@@ -30,14 +30,14 @@ enum Node<T> {
         children: [Option<Arc<Node<T>>>; NODE_CHILDREN_SIZE]
     },
     Leaf {
-        value: Option<T>
+        elements: [Option<T>; NODE_CHILDREN_SIZE]
     },
 }
 
 struct PVec<T> {
     root: Node<T>,
     size: usize,
-    tail: [Option<Arc<Node<T>>>; NODE_CHILDREN_SIZE],
+    tail: [Option<T>; NODE_CHILDREN_SIZE],
 }
 
 impl<T> PVec<T> {
@@ -49,7 +49,18 @@ impl<T> PVec<T> {
         }
     }
 
-    pub fn push(&self, value: T) {}
+    pub fn push(&mut self, item: T) {
+        let index = self.size.clone();
+        let mut tail = &mut self.tail;
+        let mut size = &mut self.size;
+
+        *size = *size + 1;
+        tail[index] = Some(item);
+    }
+
+    pub fn get(&self, index: usize) -> Option<&T> {
+        return self.tail[index].as_ref();
+    }
 }
 
 #[cfg(test)]
@@ -70,9 +81,13 @@ mod tests {
 
     #[test]
     fn new_must_return_correctly_initialized_pvec_instance() {
-        let vec = PVec::new();
+        let mut vec = PVec::new();
+        vec.push("zero");
         vec.push("one");
         vec.push("two");
-        vec.push("three");
+
+        assert_eq!(*vec.get(0).unwrap(), "zero");
+        assert_eq!(*vec.get(1).unwrap(), "one");
+        assert_eq!(*vec.get(2).unwrap(), "two");
     }
 }
