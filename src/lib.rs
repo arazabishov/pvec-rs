@@ -1,7 +1,20 @@
+use std::sync::Arc;
+
 const MASK: usize = 0b11111;
+const NODE_CHILDREN_SIZE: usize = 32;
+const BITS_PER_LEVEL: usize = 5;
 
 fn shift(key: usize, shift: usize) -> usize {
     return (key >> shift) & MASK;
+}
+
+enum Node<T> {
+    Branch {
+        children: [Option<Arc<Node<T>>>; NODE_CHILDREN_SIZE]
+    },
+    Leaf {
+        value: Option<T>
+    },
 }
 
 #[cfg(test)]
