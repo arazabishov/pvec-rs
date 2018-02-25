@@ -1,7 +1,3 @@
-// TODO: abstract shift behind a struct
-// TODO: re-consider usage of usize as a number type
-// TODO: consider making NODE_CHILDREN_SIZE constant to be architecture aware (32, 64, etc)use std::sync::Arc;
-
 use std::sync::Arc;
 
 const MASK: usize = 0b11111;
