@@ -1,3 +1,4 @@
+use std::mem;
 use std::sync::Arc;
 
 #[cfg(not(small_branch))]
@@ -49,6 +50,10 @@ impl Index {
     fn child(self, shift: Shift) -> usize {
         (self.0 >> shift.0) & BRANCH_FACTOR - 1
     }
+
+    fn element(self) -> usize {
+        self.0 & BRANCH_FACTOR - 1
+    }
 }
 
 enum Node<T> {
@@ -60,28 +65,60 @@ enum Node<T> {
     },
 }
 
+// TODO: consider comparing performance of PVec where tail is backed by the Vec or plain array
 struct PVec<T> {
-    root: Node<T>,
-    size: usize,
+    root: Option<Arc<Node<T>>>,
+    root_size: Index,
     tail: [Option<T>; BRANCH_FACTOR],
+    tail_size: Index,
+    shift: Shift,
 }
 
 impl<T> PVec<T> {
     pub fn new() -> Self {
         PVec {
-            root: Node::Branch { children: no_children!() },
-            size: 0,
+            root: Some(Arc::new(Node::Branch { children: no_children!() })),
+            root_size: Index(0),
             tail: no_children!(),
+            tail_size: Index(0),
+            shift: Shift(0),
         }
     }
 
     pub fn push(&mut self, item: T) {
-        let index = self.size.clone();
-        let mut tail = &mut self.tail;
-        let mut size = &mut self.size;
+        self.tail[self.tail_size.0] = Some(item);
+        self.tail_size.0 += 1;
 
-        *size = *size + 1;
-        tail[index] = Some(item);
+        println!("Here one");
+
+        if self.tail_size.0 == BRANCH_FACTOR {
+            let tail = mem::replace(&mut self.tail, no_children!());
+
+            self.root_size.0 += BRANCH_FACTOR;
+            self.tail_size.0 = 0;
+
+            self.push_tail(tail);
+        }
+    }
+
+    fn push_tail(&mut self, tail: [Option<T>; BRANCH_FACTOR]) {
+        if let Some(root) = self.root.as_mut() {
+            let capacity = BRANCH_FACTOR << self.shift.0;
+
+            if capacity == self.root_size.0 {
+                println!("Need to grow this thingy.");
+
+                let mut nodes = no_children!();
+                nodes[0] = Some(root.clone());
+
+                *root = Arc::new(Node::Branch { children: nodes });
+            }
+
+            // push the tail down to the leaf node
+            // update the path which this tail has affected along the way
+        } else {
+            // no root, meaning that we didn't have any values at all
+        }
     }
 
     pub fn get(&self, index: usize) -> Option<&T> {
@@ -94,6 +131,7 @@ mod tests {
     use super::*;
 
     #[test]
+    #[cfg(not(small_branch))]
     fn shift_must_return_correct_index() {
         let index = Index(141);
 
@@ -106,6 +144,7 @@ mod tests {
         let shift_6 = shift_5.inc();
         let shift_7 = shift_6.inc();
 
+        assert_eq!(index.element(), 0b01101);
         assert_eq!(index.child(shift_0), 0b01101);
         assert_eq!(index.child(shift_1), 0b00100);
         assert_eq!(index.child(shift_2), 0b00000);
@@ -119,12 +158,13 @@ mod tests {
     #[test]
     fn new_must_return_correctly_initialized_pvec_instance() {
         let mut vec = PVec::new();
-        vec.push("zero");
-        vec.push("one");
-        vec.push("two");
 
-        assert_eq!(*vec.get(0).unwrap(), "zero");
-        assert_eq!(*vec.get(1).unwrap(), "one");
-        assert_eq!(*vec.get(2).unwrap(), "two");
+        for i in 0..33 {
+            vec.push(i);
+        }
+
+        for i in 0..33 {
+            assert_eq!(*vec.get(i).unwrap(), i);
+        }
     }
 }
