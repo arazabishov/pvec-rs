@@ -44,6 +44,10 @@ impl Shift {
     fn inc(self) -> Shift {
         Shift(self.0 + BITS_PER_LEVEL)
     }
+
+    fn dec(self) -> Shift {
+        Shift(self.0 - BITS_PER_LEVEL)
+    }
 }
 
 impl Index {
@@ -56,7 +60,8 @@ impl Index {
     }
 }
 
-enum Node<T> {
+#[derive(Clone)]
+enum Node<T: Clone> {
     Branch {
         children: [Option<Arc<Node<T>>>; BRANCH_FACTOR]
     },
@@ -65,8 +70,38 @@ enum Node<T> {
     },
 }
 
+impl<T: Clone> Node<T> {
+    fn push(&mut self, index: Index, shift: Shift, values: [Option<T>; BRANCH_FACTOR]) {
+        if let &mut Node::Branch { ref mut children } = self {
+            println!("About to insert a new node with index {} and shift {}, resulting in {}", index.0, shift.0, index.child(shift));
+            children[index.child(shift)] = Some(Arc::new(Node::Leaf { elements: values }))
+        }
+    }
+
+    fn get(&self, index: Index, shift: Shift) -> Option<&T> {
+        let mut node = self;
+        let mut shift = shift;
+
+        loop {
+            match *node {
+                Node::Branch { ref children } => {
+                    node = match children[index.child(shift)] {
+                        Some(ref child) => &*child,
+                        None => unreachable!()
+                    };
+
+                    shift = shift.dec();
+                }
+                Node::Leaf { ref elements } => {
+                    return elements[index.element()].as_ref();
+                }
+            }
+        }
+    }
+}
+
 // TODO: consider comparing performance of PVec where tail is backed by the Vec or plain array
-struct PVec<T> {
+struct PVec<T: Clone> {
     root: Option<Arc<Node<T>>>,
     root_size: Index,
     tail: [Option<T>; BRANCH_FACTOR],
@@ -74,7 +109,7 @@ struct PVec<T> {
     shift: Shift,
 }
 
-impl<T> PVec<T> {
+impl<T: Clone> PVec<T> {
     pub fn new() -> Self {
         PVec {
             root: Some(Arc::new(Node::Branch { children: no_children!() })),
@@ -89,15 +124,14 @@ impl<T> PVec<T> {
         self.tail[self.tail_size.0] = Some(item);
         self.tail_size.0 += 1;
 
-        println!("Here one");
-
         if self.tail_size.0 == BRANCH_FACTOR {
             let tail = mem::replace(&mut self.tail, no_children!());
 
+            self.push_tail(tail);
+
             self.root_size.0 += BRANCH_FACTOR;
             self.tail_size.0 = 0;
-
-            self.push_tail(tail);
+            self.tail = no_children!();
         }
     }
 
@@ -105,24 +139,29 @@ impl<T> PVec<T> {
         if let Some(root) = self.root.as_mut() {
             let capacity = BRANCH_FACTOR << self.shift.0;
 
-            if capacity == self.root_size.0 {
+            if capacity == self.root_size.0 + BRANCH_FACTOR {
                 println!("Need to grow this thingy.");
 
                 let mut nodes = no_children!();
                 nodes[0] = Some(root.clone());
 
+                self.shift = self.shift.inc();
+
                 *root = Arc::new(Node::Branch { children: nodes });
             }
 
-            // push the tail down to the leaf node
-            // update the path which this tail has affected along the way
+            Arc::make_mut(root).push(self.root_size, self.shift, tail);
         } else {
             // no root, meaning that we didn't have any values at all
         }
     }
 
     pub fn get(&self, index: usize) -> Option<&T> {
-        return self.tail[index].as_ref();
+        if self.root_size.0 > index {
+            return self.root.as_ref().unwrap().get(Index(index), self.shift);
+        } else {
+            return self.tail[index - self.root_size.0].as_ref();
+        }
     }
 }
 
@@ -159,11 +198,11 @@ mod tests {
     fn new_must_return_correctly_initialized_pvec_instance() {
         let mut vec = PVec::new();
 
-        for i in 0..33 {
+        for i in 0..64 {
             vec.push(i);
         }
 
-        for i in 0..33 {
+        for i in 0..64 {
             assert_eq!(*vec.get(i).unwrap(), i);
         }
     }
