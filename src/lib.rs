@@ -71,12 +71,16 @@ enum Node<T: Clone> {
 }
 
 impl<T: Clone> Node<T> {
-    fn push(&mut self, index: Index, shift: Shift, values: [Option<T>; BRANCH_FACTOR]) {
+    fn push_tail(&mut self, index: Index, shift: Shift, tail: [Option<T>; BRANCH_FACTOR]) {
         debug_assert!(shift.0 >= BITS_PER_LEVEL);
 
-        // 1) what should be the condition for the while loop? shift == BITS_PER_LEVEL / 0 / erc
-        // 2) what should be responsibility of the loop? (traversing tree / creating branches / inserting values / all)
-        // 3) how to design the lifetime of variables within the loop in ergonomic, simple, clean way?
+        // Q1) what should be the condition for the while loop? shift == BITS_PER_LEVEL (1) / 0 / erc
+        // Q2) what should be responsibility of the loop? (traversing tree / creating branches / inserting values / all)
+        // Q3) how to design the lifetime of variables within the loop in ergonomic, simple, clean way?
+
+        // A1) shift == BITS_PER_LEVEL
+        // A2) traversing tree / creating branches
+        // A3) No clean solution (without workarounds) due to the limitations of the borrow checker - see non-lexical lifetimes project
 
         // Let's consider several corner cases. When tree has only one node - which both root and a leaf.
         // In the current set-up, Node::push won't be called in this scenario, because all of the elements
@@ -91,30 +95,32 @@ impl<T: Clone> Node<T> {
         let mut node = self;
         let mut shift = shift;
 
-        // TODO: get rid of the hack with the temporary cnode variable in the while loop
-        // TODO: consider changing implementation of if check in the Node::Branch under while loop
+        while shift.0 != BITS_PER_LEVEL {
+            let cnode = node; // FIXME: when NLL is landed into compiler
 
-        while shift.0 != 0 {
-            let cnode = node;
-
-            match *cnode {
+            let child = match *cnode {
                 Node::Leaf { .. } => unreachable!(),
                 Node::Branch { ref mut children } => {
                     let i = index.child(shift);
 
                     if children[i].is_none() {
-                        children[i] = Some(Arc::new(Node::Branch { children: no_children!() }));
+                        children[i] = Some(Arc::new(Node::Branch {
+                            children: no_children!()
+                        }));
                     }
 
-                    let child = children[i].as_mut().unwrap();
-                    node = Arc::make_mut(child);
-
-                    shift = shift.dec();
+                    children[i].as_mut().unwrap()
                 }
-            }
+            };
 
-            debug_assert_eq!(shift.0, 0);
-            println!("Reached the bottom.");
+            node = Arc::make_mut(child);
+            shift = shift.dec();
+        }
+
+        debug_assert_eq!(shift.0, BITS_PER_LEVEL);
+
+        if let Node::Branch { ref mut children } = *node {
+            children[index.child(shift)] = Some(Arc::new(Node::Leaf { elements: tail }));
         }
     }
 
@@ -190,7 +196,7 @@ impl<T: Clone> PVec<T> {
                 *root = Arc::new(Node::Branch { children: nodes });
             }
 
-            Arc::make_mut(root).push(self.root_size, self.shift, tail);
+            Arc::make_mut(root).push_tail(self.root_size, self.shift, tail);
         } else {
             // no root, meaning that we didn't have any values at all
         }
