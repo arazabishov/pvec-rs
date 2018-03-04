@@ -72,9 +72,49 @@ enum Node<T: Clone> {
 
 impl<T: Clone> Node<T> {
     fn push(&mut self, index: Index, shift: Shift, values: [Option<T>; BRANCH_FACTOR]) {
-        if let &mut Node::Branch { ref mut children } = self {
-            println!("About to insert a new node with index {} and shift {}, resulting in {}", index.0, shift.0, index.child(shift));
-            children[index.child(shift)] = Some(Arc::new(Node::Leaf { elements: values }))
+        debug_assert!(shift.0 >= BITS_PER_LEVEL);
+
+        // 1) what should be the condition for the while loop? shift == BITS_PER_LEVEL / 0 / erc
+        // 2) what should be responsibility of the loop? (traversing tree / creating branches / inserting values / all)
+        // 3) how to design the lifetime of variables within the loop in ergonomic, simple, clean way?
+
+        // Let's consider several corner cases. When tree has only one node - which both root and a leaf.
+        // In the current set-up, Node::push won't be called in this scenario, because all of the elements
+        // will be pushed onto leaf array. When that leaf array will be full, the tree will grow by one level
+        // by PVec functions, and current array will be assigned as a child node of the root. In other words,
+        // we always assume that shift.0 value will be >= BITS_PER_LEVEL, when Node::push() is invoked.
+
+        // When we have two levels in the tree, the loop must shift the node pointer to the levels - 1
+        // indexed node of branch type. Logic following the while loop, will perform insertion of the leaf node
+        // using given values array.
+
+        let mut node = self;
+        let mut shift = shift;
+
+        // TODO: get rid of the hack with the temporary cnode variable in the while loop
+        // TODO: consider changing implementation of if check in the Node::Branch under while loop
+
+        while shift.0 != 0 {
+            let cnode = node;
+
+            match *cnode {
+                Node::Leaf { .. } => unreachable!(),
+                Node::Branch { ref mut children } => {
+                    let i = index.child(shift);
+
+                    if children[i].is_none() {
+                        children[i] = Some(Arc::new(Node::Branch { children: no_children!() }));
+                    }
+
+                    let child = children[i].as_mut().unwrap();
+                    node = Arc::make_mut(child);
+
+                    shift = shift.dec();
+                }
+            }
+
+            debug_assert_eq!(shift.0, 0);
+            println!("Reached the bottom.");
         }
     }
 
