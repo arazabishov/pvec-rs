@@ -230,7 +230,7 @@ impl<T: Clone + Debug> PVec<T> {
         // TODO: Are you sure you want to start from the Node's Branch variant?
         // TODO: You might want to start from no root and just a tail instead?
         PVec {
-            root: Some(Arc::new(Node::Branch { children: no_children!() })),
+            root: None,
             root_size: Index(0),
             tail: no_children!(),
             tail_size: Index(0),
@@ -258,6 +258,10 @@ impl<T: Clone + Debug> PVec<T> {
     }
 
     fn push_tail(&mut self, tail: [Option<T>; BRANCH_FACTOR]) {
+        if self.root.is_none() {
+            self.root = Some(Arc::new(Node::Branch { children: no_children!() }));
+        }
+
         if let Some(root) = self.root.as_mut() {
             let capacity = BRANCH_FACTOR << self.shift.0;
 
@@ -274,7 +278,7 @@ impl<T: Clone + Debug> PVec<T> {
 
             Arc::make_mut(root).push_tail(self.root_size, self.shift, tail);
         } else {
-            // TODO: no root, meaning that we didn't have any values at all
+            unreachable!()
         }
     }
 
