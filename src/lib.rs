@@ -74,29 +74,11 @@ impl<T: Clone> Node<T> {
     fn push_tail(&mut self, index: Index, shift: Shift, tail: [Option<T>; BRANCH_FACTOR]) {
         debug_assert!(shift.0 >= BITS_PER_LEVEL);
 
-        // Q1) what should be the condition for the while loop? shift == BITS_PER_LEVEL (1) / 0 / erc
-        // Q2) what should be responsibility of the loop? (traversing tree / creating branches / inserting values / all)
-        // Q3) how to design the lifetime of variables within the loop in ergonomic, simple, clean way?
-
-        // A1) shift == BITS_PER_LEVEL
-        // A2) traversing tree / creating branches
-        // A3) No clean solution (without workarounds) due to the limitations of the borrow checker - see non-lexical lifetimes project
-
-        // Let's consider several corner cases. When tree has only one node - which both root and a leaf.
-        // In the current set-up, Node::push won't be called in this scenario, because all of the elements
-        // will be pushed onto leaf array. When that leaf array will be full, the tree will grow by one level
-        // by PVec functions, and current array will be assigned as a child node of the root. In other words,
-        // we always assume that shift.0 value will be >= BITS_PER_LEVEL, when Node::push() is invoked.
-
-        // When we have two levels in the tree, the loop must shift the node pointer to the levels - 1
-        // indexed node of branch type. Logic following the while loop, will perform insertion of the leaf node
-        // using given values array.
-
         let mut node = self;
         let mut shift = shift;
 
         while shift.0 != BITS_PER_LEVEL {
-            let cnode = node; // FIXME: when NLL is landed into compiler
+            let cnode = node; // FIXME: when NLL land to the compiler
 
             let child = match *cnode {
                 Node::Leaf { .. } => unreachable!(),
