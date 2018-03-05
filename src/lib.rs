@@ -1,6 +1,7 @@
 use std::mem;
 use std::sync::Arc;
 use std::cmp::Ordering;
+use std::fmt::Debug;
 
 #[cfg(not(small_branch))]
 const BRANCH_FACTOR: usize = 32;
@@ -111,7 +112,7 @@ impl Index {
 }
 
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
-enum Node<T: Clone> {
+enum Node<T> {
     Branch {
         children: [Option<Arc<Node<T>>>; BRANCH_FACTOR]
     },
@@ -215,7 +216,7 @@ impl<T: Clone> Node<T> {
 }
 
 // TODO: consider comparing performance of PVec where tail is backed by the Vec or plain array
-struct PVec<T: Clone> {
+struct PVec<T> {
     root: Option<Arc<Node<T>>>,
     root_size: Index,
     tail: [Option<T>; BRANCH_FACTOR],
@@ -223,8 +224,10 @@ struct PVec<T: Clone> {
     shift: Shift,
 }
 
-impl<T: Clone> PVec<T> {
+impl<T: Clone + Debug> PVec<T> {
     pub fn new() -> Self {
+        // TODO: Are you sure you want to start from the Node's Branch variant?
+        // TODO: You might want to start from no root and just a tail instead?
         PVec {
             root: Some(Arc::new(Node::Branch { children: no_children!() })),
             root_size: Index(0),
@@ -266,15 +269,23 @@ impl<T: Clone> PVec<T> {
 
             Arc::make_mut(root).push_tail(self.root_size, self.shift, tail);
         } else {
-            // no root, meaning that we didn't have any values at all
+            // TODO: no root, meaning that we didn't have any values at all
         }
     }
 
     pub fn get(&self, index: usize) -> Option<&T> {
         if self.root_size.0 > index {
-            return self.root.as_ref().unwrap().get(Index(index), self.shift);
+            self.root.as_ref().unwrap().get(Index(index), self.shift)
         } else {
-            return self.tail[index - self.root_size.0].as_ref();
+            self.tail[index - self.root_size.0].as_ref()
+        }
+    }
+
+    pub fn get_mut(&mut self, index: usize) -> Option<&mut T> {
+        if self.root_size.0 > index {
+            Arc::make_mut(self.root.as_mut().unwrap()).get_mut(Index(index), self.shift)
+        } else {
+            self.tail[index - self.root_size.0].as_mut()
         }
     }
 }
