@@ -78,7 +78,7 @@ impl<T: Clone> Node<T> {
         let mut shift = shift;
 
         while shift.0 != BITS_PER_LEVEL {
-            let cnode = node; // FIXME: when NLL land to the compiler
+            let cnode = node; // FIXME: NLL
 
             let child = match *cnode {
                 Node::Leaf { .. } => unreachable!(),
@@ -106,13 +106,14 @@ impl<T: Clone> Node<T> {
         }
     }
 
-    fn get(&self, index: Index, shift: Shift) -> Option<&T> {
+    pub fn get(&self, index: Index, shift: Shift) -> Option<&T> {
         let mut node = self;
         let mut shift = shift;
 
         loop {
             match *node {
                 Node::Branch { ref children } => {
+                    debug_assert!(shift.0 > 0);
                     node = match children[index.child(shift)] {
                         Some(ref child) => &*child,
                         None => unreachable!()
@@ -121,7 +122,32 @@ impl<T: Clone> Node<T> {
                     shift = shift.dec();
                 }
                 Node::Leaf { ref elements } => {
+                    debug_assert_eq!(shift.0, 0);
                     return elements[index.element()].as_ref();
+                }
+            }
+        }
+    }
+
+    pub fn get_mut(&mut self, index: Index, shift: Shift) -> Option<&mut T> {
+        let mut node = self;
+        let mut shift = shift;
+
+        loop {
+            let cnode = node; // FIXME: NLL
+            match *cnode {
+                Node::Branch { ref mut children } => {
+                    debug_assert!(shift.0 > 0);
+                    node = match children[index.child(shift)] {
+                        Some(ref mut child) => Arc::make_mut(child),
+                        None => unreachable!()
+                    };
+
+                    shift = shift.dec();
+                }
+                Node::Leaf { ref mut elements } => {
+                    debug_assert_eq!(shift.0, 0);
+                    return elements[index.element()].as_mut();
                 }
             }
         }
