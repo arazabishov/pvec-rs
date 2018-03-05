@@ -1,3 +1,4 @@
+use std::ops;
 use std::mem;
 use std::sync::Arc;
 use std::cmp::Ordering;
@@ -252,6 +253,10 @@ impl<T: Clone + Debug> PVec<T> {
         }
     }
 
+    pub fn len(&self) -> usize {
+        self.root_size.0 + self.tail_size.0
+    }
+
     fn push_tail(&mut self, tail: [Option<T>; BRANCH_FACTOR]) {
         if let Some(root) = self.root.as_mut() {
             let capacity = BRANCH_FACTOR << self.shift.0;
@@ -287,6 +292,25 @@ impl<T: Clone + Debug> PVec<T> {
         } else {
             self.tail[index - self.root_size.0].as_mut()
         }
+    }
+}
+
+impl<T: Clone + Debug> ops::Index<usize> for PVec<T> {
+    type Output = T;
+
+    fn index(&self, index: usize) -> &T {
+        self.get(index).unwrap_or_else(||
+            panic!("index `{}` out of bounds in PVec of length `{}`", index, self.len())
+        )
+    }
+}
+
+impl<T: Clone + Debug> ops::IndexMut<usize> for PVec<T> {
+    fn index_mut(&mut self, index: usize) -> &mut T {
+        let len = self.len();
+        self.get_mut(index).unwrap_or_else(||
+            panic!("index `{}` out of bounds in PVec of length `{}`", index, len)
+        )
     }
 }
 
@@ -328,7 +352,9 @@ mod tests {
         }
 
         for i in 0..64 {
-            assert_eq!(*vec.get(i).unwrap(), i);
+            assert_eq!(vec[i], i);
         }
+
+        assert_eq!(vec.len(), 64);
     }
 }
