@@ -121,12 +121,11 @@ enum Node<T: Clone> {
 }
 
 // TODO: figure out how vec clones underlying data structure (deep or shallow clone).
-// TODO: write / re-use the macro for cloning elements array.
 impl<T: Clone> Clone for Node<T> {
     fn clone(&self) -> Self {
         match *self {
-            Node::Branch { ref children } => Node::Branch { children: clone_array!(children) },
-            Node::Leaf { ref elements } => Node::Leaf { elements: elements.clone() }
+            Node::Branch { ref children } => Node::Branch { children: clone_array!(children) /* children.clone() */ },
+            Node::Leaf { ref elements } => Node::Leaf { elements: clone_array!(elements) /* elements.clone() */ }
         }
     }
 }
