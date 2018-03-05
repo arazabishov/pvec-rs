@@ -1,5 +1,6 @@
 use std::mem;
 use std::sync::Arc;
+use std::cmp::Ordering;
 
 #[cfg(not(small_branch))]
 const BRANCH_FACTOR: usize = 32;
@@ -34,11 +35,8 @@ macro_rules! no_children {
     }
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 struct Shift(usize);
-
-#[derive(Copy, Clone)]
-struct Index(usize);
 
 impl Shift {
     fn inc(self) -> Shift {
@@ -47,6 +45,33 @@ impl Shift {
 
     fn dec(self) -> Shift {
         Shift(self.0 - BITS_PER_LEVEL)
+    }
+}
+
+impl PartialEq<usize> for Shift {
+    fn eq(&self, other: &usize) -> bool {
+        self.0.eq(other)
+    }
+}
+
+impl PartialOrd<usize> for Shift {
+    fn partial_cmp(&self, other: &usize) -> Option<Ordering> {
+        self.0.partial_cmp(other)
+    }
+}
+
+#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
+struct Index(usize);
+
+impl PartialEq<usize> for Index {
+    fn eq(&self, other: &usize) -> bool {
+        self.0.eq(other)
+    }
+}
+
+impl PartialOrd<usize> for Index {
+    fn partial_cmp(&self, other: &usize) -> Option<Ordering> {
+        self.0.partial_cmp(other)
     }
 }
 
