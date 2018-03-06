@@ -37,31 +37,6 @@ macro_rules! no_children {
     }
 }
 
-#[cfg(not(small_branch))]
-macro_rules! clone_array {
-    ($source:expr) => {{
-        let s = $source;
-        [
-            s[0x00].clone(), s[0x01].clone(), s[0x02].clone(), s[0x03].clone(),
-            s[0x04].clone(), s[0x05].clone(), s[0x06].clone(), s[0x07].clone(),
-            s[0x08].clone(), s[0x09].clone(), s[0x0A].clone(), s[0x0B].clone(),
-            s[0x0C].clone(), s[0x0D].clone(), s[0x0E].clone(), s[0x0F].clone(),
-            s[0x10].clone(), s[0x11].clone(), s[0x12].clone(), s[0x13].clone(),
-            s[0x14].clone(), s[0x15].clone(), s[0x16].clone(), s[0x17].clone(),
-            s[0x18].clone(), s[0x19].clone(), s[0x1A].clone(), s[0x1B].clone(),
-            s[0x1C].clone(), s[0x1D].clone(), s[0x1E].clone(), s[0x1F].clone(),
-        ]
-    }}
-}
-
-#[cfg(small_branch)]
-macro_rules! clone_array {
-    ($source:expr) => {{
-        let s = $source;
-        [s[0x00].clone(), s[0x01].clone(), s[0x02].clone(), s[0x03].clone(),]
-    }}
-}
-
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 struct Shift(usize);
 
@@ -112,7 +87,7 @@ impl Index {
     }
 }
 
-#[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 enum Node<T> {
     Branch {
         children: [Option<Arc<Node<T>>>; BRANCH_FACTOR]
@@ -120,16 +95,6 @@ enum Node<T> {
     Leaf {
         elements: [Option<T>; BRANCH_FACTOR]
     },
-}
-
-// TODO: figure out how vec clones underlying data structure (deep or shallow clone).
-impl<T: Clone> Clone for Node<T> {
-    fn clone(&self) -> Self {
-        match *self {
-            Node::Branch { ref children } => Node::Branch { children: clone_array!(children) /* children.clone() */ },
-            Node::Leaf { ref elements } => Node::Leaf { elements: clone_array!(elements) /* elements.clone() */ }
-        }
-    }
 }
 
 impl<T: Clone> Node<T> {
