@@ -181,7 +181,7 @@ impl<T: Clone> Node<T> {
     }
 }
 
-// TODO: consider comparing performance of PVec where tail is backed by the Vec or plain array
+#[derive(Clone, Debug, Ord, PartialOrd, Eq, PartialEq)]
 pub struct PVec<T> {
     root: Option<Arc<Node<T>>>,
     root_size: Index,
