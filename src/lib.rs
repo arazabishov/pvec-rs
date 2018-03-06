@@ -192,8 +192,6 @@ struct PVec<T> {
 
 impl<T: Clone + Debug> PVec<T> {
     pub fn new() -> Self {
-        // TODO: Are you sure you want to start from the Node's Branch variant?
-        // TODO: You might want to start from no root and just a tail instead?
         PVec {
             root: None,
             root_size: Index(0),
