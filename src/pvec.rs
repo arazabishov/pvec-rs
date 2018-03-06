@@ -229,8 +229,6 @@ impl<T: Clone + Debug> PVec<T> {
             let capacity = BRANCH_FACTOR << self.shift.0;
 
             if capacity == self.root_size.0 + BRANCH_FACTOR {
-                println!("Need to grow this thingy.");
-
                 let mut nodes = no_children!();
                 nodes[0] = Some(root.clone());
 
