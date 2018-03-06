@@ -182,7 +182,7 @@ impl<T: Clone> Node<T> {
 }
 
 // TODO: consider comparing performance of PVec where tail is backed by the Vec or plain array
-struct PVec<T> {
+pub struct PVec<T> {
     root: Option<Arc<Node<T>>>,
     root_size: Index,
     tail: [Option<T>; BRANCH_FACTOR],
@@ -278,50 +278,5 @@ impl<T: Clone + Debug> ops::IndexMut<usize> for PVec<T> {
         self.get_mut(index).unwrap_or_else(||
             panic!("index `{}` out of bounds in PVec of length `{}`", index, len)
         )
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    #[cfg(not(small_branch))]
-    fn shift_must_return_correct_index() {
-        let index = Index(141);
-
-        let shift_0 = Shift(0);
-        let shift_1 = shift_0.inc();
-        let shift_2 = shift_1.inc();
-        let shift_3 = shift_2.inc();
-        let shift_4 = shift_3.inc();
-        let shift_5 = shift_4.inc();
-        let shift_6 = shift_5.inc();
-        let shift_7 = shift_6.inc();
-
-        assert_eq!(index.element(), 0b01101);
-        assert_eq!(index.child(shift_0), 0b01101);
-        assert_eq!(index.child(shift_1), 0b00100);
-        assert_eq!(index.child(shift_2), 0b00000);
-        assert_eq!(index.child(shift_3), 0b00000);
-        assert_eq!(index.child(shift_4), 0b00000);
-        assert_eq!(index.child(shift_5), 0b00000);
-        assert_eq!(index.child(shift_6), 0b00000);
-        assert_eq!(index.child(shift_7), 0b00000);
-    }
-
-    #[test]
-    fn new_must_return_correctly_initialized_pvec_instance() {
-        let mut vec = PVec::new();
-
-        for i in 0..64 {
-            vec.push(i);
-        }
-
-        for i in 0..64 {
-            assert_eq!(vec[i], i);
-        }
-
-        assert_eq!(vec.len(), 64);
     }
 }
