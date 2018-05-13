@@ -1,8 +1,8 @@
-use std::ops;
-use std::mem;
-use std::sync::Arc;
 use std::cmp::Ordering;
 use std::fmt::Debug;
+use std::mem;
+use std::ops;
+use std::sync::Arc;
 
 #[cfg(not(small_branch))]
 const BRANCH_FACTOR: usize = 32;
@@ -34,6 +34,12 @@ macro_rules! no_children {
 macro_rules! no_children {
     () => {
         [None, None, None, None]
+    }
+}
+
+macro_rules! debug {
+    ($($t:tt)*) => {
+         // println!($($t)*);
     }
 }
 
@@ -97,7 +103,7 @@ enum Node<T> {
     },
 }
 
-impl<T: Clone> Node<T> {
+impl<T: Clone + Debug> Node<T> {
     fn push_tail(&mut self, index: Index, shift: Shift, tail: [Option<T>; BRANCH_FACTOR]) {
         debug_assert!(shift.0 >= BITS_PER_LEVEL);
 
@@ -133,6 +139,43 @@ impl<T: Clone> Node<T> {
         }
     }
 
+    fn pop_tail(&mut self, index: Index, shift: Shift) -> [Option<T>; BRANCH_FACTOR] {
+        debug_assert!(shift.0 >= BITS_PER_LEVEL);
+
+        let mut node = self;
+        let mut shift = shift;
+
+        while shift.0 != BITS_PER_LEVEL {
+            let cnode = node; // FIXME: NLL
+
+            let child = match *cnode {
+                Node::Leaf { .. } => unreachable!(),
+                Node::Branch { ref mut children } => {
+                    let i = index.child(shift);
+                    children[i].as_mut().unwrap()
+                }
+            };
+
+            node = Arc::make_mut(child);
+            shift = shift.dec();
+        }
+
+        debug_assert_eq!(shift.0, BITS_PER_LEVEL);
+
+        // You might get a memory leak if you don't free up the space taken by the node
+        if let Node::Branch { ref mut children } = *node {
+            let mut leaf_node = children[index.child(shift)].take().unwrap();
+
+            if let Node::Leaf { ref mut elements } = Arc::make_mut(&mut leaf_node) {
+                return mem::replace(elements, no_children!());
+            } else {
+                unreachable!();
+            }
+        } else {
+            unreachable!();
+        }
+    }
+
     pub fn get(&self, index: Index, shift: Shift) -> Option<&T> {
         let mut node = self;
         let mut shift = shift;
@@ -162,6 +205,7 @@ impl<T: Clone> Node<T> {
 
         loop {
             let cnode = node; // FIXME: NLL
+
             match *cnode {
                 Node::Branch { ref mut children } => {
                     debug_assert!(shift.0 > 0);
@@ -221,6 +265,9 @@ impl<T: Clone + Debug> PVec<T> {
     }
 
     fn push_tail(&mut self, tail: [Option<T>; BRANCH_FACTOR]) {
+        debug!("---------------------------------------------------------------------------");
+        debug!("PVec::push_tail(tail={:?})", tail);
+
         if self.root.is_none() {
             self.root = Some(Arc::new(Node::Branch { children: no_children!() }));
         }
@@ -257,6 +304,71 @@ impl<T: Clone + Debug> PVec<T> {
         } else {
             self.tail[index - self.root_size.0].as_mut()
         }
+    }
+
+    pub fn pop(&mut self) -> Option<T> {
+        if self.len() == 0 {
+            return None;
+        }
+
+        if self.tail_size.0 == 0 {
+            self.root_size.0 -= BRANCH_FACTOR;
+            self.tail_size.0 = BRANCH_FACTOR;
+
+            let new_tail = self.pop_tail();
+            mem::replace(&mut self.tail, new_tail);
+        }
+
+        let item = self.tail[self.tail_size.0 - 1].take();
+        self.tail_size.0 -= 1;
+
+        return item;
+    }
+
+    fn pop_tail(&mut self) -> [Option<T>; BRANCH_FACTOR] {
+        debug!("---------------------------------------------------------------------------");
+        debug!("PVec::pop_tail() capacity={} root_size={} shift={}",
+               BRANCH_FACTOR << self.shift.0, self.root_size.0, self.shift.0);
+
+        let new_tail = if let Some(root) = self.root.as_mut() {
+            Arc::make_mut(root).pop_tail(self.root_size, self.shift)
+        } else {
+            unreachable!()
+        };
+
+        debug!("PVec::pop_tail() -> ({:?})", new_tail);
+
+        if self.root_size.0 == 0 {
+            self.root = None;
+            self.shift = self.shift.dec();
+
+            debug!("PVec::lower_trie -> ()");
+
+            return new_tail;
+        }
+
+        if let Some(root) = self.root.as_mut() {
+            let capacity = BRANCH_FACTOR << self.shift.dec().0;
+
+            debug!("PVec::pop_tail() capacity={} root_size={} shift={}",
+                   capacity, self.root_size.0, self.shift.0);
+
+            if capacity == self.root_size.0 + BRANCH_FACTOR {
+                self.shift = self.shift.dec();
+
+                *root = if let Node::Branch { ref mut children } = Arc::make_mut(root) {
+                    debug!("PVec::lower_trie -> ({:?})", children);
+
+                    children[0].take().unwrap()
+                } else {
+                    unreachable!();
+                };
+            }
+        } else {
+            unreachable!()
+        }
+
+        return new_tail;
     }
 }
 
