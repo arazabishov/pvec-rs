@@ -1,14 +1,13 @@
 use std::cmp::Ordering;
 use std::fmt::Debug;
 use std::mem;
-use std::ops;
 use std::sync::Arc;
 
 #[cfg(not(small_branch))]
-const BRANCH_FACTOR: usize = 32;
+pub const BRANCH_FACTOR: usize = 32;
 
 #[cfg(small_branch)]
-const BRANCH_FACTOR: usize = 4;
+pub const BRANCH_FACTOR: usize = 4;
 
 #[cfg(not(small_branch))]
 const BITS_PER_LEVEL: usize = 5;
@@ -17,7 +16,7 @@ const BITS_PER_LEVEL: usize = 5;
 const BITS_PER_LEVEL: usize = 2;
 
 #[cfg(not(small_branch))]
-macro_rules! no_children {
+macro_rules! new_branch {
     () => {
         [None, None, None, None,
          None, None, None, None,
@@ -31,7 +30,7 @@ macro_rules! no_children {
 }
 
 #[cfg(small_branch)]
-macro_rules! no_children {
+macro_rules! new_branch {
     () => {
         [None, None, None, None]
     }
@@ -120,7 +119,7 @@ impl<T: Clone + Debug> Node<T> {
 
                     if children[i].is_none() {
                         children[i] = Some(Arc::new(Node::Branch {
-                            children: no_children!()
+                            children: new_branch!()
                         }));
                     }
 
@@ -167,7 +166,7 @@ impl<T: Clone + Debug> Node<T> {
             let mut leaf_node = children[index.child(shift)].take().unwrap();
 
             if let Node::Leaf { ref mut elements } = Arc::make_mut(&mut leaf_node) {
-                return mem::replace(elements, no_children!());
+                return mem::replace(elements, new_branch!());
             } else {
                 unreachable!();
             }
@@ -176,7 +175,7 @@ impl<T: Clone + Debug> Node<T> {
         }
     }
 
-    pub fn get(&self, index: Index, shift: Shift) -> Option<&T> {
+    fn get(&self, index: Index, shift: Shift) -> Option<&T> {
         let mut node = self;
         let mut shift = shift;
 
@@ -199,7 +198,7 @@ impl<T: Clone + Debug> Node<T> {
         }
     }
 
-    pub fn get_mut(&mut self, index: Index, shift: Shift) -> Option<&mut T> {
+    fn get_mut(&mut self, index: Index, shift: Shift) -> Option<&mut T> {
         let mut node = self;
         let mut shift = shift;
 
@@ -226,123 +225,68 @@ impl<T: Clone + Debug> Node<T> {
 }
 
 #[derive(Clone, Debug, Ord, PartialOrd, Eq, PartialEq)]
-pub struct PVec<T> {
+pub struct RbTree<T> {
     root: Option<Arc<Node<T>>>,
-    root_size: Index,
-    tail: [Option<T>; BRANCH_FACTOR],
-    tail_size: Index,
+    root_len: Index,
     shift: Shift,
 }
 
-impl<T: Clone + Debug> PVec<T> {
+impl<T: Clone + Debug> RbTree<T> {
     pub fn new() -> Self {
-        PVec {
+        RbTree {
             root: None,
-            root_size: Index(0),
-            tail: no_children!(),
-            tail_size: Index(0),
+            root_len: Index(0),
             shift: Shift(0),
         }
     }
 
-    pub fn push(&mut self, item: T) {
-        self.tail[self.tail_size.0] = Some(item);
-        self.tail_size.0 += 1;
-
-        if self.tail_size.0 == BRANCH_FACTOR {
-            let tail = mem::replace(&mut self.tail, no_children!());
-
-            self.push_tail(tail);
-
-            self.root_size.0 += BRANCH_FACTOR;
-            self.tail_size.0 = 0;
-            self.tail = no_children!();
-        }
-    }
-
-    pub fn len(&self) -> usize {
-        self.root_size.0 + self.tail_size.0
-    }
-
-    fn push_tail(&mut self, tail: [Option<T>; BRANCH_FACTOR]) {
+    pub fn push(&mut self, tail: [Option<T>; BRANCH_FACTOR]) {
         debug!("---------------------------------------------------------------------------");
-        debug!("PVec::push_tail(tail={:?})", tail);
+        debug!("RbTree::push(tail={:?})", tail);
 
         if self.root.is_none() {
-            self.root = Some(Arc::new(Node::Branch { children: no_children!() }));
+            self.root = Some(Arc::new(Node::Branch { children: new_branch!() }));
         }
 
         if let Some(root) = self.root.as_mut() {
             let capacity = BRANCH_FACTOR << self.shift.0;
 
-            if capacity == self.root_size.0 + BRANCH_FACTOR {
-                let mut nodes = no_children!();
+            if capacity == self.root_len.0 + BRANCH_FACTOR {
+                let mut nodes = new_branch!();
                 nodes[0] = Some(root.clone());
 
                 self.shift = self.shift.inc();
-
                 *root = Arc::new(Node::Branch { children: nodes });
             }
 
-            Arc::make_mut(root).push_tail(self.root_size, self.shift, tail);
+            Arc::make_mut(root).push_tail(self.root_len, self.shift, tail);
         } else {
             unreachable!()
         }
+
+        self.root_len.0 += BRANCH_FACTOR;
     }
 
-    pub fn get(&self, index: usize) -> Option<&T> {
-        if self.root_size.0 > index {
-            self.root.as_ref().unwrap().get(Index(index), self.shift)
-        } else {
-            self.tail[index - self.root_size.0].as_ref()
-        }
-    }
-
-    pub fn get_mut(&mut self, index: usize) -> Option<&mut T> {
-        if self.root_size.0 > index {
-            Arc::make_mut(self.root.as_mut().unwrap()).get_mut(Index(index), self.shift)
-        } else {
-            self.tail[index - self.root_size.0].as_mut()
-        }
-    }
-
-    pub fn pop(&mut self) -> Option<T> {
-        if self.len() == 0 {
-            return None;
-        }
-
-        if self.tail_size.0 == 0 {
-            self.root_size.0 -= BRANCH_FACTOR;
-            self.tail_size.0 = BRANCH_FACTOR;
-
-            let new_tail = self.pop_tail();
-            mem::replace(&mut self.tail, new_tail);
-        }
-
-        let item = self.tail[self.tail_size.0 - 1].take();
-        self.tail_size.0 -= 1;
-
-        return item;
-    }
-
-    fn pop_tail(&mut self) -> [Option<T>; BRANCH_FACTOR] {
+    pub fn pop(&mut self) -> [Option<T>; BRANCH_FACTOR] {
         debug!("---------------------------------------------------------------------------");
-        debug!("PVec::pop_tail() capacity={} root_size={} shift={}",
-               BRANCH_FACTOR << self.shift.0, self.root_size.0, self.shift.0);
+        debug!("RbTree::pop() capacity={} root_len={} shift={}",
+               BRANCH_FACTOR << self.shift.0, self.root_len.0, self.shift.0);
+
+        self.root_len.0 -= BRANCH_FACTOR;
 
         let new_tail = if let Some(root) = self.root.as_mut() {
-            Arc::make_mut(root).pop_tail(self.root_size, self.shift)
+            Arc::make_mut(root).pop_tail(self.root_len, self.shift)
         } else {
             unreachable!()
         };
 
-        debug!("PVec::pop_tail() -> ({:?})", new_tail);
+        debug!("RbTree::pop() -> ({:?})", new_tail);
 
-        if self.root_size.0 == 0 {
+        if self.root_len.0 == 0 {
             self.root = None;
             self.shift = self.shift.dec();
 
-            debug!("PVec::lower_trie -> ()");
+            debug!("RbTree::lower_trie -> ()");
 
             return new_tail;
         }
@@ -350,14 +294,14 @@ impl<T: Clone + Debug> PVec<T> {
         if let Some(root) = self.root.as_mut() {
             let capacity = BRANCH_FACTOR << self.shift.dec().0;
 
-            debug!("PVec::pop_tail() capacity={} root_size={} shift={}",
-                   capacity, self.root_size.0, self.shift.0);
+            debug!("RbTree::pop() capacity={} root_len={} shift={}",
+                   capacity, self.root_len.0, self.shift.0);
 
-            if capacity == self.root_size.0 + BRANCH_FACTOR {
+            if capacity == self.root_len.0 + BRANCH_FACTOR {
                 self.shift = self.shift.dec();
 
                 *root = if let Node::Branch { ref mut children } = Arc::make_mut(root) {
-                    debug!("PVec::lower_trie -> ({:?})", children);
+                    debug!("RbTree::lower_trie -> ({:?})", children);
 
                     children[0].take().unwrap()
                 } else {
@@ -370,23 +314,16 @@ impl<T: Clone + Debug> PVec<T> {
 
         return new_tail;
     }
-}
 
-impl<T: Clone + Debug> ops::Index<usize> for PVec<T> {
-    type Output = T;
-
-    fn index(&self, index: usize) -> &T {
-        self.get(index).unwrap_or_else(||
-            panic!("index `{}` out of bounds in PVec of length `{}`", index, self.len())
-        )
+    pub fn get(&self, index: usize) -> Option<&T> {
+        self.root.as_ref().unwrap().get(Index(index), self.shift)
     }
-}
 
-impl<T: Clone + Debug> ops::IndexMut<usize> for PVec<T> {
-    fn index_mut(&mut self, index: usize) -> &mut T {
-        let len = self.len();
-        self.get_mut(index).unwrap_or_else(||
-            panic!("index `{}` out of bounds in PVec of length `{}`", index, len)
-        )
+    pub fn get_mut(&mut self, index: usize) -> Option<&mut T> {
+        Arc::make_mut(self.root.as_mut().unwrap()).get_mut(Index(index), self.shift)
+    }
+
+    pub fn len(&self) -> usize {
+        self.root_len.0
     }
 }
