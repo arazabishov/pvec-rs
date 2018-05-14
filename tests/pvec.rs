@@ -98,7 +98,7 @@ fn pop_must_not_mutate_cloned_pvec() {
     assert_eq!(pvec.len(), N);
     assert_eq!(pvec_0.len(), N);
 
-    for i in 0..(N / 2) {
+    for _ in 0..(N / 2) {
         pvec.pop();
     }
 
