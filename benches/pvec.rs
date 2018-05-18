@@ -145,6 +145,52 @@ fn pop_pvec_500000(bencher: &mut test_crate::Bencher) {
     pop_pvec(bencher, 500000);
 }
 
+fn pop_clone_pvec(bencher: &mut test_crate::Bencher, n: usize) {
+    bencher.iter(|| {
+        let mut vec = PVec::new();
+        let mut vec_one = vec.clone();
+
+        for i in 0..n {
+            vec.push(i * 2);
+        }
+
+        for _ in 0..n {
+            vec.pop();
+            vec_one = vec.clone();
+        }
+
+        drop(vec_one);
+    });
+}
+
+fn pop_clone_vec(bencher: &mut test_crate::Bencher, n: usize) {
+    bencher.iter(|| {
+        let mut vec = Vec::new();
+        let mut vec_one = vec.clone();
+
+        for i in 0..n {
+            vec.push(i * 2);
+        }
+
+        for _ in 0..n {
+            vec.pop();
+            vec_one = vec.clone();
+        }
+
+        drop(vec_one);
+    });
+}
+
+#[bench]
+fn pop_clone_pvec_5000(bencher: &mut test_crate::Bencher) {
+    pop_clone_pvec(bencher, 5000);
+}
+
+#[bench]
+fn pop_clone_vec_5000(bencher: &mut test_crate::Bencher) {
+    pop_clone_vec(bencher, 5000);
+}
+
 fn index_sequentially_pvec(bencher: &mut test_crate::Bencher, n: usize) {
     let mut vec = PVec::new();
     for i in 0..n {
