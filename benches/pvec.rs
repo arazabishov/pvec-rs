@@ -84,7 +84,6 @@ fn push_dvec_500000(bencher: &mut test_crate::Bencher) {
     push_dvec(bencher, 500000);
 }
 
-
 fn push_clone_vec(bencher: &mut test_crate::Bencher, n: usize) {
     bencher.iter(|| {
         let mut vec = Vec::new();
