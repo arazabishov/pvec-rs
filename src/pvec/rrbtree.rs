@@ -97,6 +97,10 @@ enum Node<T> {
     Branch {
         children: [Option<Arc<Node<T>>>; BRANCH_FACTOR]
     },
+    RelaxedBranch {
+        children: [Option<Arc<Node<T>>>; BRANCH_FACTOR],
+        sizes: [Option<usize>; BRANCH_FACTOR],
+    },
     Leaf {
         elements: [Option<T>; BRANCH_FACTOR]
     },
@@ -114,6 +118,7 @@ impl<T: Clone + Debug> Node<T> {
 
             let child = match *cnode {
                 Node::Leaf { .. } => unreachable!(),
+                Node::RelaxedBranch { .. } => unreachable!(),
                 Node::Branch { ref mut children } => {
                     let i = index.child(shift);
 
@@ -149,6 +154,7 @@ impl<T: Clone + Debug> Node<T> {
 
             let child = match *cnode {
                 Node::Leaf { .. } => unreachable!(),
+                Node::RelaxedBranch { .. } => unreachable!(),
                 Node::Branch { ref mut children } => {
                     let i = index.child(shift);
                     children[i].as_mut().unwrap()
@@ -190,6 +196,7 @@ impl<T: Clone + Debug> Node<T> {
 
                     shift = shift.dec();
                 }
+                Node::RelaxedBranch { .. } => unreachable!(),
                 Node::Leaf { ref elements } => {
                     debug_assert_eq!(shift.0, 0);
                     return elements[index.element()].as_ref();
@@ -215,6 +222,7 @@ impl<T: Clone + Debug> Node<T> {
 
                     shift = shift.dec();
                 }
+                Node::RelaxedBranch { .. } => unreachable!(),
                 Node::Leaf { ref mut elements } => {
                     debug_assert_eq!(shift.0, 0);
                     return elements[index.element()].as_mut();
