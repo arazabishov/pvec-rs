@@ -107,7 +107,7 @@ enum Node<T> {
 }
 
 impl<T: Clone + Debug> Node<T> {
-    fn push_tail(&mut self, index: Index, shift: Shift, tail: [Option<T>; BRANCH_FACTOR]) {
+    fn push(&mut self, index: Index, shift: Shift, tail: [Option<T>; BRANCH_FACTOR]) {
         debug_assert!(shift.0 >= BITS_PER_LEVEL);
 
         let mut node = self;
@@ -143,7 +143,7 @@ impl<T: Clone + Debug> Node<T> {
         }
     }
 
-    fn pop_tail(&mut self, index: Index, shift: Shift) -> [Option<T>; BRANCH_FACTOR] {
+    fn pop(&mut self, index: Index, shift: Shift) -> [Option<T>; BRANCH_FACTOR] {
         debug_assert!(shift.0 >= BITS_PER_LEVEL);
 
         let mut node = self;
@@ -267,7 +267,7 @@ impl<T: Clone + Debug> RrbTree<T> {
                 *root = Arc::new(Node::Branch { children: nodes });
             }
 
-            Arc::make_mut(root).push_tail(self.root_len, self.shift, tail);
+            Arc::make_mut(root).push(self.root_len, self.shift, tail);
         } else {
             unreachable!()
         }
@@ -283,7 +283,7 @@ impl<T: Clone + Debug> RrbTree<T> {
         self.root_len.0 -= BRANCH_FACTOR;
 
         let new_tail = if let Some(root) = self.root.as_mut() {
-            Arc::make_mut(root).pop_tail(self.root_len, self.shift)
+            Arc::make_mut(root).pop(self.root_len, self.shift)
         } else {
             unreachable!()
         };
