@@ -225,15 +225,15 @@ impl<T: Clone + Debug> Node<T> {
 }
 
 #[derive(Clone, Debug, Ord, PartialOrd, Eq, PartialEq)]
-pub struct RbTree<T> {
+pub struct RrbTree<T> {
     root: Option<Arc<Node<T>>>,
     root_len: Index,
     shift: Shift,
 }
 
-impl<T: Clone + Debug> RbTree<T> {
+impl<T: Clone + Debug> RrbTree<T> {
     pub fn new() -> Self {
-        RbTree {
+        RrbTree {
             root: None,
             root_len: Index(0),
             shift: Shift(0),
@@ -242,7 +242,7 @@ impl<T: Clone + Debug> RbTree<T> {
 
     pub fn push(&mut self, tail: [Option<T>; BRANCH_FACTOR]) {
         debug!("---------------------------------------------------------------------------");
-        debug!("RbTree::push(tail={:?})", tail);
+        debug!("RrbTree::push(tail={:?})", tail);
 
         if self.root.is_none() {
             self.root = Some(Arc::new(Node::Branch { children: new_branch!() }));
@@ -269,7 +269,7 @@ impl<T: Clone + Debug> RbTree<T> {
 
     pub fn pop(&mut self) -> [Option<T>; BRANCH_FACTOR] {
         debug!("---------------------------------------------------------------------------");
-        debug!("RbTree::pop() capacity={} root_len={} shift={}",
+        debug!("RrbTree::pop() capacity={} root_len={} shift={}",
                BRANCH_FACTOR << self.shift.0, self.root_len.0, self.shift.0);
 
         self.root_len.0 -= BRANCH_FACTOR;
@@ -280,13 +280,13 @@ impl<T: Clone + Debug> RbTree<T> {
             unreachable!()
         };
 
-        debug!("RbTree::pop() -> ({:?})", new_tail);
+        debug!("RrbTree::pop() -> ({:?})", new_tail);
 
         if self.root_len.0 == 0 {
             self.root = None;
             self.shift = self.shift.dec();
 
-            debug!("RbTree::lower_trie -> ()");
+            debug!("RrbTree::lower_trie -> ()");
 
             return new_tail;
         }
@@ -294,14 +294,14 @@ impl<T: Clone + Debug> RbTree<T> {
         if let Some(root) = self.root.as_mut() {
             let capacity = BRANCH_FACTOR << self.shift.dec().0;
 
-            debug!("RbTree::pop() capacity={} root_len={} shift={}",
+            debug!("RrbTree::pop() capacity={} root_len={} shift={}",
                    capacity, self.root_len.0, self.shift.0);
 
             if capacity == self.root_len.0 + BRANCH_FACTOR {
                 self.shift = self.shift.dec();
 
                 *root = if let Node::Branch { ref mut children } = Arc::make_mut(root) {
-                    debug!("RbTree::lower_trie -> ({:?})", children);
+                    debug!("RrbTree::lower_trie -> ({:?})", children);
 
                     children[0].take().unwrap()
                 } else {

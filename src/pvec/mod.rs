@@ -1,15 +1,15 @@
-use pvec::rbtree::BRANCH_FACTOR;
-use pvec::rbtree::RbTree;
+use pvec::rrbtree::BRANCH_FACTOR;
+use pvec::rrbtree::RrbTree;
 use std::fmt::Debug;
 use std::mem;
 use std::ops;
 
 #[macro_use]
-mod rbtree;
+mod rrbtree;
 
 #[derive(Clone, Debug, Ord, PartialOrd, Eq, PartialEq)]
 pub struct PVec<T> {
-    tree: RbTree<T>,
+    tree: RrbTree<T>,
     tail: [Option<T>; BRANCH_FACTOR],
     tail_len: usize,
 }
@@ -17,7 +17,7 @@ pub struct PVec<T> {
 impl<T: Clone + Debug> PVec<T> {
     pub fn new() -> Self {
         PVec {
-            tree: RbTree::new(),
+            tree: RrbTree::new(),
             tail: new_branch!(),
             tail_len: 0,
         }
