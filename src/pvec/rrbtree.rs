@@ -16,6 +16,12 @@ const BITS_PER_LEVEL: usize = 5;
 const BITS_PER_LEVEL: usize = 2;
 
 #[cfg(not(small_branch))]
+const MAX_HEIGHT: usize = 8;
+
+#[cfg(small_branch)]
+const MAX_HEIGHT: usize = 32;
+
+#[cfg(not(small_branch))]
 macro_rules! new_branch {
     () => {
         [None, None, None, None,
