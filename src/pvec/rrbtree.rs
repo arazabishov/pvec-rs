@@ -197,7 +197,7 @@ impl<T: Clone + Debug> Node<T> {
 
         loop {
             match *node {
-                Node::Branch { ref children, ref len } => {
+                Node::Branch { ref children, len: _ } => {
                     debug_assert!(shift.0 > 0);
                     node = match children[index.child(shift)] {
                         Some(ref child) => &*child,
@@ -223,7 +223,7 @@ impl<T: Clone + Debug> Node<T> {
             let cnode = node; // FIXME: NLL
 
             match *cnode {
-                Node::Branch { ref mut children, ref len } => {
+                Node::Branch { ref mut children, len: _ } => {
                     debug_assert!(shift.0 > 0);
                     node = match children[index.child(shift)] {
                         Some(ref mut child) => Arc::make_mut(child),
@@ -233,7 +233,7 @@ impl<T: Clone + Debug> Node<T> {
                     shift = shift.dec();
                 }
                 Node::RelaxedBranch { .. } => unreachable!(),
-                Node::Leaf { ref mut elements, ref len } => {
+                Node::Leaf { ref mut elements, len: _ } => {
                     debug_assert_eq!(shift.0, 0);
                     return elements[index.element()].as_mut();
                 }
