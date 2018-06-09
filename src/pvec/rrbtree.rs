@@ -95,14 +95,17 @@ impl Index {
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 enum Node<T> {
     Branch {
-        children: [Option<Arc<Node<T>>>; BRANCH_FACTOR]
+        children: [Option<Arc<Node<T>>>; BRANCH_FACTOR],
+        len: usize,
     },
     RelaxedBranch {
         children: [Option<Arc<Node<T>>>; BRANCH_FACTOR],
         sizes: [Option<usize>; BRANCH_FACTOR],
+        len: usize,
     },
     Leaf {
-        elements: [Option<T>; BRANCH_FACTOR]
+        elements: [Option<T>; BRANCH_FACTOR],
+        len: usize,
     },
 }
 
@@ -119,12 +122,15 @@ impl<T: Clone + Debug> Node<T> {
             let child = match *cnode {
                 Node::Leaf { .. } => unreachable!(),
                 Node::RelaxedBranch { .. } => unreachable!(),
-                Node::Branch { ref mut children } => {
+                Node::Branch { ref mut children, ref mut len } => {
                     let i = index.child(shift);
 
                     if children[i].is_none() {
+                        *len = *len + 1;
+
                         children[i] = Some(Arc::new(Node::Branch {
-                            children: new_branch!()
+                            children: new_branch!(),
+                            len: 0,
                         }));
                     }
 
@@ -138,8 +144,12 @@ impl<T: Clone + Debug> Node<T> {
 
         debug_assert_eq!(shift.0, BITS_PER_LEVEL);
 
-        if let Node::Branch { ref mut children } = *node {
-            children[index.child(shift)] = Some(Arc::new(Node::Leaf { elements: tail }));
+        if let Node::Branch { ref mut children, ref mut len } = *node {
+            *len = *len + 1;
+
+            children[index.child(shift)] = Some(Arc::new(
+                Node::Leaf { elements: tail, len: 0 }
+            ));
         }
     }
 
@@ -155,7 +165,7 @@ impl<T: Clone + Debug> Node<T> {
             let child = match *cnode {
                 Node::Leaf { .. } => unreachable!(),
                 Node::RelaxedBranch { .. } => unreachable!(),
-                Node::Branch { ref mut children } => {
+                Node::Branch { ref mut children, ref mut len } => {
                     let i = index.child(shift);
                     children[i].as_mut().unwrap()
                 }
@@ -168,10 +178,10 @@ impl<T: Clone + Debug> Node<T> {
         debug_assert_eq!(shift.0, BITS_PER_LEVEL);
 
         // You might get a memory leak if you don't free up the space taken by the node
-        if let Node::Branch { ref mut children } = *node {
+        if let Node::Branch { ref mut children, ref mut len } = *node {
             let mut leaf_node = children[index.child(shift)].take().unwrap();
 
-            if let Node::Leaf { ref mut elements } = Arc::make_mut(&mut leaf_node) {
+            if let Node::Leaf { ref mut elements, ref mut len } = Arc::make_mut(&mut leaf_node) {
                 return mem::replace(elements, new_branch!());
             } else {
                 unreachable!();
@@ -187,7 +197,7 @@ impl<T: Clone + Debug> Node<T> {
 
         loop {
             match *node {
-                Node::Branch { ref children } => {
+                Node::Branch { ref children, ref len } => {
                     debug_assert!(shift.0 > 0);
                     node = match children[index.child(shift)] {
                         Some(ref child) => &*child,
@@ -197,7 +207,7 @@ impl<T: Clone + Debug> Node<T> {
                     shift = shift.dec();
                 }
                 Node::RelaxedBranch { .. } => unreachable!(),
-                Node::Leaf { ref elements } => {
+                Node::Leaf { ref elements, ref len } => {
                     debug_assert_eq!(shift.0, 0);
                     return elements[index.element()].as_ref();
                 }
@@ -213,7 +223,7 @@ impl<T: Clone + Debug> Node<T> {
             let cnode = node; // FIXME: NLL
 
             match *cnode {
-                Node::Branch { ref mut children } => {
+                Node::Branch { ref mut children, ref len } => {
                     debug_assert!(shift.0 > 0);
                     node = match children[index.child(shift)] {
                         Some(ref mut child) => Arc::make_mut(child),
@@ -223,7 +233,7 @@ impl<T: Clone + Debug> Node<T> {
                     shift = shift.dec();
                 }
                 Node::RelaxedBranch { .. } => unreachable!(),
-                Node::Leaf { ref mut elements } => {
+                Node::Leaf { ref mut elements, ref len } => {
                     debug_assert_eq!(shift.0, 0);
                     return elements[index.element()].as_mut();
                 }
@@ -253,7 +263,7 @@ impl<T: Clone + Debug> RrbTree<T> {
         debug!("RrbTree::push(tail={:?})", tail);
 
         if self.root.is_none() {
-            self.root = Some(Arc::new(Node::Branch { children: new_branch!() }));
+            self.root = Some(Arc::new(Node::Branch { children: new_branch!(), len: 0 }));
         }
 
         if let Some(root) = self.root.as_mut() {
@@ -264,7 +274,7 @@ impl<T: Clone + Debug> RrbTree<T> {
                 nodes[0] = Some(root.clone());
 
                 self.shift = self.shift.inc();
-                *root = Arc::new(Node::Branch { children: nodes });
+                *root = Arc::new(Node::Branch { children: nodes, len: 1 });
             }
 
             Arc::make_mut(root).push(self.root_len, self.shift, tail);
@@ -308,7 +318,7 @@ impl<T: Clone + Debug> RrbTree<T> {
             if capacity == self.root_len.0 + BRANCH_FACTOR {
                 self.shift = self.shift.dec();
 
-                *root = if let Node::Branch { ref mut children } = Arc::make_mut(root) {
+                *root = if let Node::Branch { ref mut children, ref len } = Arc::make_mut(root) {
                     debug!("RrbTree::lower_trie -> ({:?})", children);
 
                     children[0].take().unwrap()
