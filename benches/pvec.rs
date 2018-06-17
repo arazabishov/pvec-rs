@@ -4,10 +4,12 @@ extern crate dogged;
 extern crate persistent;
 extern crate rand;
 extern crate test as test_crate;
+extern crate im;
 
 use dogged::DVec;
 use persistent::pvec::PVec;
 use rand::{Rng, SeedableRng, XorShiftRng};
+use im::Vector;
 
 fn push_vec(bencher: &mut test_crate::Bencher, n: usize) {
     bencher.iter(|| {
@@ -39,6 +41,17 @@ fn push_dvec(bencher: &mut test_crate::Bencher, n: usize) {
     });
 }
 
+
+fn push_im_vec(bencher: &mut test_crate::Bencher, n: usize) {
+    bencher.iter(|| {
+        let mut vec = Vector::new();
+
+        for i in 0..n {
+            vec.push_back_mut(i);
+        }
+    });
+}
+
 #[bench]
 fn push_vec_5000(bencher: &mut test_crate::Bencher) {
     push_vec(bencher, 5000);
@@ -52,6 +65,11 @@ fn push_pvec_5000(bencher: &mut test_crate::Bencher) {
 #[bench]
 fn push_dvec_5000(bencher: &mut test_crate::Bencher) {
     push_dvec(bencher, 5000);
+}
+
+#[bench]
+fn push_im_vec_5000(bencher: &mut test_crate::Bencher) {
+    push_im_vec(bencher, 5000);
 }
 
 #[bench]
@@ -70,6 +88,11 @@ fn push_dvec_50000(bencher: &mut test_crate::Bencher) {
 }
 
 #[bench]
+fn push_im_vec_50000(bencher: &mut test_crate::Bencher) {
+    push_im_vec(bencher, 50000);
+}
+
+#[bench]
 fn push_vec_500000(bencher: &mut test_crate::Bencher) {
     push_vec(bencher, 500000);
 }
@@ -82,6 +105,11 @@ fn push_pvec_500000(bencher: &mut test_crate::Bencher) {
 #[bench]
 fn push_dvec_500000(bencher: &mut test_crate::Bencher) {
     push_dvec(bencher, 500000);
+}
+
+#[bench]
+fn push_im_vec_500000(bencher: &mut test_crate::Bencher) {
+    push_im_vec(bencher, 500000);
 }
 
 fn push_clone_vec(bencher: &mut test_crate::Bencher, n: usize) {
