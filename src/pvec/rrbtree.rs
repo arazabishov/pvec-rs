@@ -289,7 +289,7 @@ impl<T: Clone + Debug> RrbTree<T> {
                 nodes[0] = Some(root.clone());
 
                 self.shift = self.shift.inc();
-                *root = Arc::new(Node::Branch { children: nodes, len: 1 });
+                *root = Arc::new(Node::Branch { children: nodes, len: 0 });
             }
 
             Arc::make_mut(root).push(self.root_len, self.shift, tail);
