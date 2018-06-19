@@ -9,3 +9,7 @@ authors = ["Araz Abishov <araz@abishov.com>"]
 rand = "0.3.14"
 dogged = "0.2.0"
 im = "10.2.0"
+
+serde = { version = "1.0.66", features = ["rc"] }
+serde_json = "1.0.20"
+serde_derive = "1.0.66"
