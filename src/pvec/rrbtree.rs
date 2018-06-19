@@ -161,40 +161,50 @@ impl<T: Clone + Debug> Node<T> {
 
     fn pop(&mut self, index: Index, shift: Shift) -> [Option<T>; BRANCH_FACTOR] {
         debug_assert!(shift.0 >= BITS_PER_LEVEL);
+        return self.pop_recursive(index, shift).1;
+    }
 
-        let mut node = self;
-        let mut shift = shift;
+    fn pop_recursive(&mut self, index: Index, shift: Shift) -> (usize, [Option<T>; BRANCH_FACTOR]) {
+        if let Node::Branch { ref mut children, ref mut len } = *self {
+            let i = index.child(shift);
 
-        while shift.0 != BITS_PER_LEVEL {
-            let cnode = node; // FIXME: NLL
+            if shift.0 == BITS_PER_LEVEL {
+                *len = *len - 1;
 
-            let child = match *cnode {
-                Node::Leaf { .. } => unreachable!(),
-                Node::RelaxedBranch { .. } => unreachable!(),
-                Node::Branch { ref mut children, ref mut len } => {
-                    let i = index.child(shift);
-                    children[i].as_mut().unwrap()
-                }
-            };
+                println!("branch factor if {}", shift.0);
 
-            node = Arc::make_mut(child);
-            shift = shift.dec();
-        }
+                let mut leaf_node = children[i].take().unwrap();
 
-        debug_assert_eq!(shift.0, BITS_PER_LEVEL);
+                println!("leaf_node_references {}", Arc::strong_count(&leaf_node));
 
-        // You might get a memory leak if you don't free up the space taken by the node
-        if let Node::Branch { ref mut children, ref mut len } = *node {
-            let mut leaf_node = children[index.child(shift)].take().unwrap();
+                Arc::make_mut(&mut leaf_node);
 
-            if let Node::Leaf { ref mut elements, ref mut len } = Arc::make_mut(&mut leaf_node) {
-                return mem::replace(elements, new_branch!());
+                let elements =
+                    if let Node::Leaf { elements, len: _ } = Arc::try_unwrap(leaf_node).unwrap() {
+                        elements
+                    } else {
+                        unreachable!();
+                    };
+
+                return (*len, elements);
             } else {
-                unreachable!();
+                println!("branch factor else {}, {}", shift.0, BRANCH_FACTOR);
+                let (child_size, popped_branch) = children[i].as_mut()
+                    .map(|child|
+                        Arc::make_mut(child).pop_recursive(index, shift.dec()))
+                    .unwrap();
+
+                if child_size == 0 {
+                    *len = *len - 1;
+                    children[i] = None;
+                }
+
+                return (*len, popped_branch);
             }
-        } else {
-            unreachable!();
         }
+
+        println!("branch factor {}", shift.0);
+        unreachable!();
     }
 
     fn get(&self, index: Index, shift: Shift) -> Option<&T> {
