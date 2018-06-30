@@ -15,12 +15,6 @@ const BITS_PER_LEVEL: usize = 5;
 const BITS_PER_LEVEL: usize = 2;
 
 #[cfg(not(small_branch))]
-const MAX_HEIGHT: usize = 8;
-
-#[cfg(small_branch)]
-const MAX_HEIGHT: usize = 32;
-
-#[cfg(not(small_branch))]
 macro_rules! new_branch {
     () => {
         [None, None, None, None,
@@ -57,6 +51,10 @@ impl Shift {
 
     fn dec(self) -> Shift {
         Shift(self.0 - BITS_PER_LEVEL)
+    }
+
+    fn capacity(self) -> usize {
+        BRANCH_FACTOR << self.0
     }
 }
 
@@ -115,13 +113,13 @@ enum Node<T> {
 }
 
 impl<T: Clone + Debug> Node<T> {
-    fn push(&mut self, index: Index, shift: Shift, tail: [Option<T>; BRANCH_FACTOR]) {
+    fn push(&mut self, index: Index, shift: Shift, tail: [Option<T>; BRANCH_FACTOR], tail_len: usize) {
         debug_assert!(shift.0 >= BITS_PER_LEVEL);
 
         let mut node = self;
         let mut shift = shift;
 
-        while shift.0 != BITS_PER_LEVEL {
+        while shift.0 > BITS_PER_LEVEL {
             let cnode = node; // FIXME: NLL
 
             let child = match *cnode {
@@ -153,56 +151,51 @@ impl<T: Clone + Debug> Node<T> {
             *len = *len + 1;
 
             children[index.child(shift)] = Some(Arc::new(
-                Node::Leaf { elements: tail, len: 0 }
+                Node::Leaf { elements: tail, len: tail_len }
             ));
         }
     }
 
-    fn pop(&mut self, index: Index, shift: Shift) -> [Option<T>; BRANCH_FACTOR] {
-        debug_assert!(shift.0 >= BITS_PER_LEVEL);
-        return self.pop_recursive(index, shift).1;
+    fn pop(&mut self, index: Index, shift: Shift) -> ([Option<T>; BRANCH_FACTOR], usize) {
+        let (tail, tail_len, _child_len) = self.remove(index, shift);
+        return (tail, tail_len);
     }
 
-    fn pop_recursive(&mut self, index: Index, shift: Shift) -> (usize, [Option<T>; BRANCH_FACTOR]) {
+    fn remove(&mut self, index: Index, shift: Shift) -> ([Option<T>; BRANCH_FACTOR], usize, usize) {
+        debug_assert!(shift.0 >= BITS_PER_LEVEL);
+
         if let Node::Branch { ref mut children, ref mut len } = *self {
             let i = index.child(shift);
 
             if shift.0 == BITS_PER_LEVEL {
                 *len = *len - 1;
 
-                println!("branch factor if {}", shift.0);
-
                 let mut leaf_node = children[i].take().unwrap();
-
-                println!("leaf_node_references {}", Arc::strong_count(&leaf_node));
-
                 Arc::make_mut(&mut leaf_node);
 
-                let elements =
-                    if let Node::Leaf { elements, len: _ } = Arc::try_unwrap(leaf_node).unwrap() {
-                        elements
+                let (elements, elements_len) =
+                    if let Node::Leaf { elements, len: elements_len } = Arc::try_unwrap(leaf_node).unwrap() {
+                        (elements, elements_len)
                     } else {
                         unreachable!();
                     };
 
-                return (*len, elements);
+                return (elements, elements_len, *len);
             } else {
-                println!("branch factor else {}, {}", shift.0, BRANCH_FACTOR);
-                let (child_size, popped_branch) = children[i].as_mut()
+                let (tail, tail_len, child_len) = children[i].as_mut()
                     .map(|child|
-                        Arc::make_mut(child).pop_recursive(index, shift.dec()))
+                        Arc::make_mut(child).remove(index, shift.dec()))
                     .unwrap();
 
-                if child_size == 0 {
+                if child_len == 0 {
                     *len = *len - 1;
                     children[i] = None;
                 }
 
-                return (*len, popped_branch);
+                return (tail, tail_len, *len);
             }
         }
 
-        println!("branch factor {}", shift.0);
         unreachable!();
     }
 
@@ -222,7 +215,7 @@ impl<T: Clone + Debug> Node<T> {
                     shift = shift.dec();
                 }
                 Node::RelaxedBranch { .. } => unreachable!(),
-                Node::Leaf { ref elements, ref len } => {
+                Node::Leaf { ref elements, len: _ } => {
                     debug_assert_eq!(shift.0, 0);
                     return elements[index.element()].as_ref();
                 }
@@ -261,6 +254,7 @@ impl<T: Clone + Debug> Node<T> {
 pub struct RrbTree<T> {
     root: Option<Arc<Node<T>>>,
     root_len: Index,
+    root_len_max: Index,
     shift: Shift,
 }
 
@@ -269,53 +263,55 @@ impl<T: Clone + Debug> RrbTree<T> {
         RrbTree {
             root: None,
             root_len: Index(0),
+            root_len_max: Index(0),
             shift: Shift(0),
         }
     }
 
-    pub fn push(&mut self, tail: [Option<T>; BRANCH_FACTOR]) {
+    #[cold]
+    pub fn push(&mut self, tail: [Option<T>; BRANCH_FACTOR], tail_len: usize) {
         debug!("---------------------------------------------------------------------------");
         debug!("RrbTree::push(tail={:?})", tail);
 
         if self.root.is_none() {
             self.root = Some(Arc::new(Node::Branch { children: new_branch!(), len: 0 }));
+            self.shift = self.shift.inc();
         }
 
-        if let Some(root) = self.root.as_mut() {
-            let capacity = BRANCH_FACTOR << self.shift.0;
+        let root = self.root.as_mut().unwrap();
+        Arc::make_mut(root).push(self.root_len_max, self.shift, tail, tail_len);
 
-            if capacity == self.root_len.0 + BRANCH_FACTOR {
-                let mut nodes = new_branch!();
-                nodes[0] = Some(root.clone());
+        if self.shift.capacity() == self.root_len_max.0 + BRANCH_FACTOR {
+            debug!("RrbTree::push() - growing tree; capacity={}", self.shift.capacity());
 
-                self.shift = self.shift.inc();
-                *root = Arc::new(Node::Branch { children: nodes, len: 0 });
-            }
+            let mut nodes = new_branch!();
+            nodes[0] = Some(root.clone());
 
-            Arc::make_mut(root).push(self.root_len, self.shift, tail);
-        } else {
-            unreachable!()
+            self.shift = self.shift.inc();
+            *root = Arc::new(Node::Branch { children: nodes, len: 1 });
         }
 
-        self.root_len.0 += BRANCH_FACTOR;
+        self.root_len.0 += tail_len;
+        self.root_len_max.0 += BRANCH_FACTOR;
     }
 
     pub fn pop(&mut self) -> [Option<T>; BRANCH_FACTOR] {
         debug!("---------------------------------------------------------------------------");
-        debug!("RrbTree::pop() capacity={} root_len={} shift={}",
-               BRANCH_FACTOR << self.shift.0, self.root_len.0, self.shift.0);
+        debug!("RrbTree::pop() capacity={} root_len_max={} shift={}",
+               self.shift.capacity(), self.root_len_max.0, self.shift.0);
 
-        self.root_len.0 -= BRANCH_FACTOR;
+        self.root_len_max.0 -= BRANCH_FACTOR;
 
-        let new_tail = if let Some(root) = self.root.as_mut() {
-            Arc::make_mut(root).pop(self.root_len, self.shift)
-        } else {
-            unreachable!()
-        };
+        let (new_tail, new_tail_len) = Arc::make_mut(
+            self.root.as_mut().unwrap()
+        ).pop(self.root_len_max, self.shift);
+
+        self.root_len.0 -= new_tail_len;
 
         debug!("RrbTree::pop() -> ({:?})", new_tail);
+        debug!("RrbTree::pop() -> len ({:?})", new_tail_len);
 
-        if self.root_len.0 == 0 {
+        if self.root_len_max.0 == 0 {
             self.root = None;
             self.shift = self.shift.dec();
 
@@ -324,25 +320,26 @@ impl<T: Clone + Debug> RrbTree<T> {
             return new_tail;
         }
 
-        if let Some(root) = self.root.as_mut() {
-            let capacity = BRANCH_FACTOR << self.shift.dec().0;
+        let root = self.root.as_mut().unwrap();
+//
+//        debug!("RrbTree::pop() - 2 capacity={} root_len_max={} shift={}",
+//               self.shift.dec().capacity(), self.root_len_max.0, self.shift.0);
 
-            debug!("RrbTree::pop() capacity={} root_len={} shift={}",
-                   capacity, self.root_len.0, self.shift.0);
+        debug!("RrbTree::pop() -> self.shift.dec().capacity()={} self.root_len_max + BRANCH_FACTOR={} shift={}",
+               self.shift.dec().capacity(), self.root_len_max.0 + BRANCH_FACTOR, self.shift.0);
 
-            if capacity == self.root_len.0 + BRANCH_FACTOR {
-                self.shift = self.shift.dec();
+        if self.shift.dec().capacity() == self.root_len_max.0 + BRANCH_FACTOR {
+            self.shift = self.shift.dec();
 
-                *root = if let Node::Branch { ref mut children, ref len } = Arc::make_mut(root) {
-                    debug!("RrbTree::lower_trie -> ({:?})", children);
+            debug!("RrbTree::pop() -> trying to lower the tree");
 
-                    children[0].take().unwrap()
-                } else {
-                    unreachable!();
-                };
-            }
-        } else {
-            unreachable!()
+            *root = if let Node::Branch { ref mut children, len: _ } = Arc::make_mut(root) {
+                debug!("RrbTree::lower_trie -> ({:?})", children);
+
+                children[0].take().unwrap()
+            } else {
+                unreachable!();
+            };
         }
 
         return new_tail;
@@ -473,6 +470,7 @@ mod tests {
 
             let mut serde_state = serializer.serialize_struct("RrbTree", 1)?;
             serde_state.serialize_field("root_len", &self.root_len.0)?;
+            serde_state.serialize_field("root_len_max", &self.root_len_max.0)?;
             serde_state.serialize_field("shift", &self.shift.0)?;
             serde_state.serialize_field("root", &root_json_value)?;
             serde_state.end()
@@ -480,18 +478,71 @@ mod tests {
     }
 
     #[test]
-    fn hello_world() {
-        let mut values = new_branch!();
-        for i in 0..BRANCH_FACTOR {
-            values[i] = Some(i);
+    #[ignore]
+    fn serialized_state_should_match_to_valid_rb_tree_after_clone() {
+        let mut tree_1 = RrbTree::new();
+        let mut value = 1;
+
+        for i in 0..(BRANCH_FACTOR * BRANCH_FACTOR - 2) {
+            let mut values = new_branch!();
+
+            for j in 0..BRANCH_FACTOR {
+                values[j] = Some(value);
+                value = value + 1;
+            }
+
+            tree_1.push(values, BRANCH_FACTOR);
         }
 
+        let mut tree_2 = tree_1.clone();
+        let mut values_2 = new_branch!();
+
+        for j in 0..BRANCH_FACTOR {
+            values_2[j] = Some(value);
+            value = value + 1;
+        }
+
+        tree_2.push(values_2, BRANCH_FACTOR);
+
+        let mut tree_3 = tree_2.clone();
+        let mut values_3 = new_branch!();
+
+        for j in 0..BRANCH_FACTOR {
+            values_3[j] = Some(value);
+            value = value + 1;
+        }
+
+        tree_3.push(values_3, BRANCH_FACTOR);
+
+        debug!("{}", serde_json::to_string(&tree_1).unwrap());
+        debug!("{}", serde_json::to_string(&tree_2).unwrap());
+        debug!("{}", serde_json::to_string(&tree_3).unwrap());
+    }
+
+    #[test]
+    fn serialized_state_should_match_to_valid_rb_tree() {
         let mut tree = RrbTree::new();
-        println!("tree = {}", serde_json::to_string(&tree).unwrap());
 
-        tree.push(values);
+        let mut value = 1;
 
-        println!("tree = {}", serde_json::to_string(&tree).unwrap());
+        for i in 0..(BRANCH_FACTOR * BRANCH_FACTOR) {
+            let mut values = new_branch!();
+
+            for j in 0..(BRANCH_FACTOR) {
+                values[j] = Some(value);
+                value = value + 1;
+            }
+
+            tree.push(values, BRANCH_FACTOR);
+        }
+
+        debug!("{}", serde_json::to_string(&tree).unwrap());
+
+        for i in 0..(BRANCH_FACTOR * BRANCH_FACTOR / 2 + 5) {
+            tree.pop();
+        }
+
+        debug!("{}", serde_json::to_string(&tree).unwrap());
     }
 }
 

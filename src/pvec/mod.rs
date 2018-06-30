@@ -30,7 +30,7 @@ impl<T: Clone + Debug> PVec<T> {
         if self.tail_len == self.tail.len() {
             let tail = mem::replace(&mut self.tail, new_branch!());
 
-            self.tree.push(tail);
+            self.tree.push(tail, self.tail_len);
             self.tail_len = 0;
         }
     }
