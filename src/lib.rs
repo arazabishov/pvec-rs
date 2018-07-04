@@ -1,3 +1,5 @@
+#![feature(nll)]
+
 #[cfg(test)]
 #[macro_use]
 extern crate serde_json;

@@ -115,9 +115,7 @@ impl<T: Clone + Debug> Node<T> {
         let mut shift = shift;
 
         while shift.0 > BITS_PER_LEVEL {
-            let cnode = node; // FIXME: NLL
-
-            let child = match *cnode {
+            node = match *node {
                 Node::Leaf { .. } => unreachable!(),
                 Node::Branch { ref mut children, ref mut len } => {
                     let i = index.child(shift);
@@ -131,11 +129,10 @@ impl<T: Clone + Debug> Node<T> {
                         }));
                     }
 
-                    children[i].as_mut().unwrap()
+                    Arc::make_mut(children[i].as_mut().unwrap())
                 }
             };
 
-            node = Arc::make_mut(child);
             shift = shift.dec();
         }
 
@@ -226,11 +223,10 @@ impl<T: Clone + Debug> Node<T> {
         let mut shift = shift;
 
         loop {
-            let cnode = node; // FIXME: NLL
-
-            match *cnode {
+            match *node {
                 Node::Branch { ref mut children, .. } => {
                     debug_assert!(shift.0 > 0);
+
                     node = match children[index.child(shift)] {
                         Some(ref mut child) => Arc::make_mut(child),
                         None => unreachable!()
