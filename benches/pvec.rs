@@ -1,15 +1,15 @@
 #![cfg_attr(test, feature(test))]
 
 extern crate dogged;
+extern crate im;
 extern crate persistent;
 extern crate rand;
 extern crate test as test_crate;
-extern crate im;
 
 use dogged::DVec;
+use im::Vector;
 use persistent::pvec::PVec;
 use rand::{Rng, SeedableRng, XorShiftRng};
-use im::Vector;
 
 fn push_vec(bencher: &mut test_crate::Bencher, n: usize) {
     bencher.iter(|| {
@@ -47,7 +47,7 @@ fn push_im_vec(bencher: &mut test_crate::Bencher, n: usize) {
         let mut vec = Vector::new();
 
         for i in 0..n {
-            vec.push_back_mut(i);
+            vec.push_back(i);
         }
     });
 }
