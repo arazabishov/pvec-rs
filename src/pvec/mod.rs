@@ -36,7 +36,7 @@ impl<T: Clone + Debug> PVec<T> {
     }
 
     pub fn pop(&mut self) -> Option<T> {
-        if self.len() == 0 {
+        if self.is_empty() {
             return None;
         }
 
@@ -50,7 +50,7 @@ impl<T: Clone + Debug> PVec<T> {
         let item = self.tail[self.tail_len - 1].take();
         self.tail_len -= 1;
 
-        return item;
+        item
     }
 
     pub fn get(&self, index: usize) -> Option<&T> {
@@ -71,6 +71,10 @@ impl<T: Clone + Debug> PVec<T> {
 
     pub fn len(&self) -> usize {
         self.tree.len() + self.tail_len
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
     }
 }
 

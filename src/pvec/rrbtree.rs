@@ -87,11 +87,11 @@ impl PartialOrd<usize> for Index {
 
 impl Index {
     fn child(self, shift: Shift) -> usize {
-        (self.0 >> shift.0) & BRANCH_FACTOR - 1
+        (self.0 >> shift.0) & (BRANCH_FACTOR - 1)
     }
 
     fn element(self) -> usize {
-        self.0 & BRANCH_FACTOR - 1
+        self.0 & (BRANCH_FACTOR - 1)
     }
 }
 
@@ -123,7 +123,7 @@ impl<T: Clone + Debug> Node<T> {
                     let i = index.child(shift);
 
                     if children[i].is_none() {
-                        *len = *len + 1;
+                        *len += 1;
 
                         children[i] = Some(Arc::new(Node::Branch {
                             children: new_branch!(),
@@ -142,7 +142,7 @@ impl<T: Clone + Debug> Node<T> {
         debug_assert_eq!(shift.0, BITS_PER_LEVEL);
 
         if let Node::Branch { ref mut children, ref mut len } = *node {
-            *len = *len + 1;
+            *len += 1;
 
             children[index.child(shift)] = Some(Arc::new(
                 Node::Leaf { elements: tail, len: tail_len }
@@ -157,7 +157,7 @@ impl<T: Clone + Debug> Node<T> {
             _child_len
         ) = self.remove(index, shift);
 
-        return (tail, tail_len);
+        (tail, tail_len)
     }
 
     fn remove(&mut self, index: Index, shift: Shift) -> ([Option<T>; BRANCH_FACTOR], usize, usize) {
@@ -167,7 +167,7 @@ impl<T: Clone + Debug> Node<T> {
             let i = index.child(shift);
 
             if shift.0 == BITS_PER_LEVEL {
-                *len = *len - 1;
+                *len -= 1;
 
                 let mut leaf_node = children[i].take().unwrap();
                 Arc::make_mut(&mut leaf_node);
@@ -187,7 +187,7 @@ impl<T: Clone + Debug> Node<T> {
                     .unwrap();
 
                 if child_len == 0 {
-                    *len = *len - 1;
+                    *len -= 1;
                     children[i] = None;
                 }
 
@@ -204,7 +204,7 @@ impl<T: Clone + Debug> Node<T> {
 
         loop {
             match *node {
-                Node::Branch { ref children, len: _ } => {
+                Node::Branch { ref children, .. } => {
                     debug_assert!(shift.0 > 0);
                     node = match children[index.child(shift)] {
                         Some(ref child) => &*child,
@@ -213,7 +213,7 @@ impl<T: Clone + Debug> Node<T> {
 
                     shift = shift.dec();
                 }
-                Node::Leaf { ref elements, len: _ } => {
+                Node::Leaf { ref elements, .. } => {
                     debug_assert_eq!(shift.0, 0);
                     return elements[index.element()].as_ref();
                 }
@@ -229,7 +229,7 @@ impl<T: Clone + Debug> Node<T> {
             let cnode = node; // FIXME: NLL
 
             match *cnode {
-                Node::Branch { ref mut children, len: _ } => {
+                Node::Branch { ref mut children, .. } => {
                     debug_assert!(shift.0 > 0);
                     node = match children[index.child(shift)] {
                         Some(ref mut child) => Arc::make_mut(child),
@@ -238,7 +238,7 @@ impl<T: Clone + Debug> Node<T> {
 
                     shift = shift.dec();
                 }
-                Node::Leaf { ref mut elements, len: _ } => {
+                Node::Leaf { ref mut elements, .. } => {
                     debug_assert_eq!(shift.0, 0);
                     return elements[index.element()].as_mut();
                 }
@@ -330,7 +330,7 @@ impl<T: Clone + Debug> RrbTree<T> {
 
             debug!("RrbTree::pop() -> trying to lower the tree");
 
-            *root = if let Node::Branch { ref mut children, len: _ } = Arc::make_mut(root) {
+            *root = if let Node::Branch { ref mut children, .. } = Arc::make_mut(root) {
                 debug!("RrbTree::lower_trie -> ({:?})", children);
 
                 children[0].take().unwrap()
@@ -339,7 +339,7 @@ impl<T: Clone + Debug> RrbTree<T> {
             };
         }
 
-        return new_tail;
+        new_tail
     }
 
     pub fn get(&self, index: usize) -> Option<&T> {
