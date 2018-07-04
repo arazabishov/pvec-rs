@@ -101,11 +101,6 @@ enum Node<T> {
         children: [Option<Arc<Node<T>>>; BRANCH_FACTOR],
         len: usize,
     },
-    RelaxedBranch {
-        children: [Option<Arc<Node<T>>>; BRANCH_FACTOR],
-        sizes: [Option<usize>; BRANCH_FACTOR],
-        len: usize,
-    },
     Leaf {
         elements: [Option<T>; BRANCH_FACTOR],
         len: usize,
@@ -124,7 +119,6 @@ impl<T: Clone + Debug> Node<T> {
 
             let child = match *cnode {
                 Node::Leaf { .. } => unreachable!(),
-                Node::RelaxedBranch { .. } => unreachable!(),
                 Node::Branch { ref mut children, ref mut len } => {
                     let i = index.child(shift);
 
@@ -219,7 +213,6 @@ impl<T: Clone + Debug> Node<T> {
 
                     shift = shift.dec();
                 }
-                Node::RelaxedBranch { .. } => unreachable!(),
                 Node::Leaf { ref elements, len: _ } => {
                     debug_assert_eq!(shift.0, 0);
                     return elements[index.element()].as_ref();
@@ -245,7 +238,6 @@ impl<T: Clone + Debug> Node<T> {
 
                     shift = shift.dec();
                 }
-                Node::RelaxedBranch { .. } => unreachable!(),
                 Node::Leaf { ref mut elements, len: _ } => {
                     debug_assert_eq!(shift.0, 0);
                     return elements[index.element()].as_mut();
@@ -389,14 +381,6 @@ mod tests {
                                 "len": len
                             })
                         }
-                        Node::RelaxedBranch { children: _, ref sizes, ref len } => {
-                            json!({
-                                "relaxed_branch": child,
-                                "sizes": sizes,
-                                "refs": refs,
-                                "len": len
-                            })
-                        }
                         Node::Leaf { elements: _, ref len } => {
                             json!({
                                 "leaf": child,
@@ -434,7 +418,6 @@ mod tests {
         fn serialize<S>(&self, serializer: S) -> Result<<S>::Ok, <S>::Error> where S: Serializer {
             match *self {
                 Node::Branch { ref children, len: _ } => Node::serialize_branch(children, serializer),
-                Node::RelaxedBranch { ref children, sizes: _, len: _ } => Node::serialize_branch(children, serializer),
                 Node::Leaf { ref elements, len: _ } => Node::serialize_leaf(elements, serializer)
             }
         }
@@ -450,14 +433,6 @@ mod tests {
                         json!({
                             "branch": root,
                             "refs":  refs,
-                            "len": len
-                        })
-                    }
-                    Node::RelaxedBranch { children: _, ref sizes, ref len } => {
-                        json!({
-                            "relaxed_branch": root,
-                            "sizes": sizes,
-                            "refs": refs,
                             "len": len
                         })
                     }
