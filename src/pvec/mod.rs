@@ -1,15 +1,15 @@
-use pvec::rbtree::BRANCH_FACTOR;
-use pvec::rbtree::RbTree;
+use pvec::rrbtree::BRANCH_FACTOR;
+use pvec::rrbtree::RrbTree;
 use std::fmt::Debug;
 use std::mem;
 use std::ops;
 
 #[macro_use]
-mod rbtree;
+mod rrbtree;
 
 #[derive(Clone, Debug, Ord, PartialOrd, Eq, PartialEq)]
 pub struct PVec<T> {
-    tree: RbTree<T>,
+    tree: RrbTree<T>,
     tail: [Option<T>; BRANCH_FACTOR],
     tail_len: usize,
 }
@@ -17,7 +17,7 @@ pub struct PVec<T> {
 impl<T: Clone + Debug> PVec<T> {
     pub fn new() -> Self {
         PVec {
-            tree: RbTree::new(),
+            tree: RrbTree::new(),
             tail: new_branch!(),
             tail_len: 0,
         }
@@ -30,13 +30,13 @@ impl<T: Clone + Debug> PVec<T> {
         if self.tail_len == self.tail.len() {
             let tail = mem::replace(&mut self.tail, new_branch!());
 
-            self.tree.push(tail);
+            self.tree.push(tail, self.tail_len);
             self.tail_len = 0;
         }
     }
 
     pub fn pop(&mut self) -> Option<T> {
-        if self.len() == 0 {
+        if self.is_empty() {
             return None;
         }
 
@@ -50,7 +50,7 @@ impl<T: Clone + Debug> PVec<T> {
         let item = self.tail[self.tail_len - 1].take();
         self.tail_len -= 1;
 
-        return item;
+        item
     }
 
     pub fn get(&self, index: usize) -> Option<&T> {
@@ -71,6 +71,10 @@ impl<T: Clone + Debug> PVec<T> {
 
     pub fn len(&self) -> usize {
         self.tree.len() + self.tail_len
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
     }
 }
 
