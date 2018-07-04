@@ -463,7 +463,7 @@ mod tests {
         let mut tree_1 = RrbTree::new();
         let mut value = 1;
 
-        for i in 0..(BRANCH_FACTOR * BRANCH_FACTOR - 2) {
+        for _i in 0..(BRANCH_FACTOR * BRANCH_FACTOR - 2) {
             let mut values = new_branch!();
 
             for j in 0..BRANCH_FACTOR {
@@ -505,7 +505,7 @@ mod tests {
 
         let mut value = 1;
 
-        for i in 0..(BRANCH_FACTOR * BRANCH_FACTOR) {
+        for _i in 0..(BRANCH_FACTOR * BRANCH_FACTOR) {
             let mut values = new_branch!();
 
             for j in 0..(BRANCH_FACTOR) {
@@ -518,7 +518,7 @@ mod tests {
 
         debug!("{}", serde_json::to_string(&tree).unwrap());
 
-        for i in 0..(BRANCH_FACTOR * BRANCH_FACTOR / 2 + 5) {
+        for _i in 0..(BRANCH_FACTOR * BRANCH_FACTOR / 2 + 5) {
             tree.pop();
         }
 
