@@ -157,7 +157,12 @@ impl<T: Clone + Debug> Node<T> {
     }
 
     fn pop(&mut self, index: Index, shift: Shift) -> ([Option<T>; BRANCH_FACTOR], usize) {
-        let (tail, tail_len, _child_len) = self.remove(index, shift);
+        let (
+            tail,
+            tail_len,
+            _child_len
+        ) = self.remove(index, shift);
+
         return (tail, tail_len);
     }
 
@@ -452,14 +457,14 @@ mod tests {
                         json!({
                             "relaxed_branch": root,
                             "sizes": sizes,
-                            "refs":  refs,
+                            "refs": refs,
                             "len": len
                         })
                     }
                     Node::Leaf { elements: _, ref len } => {
                         json!({
                             "leaf": root,
-                            "refs":  refs,
+                            "refs": refs,
                             "len": len
                         })
                     }
