@@ -95,16 +95,25 @@ impl Index {
     }
 }
 
+// ToDo: Arc<> contents of the node instead of Box<>
+
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+struct Branch<T> {
+    children: [Option<Arc<Node<T>>>; BRANCH_FACTOR],
+    len: usize,
+}
+
+
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+struct Leaf<T> {
+    elements: [Option<T>; BRANCH_FACTOR],
+    len: usize,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 enum Node<T> {
-    Branch {
-        children: [Option<Arc<Node<T>>>; BRANCH_FACTOR],
-        len: usize,
-    },
-    Leaf {
-        elements: [Option<T>; BRANCH_FACTOR],
-        len: usize,
-    },
+    Branch(Box<Branch<T>>),
+    Leaf(Box<Leaf<T>>),
 }
 
 impl<T: Clone + Debug> Node<T> {
@@ -116,20 +125,22 @@ impl<T: Clone + Debug> Node<T> {
 
         while shift.0 > BITS_PER_LEVEL {
             node = match *node {
-                Node::Leaf { .. } => unreachable!(),
-                Node::Branch { ref mut children, ref mut len } => {
+                Node::Leaf(..) => unreachable!(),
+                Node::Branch(ref mut branch) => {
                     let i = index.child(shift);
 
-                    if children[i].is_none() {
-                        *len += 1;
+                    if branch.children[i].is_none() {
+                        branch.len += 1;
 
-                        children[i] = Some(Arc::new(Node::Branch {
-                            children: new_branch!(),
-                            len: 0,
-                        }));
+                        branch.children[i] = Some(Arc::new(Node::Branch(
+                            Box::new(Branch {
+                                children: new_branch!(),
+                                len: 0,
+                            })
+                        )));
                     }
 
-                    Arc::make_mut(children[i].as_mut().unwrap())
+                    Arc::make_mut(branch.children[i].as_mut().unwrap())
                 }
             };
 
@@ -138,11 +149,10 @@ impl<T: Clone + Debug> Node<T> {
 
         debug_assert_eq!(shift.0, BITS_PER_LEVEL);
 
-        if let Node::Branch { ref mut children, ref mut len } = *node {
-            *len += 1;
-
-            children[index.child(shift)] = Some(Arc::new(
-                Node::Leaf { elements: tail, len: tail_len }
+        if let Node::Branch(ref mut branch) = *node {
+            branch.len += 1;
+            branch.children[index.child(shift)] = Some(Arc::new(
+                Node::Leaf(Box::new(Leaf { elements: tail, len: tail_len }))
             ));
         }
     }
@@ -160,35 +170,35 @@ impl<T: Clone + Debug> Node<T> {
     fn remove(&mut self, index: Index, shift: Shift) -> ([Option<T>; BRANCH_FACTOR], usize, usize) {
         debug_assert!(shift.0 >= BITS_PER_LEVEL);
 
-        if let Node::Branch { ref mut children, ref mut len } = *self {
+        if let Node::Branch(ref mut branch) = *self {
             let i = index.child(shift);
 
             if shift.0 == BITS_PER_LEVEL {
-                *len -= 1;
+                branch.len -= 1;
 
-                let mut leaf_node = children[i].take().unwrap();
+                let mut leaf_node = branch.children[i].take().unwrap();
                 Arc::make_mut(&mut leaf_node);
 
                 let (elements, elements_len) =
-                    if let Node::Leaf { elements, len: elements_len } = Arc::try_unwrap(leaf_node).unwrap() {
-                        (elements, elements_len)
+                    if let Node::Leaf(leaf) = Arc::try_unwrap(leaf_node).unwrap() {
+                        (leaf.elements, leaf.len)
                     } else {
                         unreachable!();
                     };
 
-                return (elements, elements_len, *len);
+                return (elements, elements_len, branch.len);
             } else {
-                let (tail, tail_len, child_len) = children[i].as_mut()
+                let (tail, tail_len, child_len) = branch.children[i].as_mut()
                     .map(|child|
                         Arc::make_mut(child).remove(index, shift.dec()))
                     .unwrap();
 
                 if child_len == 0 {
-                    *len -= 1;
-                    children[i] = None;
+                    branch.len -= 1;
+                    branch.children[i] = None;
                 }
 
-                return (tail, tail_len, *len);
+                return (tail, tail_len, branch.len);
             }
         }
 
@@ -201,18 +211,18 @@ impl<T: Clone + Debug> Node<T> {
 
         loop {
             match *node {
-                Node::Branch { ref children, .. } => {
+                Node::Branch(ref branch) => {
                     debug_assert!(shift.0 > 0);
-                    node = match children[index.child(shift)] {
+                    node = match branch.children[index.child(shift)] {
                         Some(ref child) => &*child,
                         None => unreachable!()
                     };
 
                     shift = shift.dec();
                 }
-                Node::Leaf { ref elements, .. } => {
+                Node::Leaf(ref leaf) => {
                     debug_assert_eq!(shift.0, 0);
-                    return elements[index.element()].as_ref();
+                    return leaf.elements[index.element()].as_ref();
                 }
             }
         }
@@ -224,19 +234,19 @@ impl<T: Clone + Debug> Node<T> {
 
         loop {
             match *node {
-                Node::Branch { ref mut children, .. } => {
+                Node::Branch(ref mut branch) => {
                     debug_assert!(shift.0 > 0);
 
-                    node = match children[index.child(shift)] {
+                    node = match branch.children[index.child(shift)] {
                         Some(ref mut child) => Arc::make_mut(child),
                         None => unreachable!()
                     };
 
                     shift = shift.dec();
                 }
-                Node::Leaf { ref mut elements, .. } => {
+                Node::Leaf(ref mut leaf) => {
                     debug_assert_eq!(shift.0, 0);
-                    return elements[index.element()].as_mut();
+                    return leaf.elements[index.element()].as_mut();
                 }
             }
         }
@@ -267,7 +277,11 @@ impl<T: Clone + Debug> RrbTree<T> {
         debug!("RrbTree::push(tail={:?})", tail);
 
         if self.root.is_none() {
-            self.root = Some(Arc::new(Node::Branch { children: new_branch!(), len: 0 }));
+            self.root = Some(Arc::new(Node::Branch(
+                Box::new(
+                    Branch { children: new_branch!(), len: 0 }
+                ))
+            ));
             self.shift = self.shift.inc();
         }
 
@@ -281,7 +295,11 @@ impl<T: Clone + Debug> RrbTree<T> {
             nodes[0] = Some(root.clone());
 
             self.shift = self.shift.inc();
-            *root = Arc::new(Node::Branch { children: nodes, len: 1 });
+            *root = Arc::new(Node::Branch(
+                Box::new(
+                    Branch { children: nodes, len: 1 }
+                )
+            ));
         }
 
         self.root_len.0 += tail_len;
@@ -326,10 +344,10 @@ impl<T: Clone + Debug> RrbTree<T> {
 
             debug!("RrbTree::pop() -> trying to lower the tree");
 
-            *root = if let Node::Branch { ref mut children, .. } = Arc::make_mut(root) {
-                debug!("RrbTree::lower_trie -> ({:?})", children);
+            *root = if let Node::Branch(ref mut branch) = Arc::make_mut(root) {
+                debug!("RrbTree::lower_trie -> ({:?})", branch.children);
 
-                children[0].take().unwrap()
+                branch.children[0].take().unwrap()
             } else {
                 unreachable!();
             };
@@ -370,18 +388,18 @@ mod tests {
                     let refs = Arc::strong_count(child);
 
                     let child_json_value = match child.as_ref() {
-                        Node::Branch { children: _, ref len } => {
+                        Node::Branch(ref branch) => {
                             json!({
                                 "branch": child,
                                 "refs": refs,
-                                "len": len
+                                "len": branch.len
                             })
                         }
-                        Node::Leaf { elements: _, ref len } => {
+                        Node::Leaf(ref leaf) => {
                             json!({
                                 "leaf": child,
                                 "refs": refs,
-                                "len": len
+                                "len": leaf.len
                             })
                         }
                     };
@@ -413,8 +431,8 @@ mod tests {
     impl<T> Serialize for Node<T> where T: Serialize {
         fn serialize<S>(&self, serializer: S) -> Result<<S>::Ok, <S>::Error> where S: Serializer {
             match *self {
-                Node::Branch { ref children, len: _ } => Node::serialize_branch(children, serializer),
-                Node::Leaf { ref elements, len: _ } => Node::serialize_leaf(elements, serializer)
+                Node::Branch(ref branch) => Node::serialize_branch(&branch.children, serializer),
+                Node::Leaf(ref leaf) => Node::serialize_leaf(&leaf.elements, serializer)
             }
         }
     }
@@ -425,18 +443,18 @@ mod tests {
                 let refs = Some(Arc::strong_count(root));
 
                 let json = match root.as_ref() {
-                    Node::Branch { children: _, ref len } => {
+                    Node::Branch(ref branch) => {
                         json!({
                             "branch": root,
                             "refs":  refs,
-                            "len": len
+                            "len": branch.len
                         })
                     }
-                    Node::Leaf { elements: _, ref len } => {
+                    Node::Leaf(ref leaf) => {
                         json!({
                             "leaf": root,
                             "refs": refs,
-                            "len": len
+                            "len": leaf.len
                         })
                     }
                 };
