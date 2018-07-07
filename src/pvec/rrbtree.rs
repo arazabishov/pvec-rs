@@ -98,11 +98,11 @@ impl Index {
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 enum Node<T> {
     Branch {
-        children: [Option<Arc<Node<T>>>; BRANCH_FACTOR],
+        children: Box<[Option<Arc<Node<T>>>; BRANCH_FACTOR]>,
         len: usize,
     },
     Leaf {
-        elements: [Option<T>; BRANCH_FACTOR],
+        elements: Box<[Option<T>; BRANCH_FACTOR]>,
         len: usize,
     },
 }
@@ -124,7 +124,7 @@ impl<T: Clone + Debug> Node<T> {
                         *len += 1;
 
                         children[i] = Some(Arc::new(Node::Branch {
-                            children: new_branch!(),
+                            children: Box::new(new_branch!()),
                             len: 0,
                         }));
                     }
@@ -142,7 +142,7 @@ impl<T: Clone + Debug> Node<T> {
             *len += 1;
 
             children[index.child(shift)] = Some(Arc::new(
-                Node::Leaf { elements: tail, len: tail_len }
+                Node::Leaf { elements: Box::new(tail), len: tail_len }
             ));
         }
     }
@@ -171,7 +171,7 @@ impl<T: Clone + Debug> Node<T> {
 
                 let (elements, elements_len) =
                     if let Node::Leaf { elements, len: elements_len } = Arc::try_unwrap(leaf_node).unwrap() {
-                        (elements, elements_len)
+                        (*elements, elements_len)
                     } else {
                         unreachable!();
                     };
@@ -267,7 +267,7 @@ impl<T: Clone + Debug> RrbTree<T> {
         debug!("RrbTree::push(tail={:?})", tail);
 
         if self.root.is_none() {
-            self.root = Some(Arc::new(Node::Branch { children: new_branch!(), len: 0 }));
+            self.root = Some(Arc::new(Node::Branch { children: Box::new(new_branch!()), len: 0 }));
             self.shift = self.shift.inc();
         }
 
@@ -281,7 +281,7 @@ impl<T: Clone + Debug> RrbTree<T> {
             nodes[0] = Some(root.clone());
 
             self.shift = self.shift.inc();
-            *root = Arc::new(Node::Branch { children: nodes, len: 1 });
+            *root = Arc::new(Node::Branch { children: Box::new(nodes), len: 1 });
         }
 
         self.root_len.0 += tail_len;
