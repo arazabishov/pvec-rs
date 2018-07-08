@@ -95,14 +95,11 @@ impl Index {
     }
 }
 
-// ToDo: Arc<> contents of the node instead of Box<>
-
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 struct Branch<T> {
-    children: [Option<Arc<Node<T>>>; BRANCH_FACTOR],
+    children: [Option<Node<T>>; BRANCH_FACTOR],
     len: usize,
 }
-
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 struct Leaf<T> {
@@ -112,8 +109,8 @@ struct Leaf<T> {
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 enum Node<T> {
-    Branch(Box<Branch<T>>),
-    Leaf(Box<Leaf<T>>),
+    Branch(Arc<Branch<T>>),
+    Leaf(Arc<Leaf<T>>),
 }
 
 impl<T: Clone + Debug> Node<T> {
@@ -126,21 +123,21 @@ impl<T: Clone + Debug> Node<T> {
         while shift.0 > BITS_PER_LEVEL {
             node = match *node {
                 Node::Leaf(..) => unreachable!(),
-                Node::Branch(ref mut branch) => {
+                Node::Branch(ref mut arc_branch) => {
                     let i = index.child(shift);
+                    let branch = Arc::make_mut(arc_branch);
 
                     if branch.children[i].is_none() {
                         branch.len += 1;
-
-                        branch.children[i] = Some(Arc::new(Node::Branch(
-                            Box::new(Branch {
+                        branch.children[i] = Some(Node::Branch(
+                            Arc::new(Branch {
                                 children: new_branch!(),
                                 len: 0,
                             })
-                        )));
+                        ));
                     }
 
-                    Arc::make_mut(branch.children[i].as_mut().unwrap())
+                    branch.children[i].as_mut().unwrap()
                 }
             };
 
@@ -149,11 +146,13 @@ impl<T: Clone + Debug> Node<T> {
 
         debug_assert_eq!(shift.0, BITS_PER_LEVEL);
 
-        if let Node::Branch(ref mut branch) = *node {
+        if let Node::Branch(ref mut branch_arc) = *node {
+            let branch = Arc::make_mut(branch_arc);
+
             branch.len += 1;
-            branch.children[index.child(shift)] = Some(Arc::new(
-                Node::Leaf(Box::new(Leaf { elements: tail, len: tail_len }))
-            ));
+            branch.children[index.child(shift)] = Some(
+                Node::Leaf(Arc::new(Leaf { elements: tail, len: tail_len }))
+            );
         }
     }
 
@@ -170,27 +169,27 @@ impl<T: Clone + Debug> Node<T> {
     fn remove(&mut self, index: Index, shift: Shift) -> ([Option<T>; BRANCH_FACTOR], usize, usize) {
         debug_assert!(shift.0 >= BITS_PER_LEVEL);
 
-        if let Node::Branch(ref mut branch) = *self {
+        if let Node::Branch(ref mut branch_arc) = *self {
+            let branch = Arc::make_mut(branch_arc);
             let i = index.child(shift);
 
             if shift.0 == BITS_PER_LEVEL {
                 branch.len -= 1;
 
-                let mut leaf_node = branch.children[i].take().unwrap();
-                Arc::make_mut(&mut leaf_node);
+                let leaf_node = branch.children[i].take().unwrap();
 
-                let (elements, elements_len) =
-                    if let Node::Leaf(leaf) = Arc::try_unwrap(leaf_node).unwrap() {
-                        (leaf.elements, leaf.len)
-                    } else {
-                        unreachable!();
-                    };
+                let leaf = if let Node::Leaf(mut leaf_arc) = leaf_node {
+                    Arc::make_mut(&mut leaf_arc);
+                    Arc::try_unwrap(leaf_arc).unwrap()
+                } else {
+                    unreachable!();
+                };
 
-                return (elements, elements_len, branch.len);
+                return (leaf.elements, leaf.len, branch.len);
             } else {
                 let (tail, tail_len, child_len) = branch.children[i].as_mut()
                     .map(|child|
-                        Arc::make_mut(child).remove(index, shift.dec()))
+                        child.remove(index, shift.dec()))
                     .unwrap();
 
                 if child_len == 0 {
@@ -234,18 +233,21 @@ impl<T: Clone + Debug> Node<T> {
 
         loop {
             match *node {
-                Node::Branch(ref mut branch) => {
+                Node::Branch(ref mut branch_arc) => {
                     debug_assert!(shift.0 > 0);
 
+                    let branch = Arc::make_mut(branch_arc);
+
                     node = match branch.children[index.child(shift)] {
-                        Some(ref mut child) => Arc::make_mut(child),
+                        Some(ref mut child) => child,
                         None => unreachable!()
                     };
 
                     shift = shift.dec();
                 }
-                Node::Leaf(ref mut leaf) => {
+                Node::Leaf(ref mut leaf_arc) => {
                     debug_assert_eq!(shift.0, 0);
+                    let leaf = Arc::make_mut(leaf_arc);
                     return leaf.elements[index.element()].as_mut();
                 }
             }
@@ -255,7 +257,7 @@ impl<T: Clone + Debug> Node<T> {
 
 #[derive(Clone, Debug, Ord, PartialOrd, Eq, PartialEq)]
 pub struct RrbTree<T> {
-    root: Option<Arc<Node<T>>>,
+    root: Option<Node<T>>,
     root_len: Index,
     root_len_max: Index,
     shift: Shift,
@@ -277,16 +279,16 @@ impl<T: Clone + Debug> RrbTree<T> {
         debug!("RrbTree::push(tail={:?})", tail);
 
         if self.root.is_none() {
-            self.root = Some(Arc::new(Node::Branch(
-                Box::new(
+            self.root = Some(Node::Branch(
+                Arc::new(
                     Branch { children: new_branch!(), len: 0 }
-                ))
+                )
             ));
             self.shift = self.shift.inc();
         }
 
         let root = self.root.as_mut().unwrap();
-        Arc::make_mut(root).push(self.root_len_max, self.shift, tail, tail_len);
+        root.push(self.root_len_max, self.shift, tail, tail_len);
 
         if self.shift.capacity() == self.root_len_max.0 + BRANCH_FACTOR {
             debug!("RrbTree::push() - growing tree; capacity={}", self.shift.capacity());
@@ -295,11 +297,11 @@ impl<T: Clone + Debug> RrbTree<T> {
             nodes[0] = Some(root.clone());
 
             self.shift = self.shift.inc();
-            *root = Arc::new(Node::Branch(
-                Box::new(
+            *root = Node::Branch(
+                Arc::new(
                     Branch { children: nodes, len: 1 }
                 )
-            ));
+            );
         }
 
         self.root_len.0 += tail_len;
@@ -313,9 +315,8 @@ impl<T: Clone + Debug> RrbTree<T> {
 
         self.root_len_max.0 -= BRANCH_FACTOR;
 
-        let (new_tail, new_tail_len) = Arc::make_mut(
-            self.root.as_mut().unwrap()
-        ).pop(self.root_len_max, self.shift);
+        let (new_tail, new_tail_len) = self.root.as_mut().unwrap()
+            .pop(self.root_len_max, self.shift);
 
         self.root_len.0 -= new_tail_len;
 
@@ -344,9 +345,10 @@ impl<T: Clone + Debug> RrbTree<T> {
 
             debug!("RrbTree::pop() -> trying to lower the tree");
 
-            *root = if let Node::Branch(ref mut branch) = Arc::make_mut(root) {
-                debug!("RrbTree::lower_trie -> ({:?})", branch.children);
+            *root = if let Node::Branch(ref mut branch_arc) = root {
+                debug!("RrbTree::lower_trie -> ({:?})", branch_arc.children);
 
+                let branch = Arc::make_mut(branch_arc);
                 branch.children[0].take().unwrap()
             } else {
                 unreachable!();
@@ -361,7 +363,7 @@ impl<T: Clone + Debug> RrbTree<T> {
     }
 
     pub fn get_mut(&mut self, index: usize) -> Option<&mut T> {
-        Arc::make_mut(self.root.as_mut().unwrap()).get_mut(Index(index), self.shift)
+        self.root.as_mut().unwrap().get_mut(Index(index), self.shift)
     }
 
     pub fn len(&self) -> usize {
@@ -380,25 +382,23 @@ mod tests {
     use super::BRANCH_FACTOR;
 
     impl<T> Node<T> where T: Serialize {
-        fn serialize_branch<S>(children: &[Option<Arc<Node<T>>>; BRANCH_FACTOR], serializer: S) -> Result<<S>::Ok, <S>::Error> where S: Serializer {
+        fn serialize_branch<S>(children: &[Option<Node<T>>; BRANCH_FACTOR], serializer: S) -> Result<<S>::Ok, <S>::Error> where S: Serializer {
             let mut children_refs = Vec::with_capacity(BRANCH_FACTOR);
 
             for i in 0..BRANCH_FACTOR {
                 if let Some(child) = children[i].as_ref() {
-                    let refs = Arc::strong_count(child);
-
-                    let child_json_value = match child.as_ref() {
+                    let child_json_value = match child {
                         Node::Branch(ref branch) => {
                             json!({
                                 "branch": child,
-                                "refs": refs,
+                                "refs": Arc::strong_count(branch),
                                 "len": branch.len
                             })
                         }
                         Node::Leaf(ref leaf) => {
                             json!({
                                 "leaf": child,
-                                "refs": refs,
+                                "refs": Arc::strong_count(leaf),
                                 "len": leaf.len
                             })
                         }
@@ -440,20 +440,18 @@ mod tests {
     impl<T> Serialize for RrbTree<T> where T: Serialize {
         fn serialize<S>(&self, serializer: S) -> Result<<S>::Ok, <S>::Error> where S: Serializer {
             let root_json_value = self.root.as_ref().map_or(None, |root| {
-                let refs = Some(Arc::strong_count(root));
-
-                let json = match root.as_ref() {
+                let json = match root {
                     Node::Branch(ref branch) => {
                         json!({
                             "branch": root,
-                            "refs":  refs,
+                            "refs":  Arc::strong_count(branch),
                             "len": branch.len
                         })
                     }
                     Node::Leaf(ref leaf) => {
                         json!({
                             "leaf": root,
-                            "refs": refs,
+                            "refs": Arc::strong_count(leaf),
                             "len": leaf.len
                         })
                     }
@@ -472,7 +470,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore]
     fn serialized_state_should_match_to_valid_rb_tree_after_clone() {
         let mut tree_1 = RrbTree::new();
         let mut value = 1;
