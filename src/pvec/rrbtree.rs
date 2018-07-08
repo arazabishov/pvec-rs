@@ -346,7 +346,7 @@ impl<T: Clone + Debug> RrbTree<T> {
             debug!("RrbTree::pop() -> trying to lower the tree");
 
             *root = if let Node::Branch(ref mut branch_arc) = root {
-                debug!("RrbTree::lower_trie -> ({:?})", branch.children);
+                debug!("RrbTree::lower_trie -> ({:?})", branch_arc.children);
 
                 let branch = Arc::make_mut(branch_arc);
                 branch.children[0].take().unwrap()
@@ -371,174 +371,169 @@ impl<T: Clone + Debug> RrbTree<T> {
     }
 }
 
-//#[cfg(test)]
-//mod tests {
-//    extern crate serde;
-//    extern crate serde_json;
-//
-//    use self::serde::ser::{Serialize, Serializer, SerializeSeq, SerializeStruct};
-//    use std::sync::Arc;
-//    use super::{Node, RrbTree};
-//    use super::BRANCH_FACTOR;
-//
-//    impl<T> Node<T> where T: Serialize {
-//        fn serialize_branch<S>(children: &[Option<Arc<Node<T>>>; BRANCH_FACTOR], serializer: S) -> Result<<S>::Ok, <S>::Error> where S: Serializer {
-//            let mut children_refs = Vec::with_capacity(BRANCH_FACTOR);
-//
-//            for i in 0..BRANCH_FACTOR {
-//                if let Some(child) = children[i].as_ref() {
-//                    let refs = Arc::strong_count(child);
-//
-//                    let child_json_value = match child.as_ref() {
-//                        Node::Branch(ref branch) => {
-//                            json!({
-//                                "branch": child,
-//                                "refs": refs,
-//                                "len": branch.len
-//                            })
-//                        }
-//                        Node::Leaf(ref leaf) => {
-//                            json!({
-//                                "leaf": child,
-//                                "refs": refs,
-//                                "len": leaf.len
-//                            })
-//                        }
-//                    };
-//
-//                    children_refs.push(child_json_value);
-//                }
-//            }
-//
-//            let mut serde_state = serializer.serialize_seq(Some(BRANCH_FACTOR))?;
-//
-//            for child in children_refs {
-//                serde_state.serialize_element(&child)?;
-//            }
-//
-//            return serde_state.end();
-//        }
-//
-//        fn serialize_leaf<S>(elements: &[Option<T>; BRANCH_FACTOR], serializer: S) -> Result<<S>::Ok, <S>::Error> where S: Serializer {
-//            let mut serde_state = serializer.serialize_seq(Some(BRANCH_FACTOR))?;
-//
-//            for element in elements {
-//                serde_state.serialize_element(&element)?;
-//            }
-//
-//            return serde_state.end();
-//        }
-//    }
-//
-//    impl<T> Serialize for Node<T> where T: Serialize {
-//        fn serialize<S>(&self, serializer: S) -> Result<<S>::Ok, <S>::Error> where S: Serializer {
-//            match *self {
-//                Node::Branch(ref branch) => Node::serialize_branch(&branch.children, serializer),
-//                Node::Leaf(ref leaf) => Node::serialize_leaf(&leaf.elements, serializer)
-//            }
-//        }
-//    }
-//
-//    impl<T> Serialize for RrbTree<T> where T: Serialize {
-//        fn serialize<S>(&self, serializer: S) -> Result<<S>::Ok, <S>::Error> where S: Serializer {
-//            let root_json_value = self.root.as_ref().map_or(None, |root| {
-//                let refs = Some(Arc::strong_count(root));
-//
-//                let json = match root.as_ref() {
-//                    Node::Branch(ref branch) => {
-//                        json!({
-//                            "branch": root,
-//                            "refs":  refs,
-//                            "len": branch.len
-//                        })
-//                    }
-//                    Node::Leaf(ref leaf) => {
-//                        json!({
-//                            "leaf": root,
-//                            "refs": refs,
-//                            "len": leaf.len
-//                        })
-//                    }
-//                };
-//
-//                Some(json)
-//            });
-//
-//            let mut serde_state = serializer.serialize_struct("RrbTree", 1)?;
-//            serde_state.serialize_field("root_len", &self.root_len.0)?;
-//            serde_state.serialize_field("root_len_max", &self.root_len_max.0)?;
-//            serde_state.serialize_field("shift", &self.shift.0)?;
-//            serde_state.serialize_field("root", &root_json_value)?;
-//            serde_state.end()
-//        }
-//    }
-//
-//    #[test]
-//    #[ignore]
-//    fn serialized_state_should_match_to_valid_rb_tree_after_clone() {
-//        let mut tree_1 = RrbTree::new();
-//        let mut value = 1;
-//
-//        for _i in 0..(BRANCH_FACTOR * BRANCH_FACTOR - 2) {
-//            let mut values = new_branch!();
-//
-//            for j in 0..BRANCH_FACTOR {
-//                values[j] = Some(value);
-//                value = value + 1;
-//            }
-//
-//            tree_1.push(values, BRANCH_FACTOR);
-//        }
-//
-//        let mut tree_2 = tree_1.clone();
-//        let mut values_2 = new_branch!();
-//
-//        for j in 0..BRANCH_FACTOR {
-//            values_2[j] = Some(value);
-//            value = value + 1;
-//        }
-//
-//        tree_2.push(values_2, BRANCH_FACTOR);
-//
-//        let mut tree_3 = tree_2.clone();
-//        let mut values_3 = new_branch!();
-//
-//        for j in 0..BRANCH_FACTOR {
-//            values_3[j] = Some(value);
-//            value = value + 1;
-//        }
-//
-//        tree_3.push(values_3, BRANCH_FACTOR);
-//
-//        debug!("{}", serde_json::to_string(&tree_1).unwrap());
-//        debug!("{}", serde_json::to_string(&tree_2).unwrap());
-//        debug!("{}", serde_json::to_string(&tree_3).unwrap());
-//    }
-//
-//    #[test]
-//    fn serialized_state_should_match_to_valid_rb_tree() {
-//        let mut tree = RrbTree::new();
-//
-//        let mut value = 1;
-//
-//        for _i in 0..(BRANCH_FACTOR * BRANCH_FACTOR) {
-//            let mut values = new_branch!();
-//
-//            for j in 0..(BRANCH_FACTOR) {
-//                values[j] = Some(value);
-//                value = value + 1;
-//            }
-//
-//            tree.push(values, BRANCH_FACTOR);
-//        }
-//
-//        debug!("{}", serde_json::to_string(&tree).unwrap());
-//
-//        for _i in 0..(BRANCH_FACTOR * BRANCH_FACTOR / 2 + 5) {
-//            tree.pop();
-//        }
-//
-//        debug!("{}", serde_json::to_string(&tree).unwrap());
-//    }
-//}
+#[cfg(test)]
+mod tests {
+    extern crate serde;
+    extern crate serde_json;
+
+    use self::serde::ser::{Serialize, Serializer, SerializeSeq, SerializeStruct};
+    use std::sync::Arc;
+    use super::{Node, RrbTree};
+    use super::BRANCH_FACTOR;
+
+    impl<T> Node<T> where T: Serialize {
+        fn serialize_branch<S>(children: &[Option<Node<T>>; BRANCH_FACTOR], serializer: S) -> Result<<S>::Ok, <S>::Error> where S: Serializer {
+            let mut children_refs = Vec::with_capacity(BRANCH_FACTOR);
+
+            for i in 0..BRANCH_FACTOR {
+                if let Some(child) = children[i].as_ref() {
+                    let child_json_value = match child {
+                        Node::Branch(ref branch) => {
+                            json!({
+                                "branch": child,
+                                "refs": Arc::strong_count(branch),
+                                "len": branch.len
+                            })
+                        }
+                        Node::Leaf(ref leaf) => {
+                            json!({
+                                "leaf": child,
+                                "refs": Arc::strong_count(leaf),
+                                "len": leaf.len
+                            })
+                        }
+                    };
+
+                    children_refs.push(child_json_value);
+                }
+            }
+
+            let mut serde_state = serializer.serialize_seq(Some(BRANCH_FACTOR))?;
+
+            for child in children_refs {
+                serde_state.serialize_element(&child)?;
+            }
+
+            return serde_state.end();
+        }
+
+        fn serialize_leaf<S>(elements: &[Option<T>; BRANCH_FACTOR], serializer: S) -> Result<<S>::Ok, <S>::Error> where S: Serializer {
+            let mut serde_state = serializer.serialize_seq(Some(BRANCH_FACTOR))?;
+
+            for element in elements {
+                serde_state.serialize_element(&element)?;
+            }
+
+            return serde_state.end();
+        }
+    }
+
+    impl<T> Serialize for Node<T> where T: Serialize {
+        fn serialize<S>(&self, serializer: S) -> Result<<S>::Ok, <S>::Error> where S: Serializer {
+            match *self {
+                Node::Branch(ref branch) => Node::serialize_branch(&branch.children, serializer),
+                Node::Leaf(ref leaf) => Node::serialize_leaf(&leaf.elements, serializer)
+            }
+        }
+    }
+
+    impl<T> Serialize for RrbTree<T> where T: Serialize {
+        fn serialize<S>(&self, serializer: S) -> Result<<S>::Ok, <S>::Error> where S: Serializer {
+            let root_json_value = self.root.as_ref().map_or(None, |root| {
+                let json = match root {
+                    Node::Branch(ref branch) => {
+                        json!({
+                            "branch": root,
+                            "refs":  Arc::strong_count(branch),
+                            "len": branch.len
+                        })
+                    }
+                    Node::Leaf(ref leaf) => {
+                        json!({
+                            "leaf": root,
+                            "refs": Arc::strong_count(leaf),
+                            "len": leaf.len
+                        })
+                    }
+                };
+
+                Some(json)
+            });
+
+            let mut serde_state = serializer.serialize_struct("RrbTree", 1)?;
+            serde_state.serialize_field("root_len", &self.root_len.0)?;
+            serde_state.serialize_field("root_len_max", &self.root_len_max.0)?;
+            serde_state.serialize_field("shift", &self.shift.0)?;
+            serde_state.serialize_field("root", &root_json_value)?;
+            serde_state.end()
+        }
+    }
+
+    #[test]
+    fn serialized_state_should_match_to_valid_rb_tree_after_clone() {
+        let mut tree_1 = RrbTree::new();
+        let mut value = 1;
+
+        for _i in 0..(BRANCH_FACTOR * BRANCH_FACTOR - 2) {
+            let mut values = new_branch!();
+
+            for j in 0..BRANCH_FACTOR {
+                values[j] = Some(value);
+                value = value + 1;
+            }
+
+            tree_1.push(values, BRANCH_FACTOR);
+        }
+
+        let mut tree_2 = tree_1.clone();
+        let mut values_2 = new_branch!();
+
+        for j in 0..BRANCH_FACTOR {
+            values_2[j] = Some(value);
+            value = value + 1;
+        }
+
+        tree_2.push(values_2, BRANCH_FACTOR);
+
+        let mut tree_3 = tree_2.clone();
+        let mut values_3 = new_branch!();
+
+        for j in 0..BRANCH_FACTOR {
+            values_3[j] = Some(value);
+            value = value + 1;
+        }
+
+        tree_3.push(values_3, BRANCH_FACTOR);
+
+        debug!("{}", serde_json::to_string(&tree_1).unwrap());
+        debug!("{}", serde_json::to_string(&tree_2).unwrap());
+        debug!("{}", serde_json::to_string(&tree_3).unwrap());
+    }
+
+    #[test]
+    fn serialized_state_should_match_to_valid_rb_tree() {
+        let mut tree = RrbTree::new();
+
+        let mut value = 1;
+
+        for _i in 0..(BRANCH_FACTOR * BRANCH_FACTOR) {
+            let mut values = new_branch!();
+
+            for j in 0..(BRANCH_FACTOR) {
+                values[j] = Some(value);
+                value = value + 1;
+            }
+
+            tree.push(values, BRANCH_FACTOR);
+        }
+
+        debug!("{}", serde_json::to_string(&tree).unwrap());
+
+        for _i in 0..(BRANCH_FACTOR * BRANCH_FACTOR / 2 + 5) {
+            tree.pop();
+        }
+
+        debug!("{}", serde_json::to_string(&tree).unwrap());
+    }
+}
 
