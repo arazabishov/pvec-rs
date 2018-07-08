@@ -399,6 +399,20 @@ fn index_sequentially_dvec(bencher: &mut test_crate::Bencher, n: usize) {
     });
 }
 
+fn index_sequentially_im_vec(bencher: &mut test_crate::Bencher, n: usize) {
+    let mut vec = Vector::new();
+
+    for i in 0..n {
+        vec.push_back(i * 2);
+    }
+
+    bencher.iter(|| {
+        for i in 0..n {
+            assert_eq!(vec[i], i * 2);
+        }
+    });
+}
+
 #[bench]
 fn index_sequentially_vec_5000(bencher: &mut test_crate::Bencher) {
     index_sequentially_vec(bencher, 5000);
@@ -412,6 +426,11 @@ fn index_sequentially_pvec_5000(bencher: &mut test_crate::Bencher) {
 #[bench]
 fn index_sequentially_dvec_5000(bencher: &mut test_crate::Bencher) {
     index_sequentially_dvec(bencher, 5000);
+}
+
+#[bench]
+fn index_sequentially_im_vec_5000(bencher: &mut test_crate::Bencher) {
+    index_sequentially_im_vec(bencher, 5000);
 }
 
 #[bench]
@@ -430,6 +449,11 @@ fn index_sequentially_dvec_50000(bencher: &mut test_crate::Bencher) {
 }
 
 #[bench]
+fn index_sequentially_im_vec_50000(bencher: &mut test_crate::Bencher) {
+    index_sequentially_im_vec(bencher, 50000);
+}
+
+#[bench]
 fn index_sequentially_vec_500000(bencher: &mut test_crate::Bencher) {
     index_sequentially_vec(bencher, 500000);
 }
@@ -442,6 +466,11 @@ fn index_sequentially_pvec_500000(bencher: &mut test_crate::Bencher) {
 #[bench]
 fn index_sequentially_dvec_500000(bencher: &mut test_crate::Bencher) {
     index_sequentially_dvec(bencher, 500000);
+}
+
+#[bench]
+fn index_sequentially_im_vec_500000(bencher: &mut test_crate::Bencher) {
+    index_sequentially_im_vec(bencher, 500000);
 }
 
 fn index_randomly_vec(bencher: &mut test_crate::Bencher, n: usize) {
@@ -489,6 +518,21 @@ fn index_randomly_dvec(bencher: &mut test_crate::Bencher, n: usize) {
     });
 }
 
+fn index_randomly_im_vec(bencher: &mut test_crate::Bencher, n: usize) {
+    let mut vec = Vector::new();
+    for i in 0..n {
+        vec.push_back(i * 2);
+    }
+
+    let mut rng = XorShiftRng::from_seed([0, 1, 2, 3]);
+    bencher.iter(|| {
+        for _ in 0..n {
+            let j = (rng.next_u32() as usize) % n;
+            assert_eq!(*vec.get(j).unwrap(), j * 2);
+        }
+    });
+}
+
 #[bench]
 fn index_randomly_vec_5000(bencher: &mut test_crate::Bencher) {
     index_randomly_vec(bencher, 5000);
@@ -502,6 +546,11 @@ fn index_randomly_pvec_5000(bencher: &mut test_crate::Bencher) {
 #[bench]
 fn index_randomly_dvec_5000(bencher: &mut test_crate::Bencher) {
     index_randomly_dvec(bencher, 5000);
+}
+
+#[bench]
+fn index_randomly_im_vec_5000(bencher: &mut test_crate::Bencher) {
+    index_randomly_im_vec(bencher, 5000);
 }
 
 #[bench]
@@ -520,6 +569,11 @@ fn index_randomly_dvec_50000(bencher: &mut test_crate::Bencher) {
 }
 
 #[bench]
+fn index_randomly_im_vec_50000(bencher: &mut test_crate::Bencher) {
+    index_randomly_im_vec(bencher, 50000);
+}
+
+#[bench]
 fn index_randomly_vec_500000(bencher: &mut test_crate::Bencher) {
     index_randomly_vec(bencher, 500000);
 }
@@ -532,5 +586,10 @@ fn index_randomly_pvec_500000(bencher: &mut test_crate::Bencher) {
 #[bench]
 fn index_randomly_dvec_500000(bencher: &mut test_crate::Bencher) {
     index_randomly_dvec(bencher, 500000);
+}
+
+#[bench]
+fn index_randomly_im_vec_500000(bencher: &mut test_crate::Bencher) {
+    index_randomly_im_vec(bencher, 500000);
 }
 
