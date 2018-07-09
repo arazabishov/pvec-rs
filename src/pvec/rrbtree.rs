@@ -45,14 +45,17 @@ macro_rules! debug {
 struct Shift(usize);
 
 impl Shift {
+    #[inline(always)]
     fn inc(self) -> Shift {
         Shift(self.0 + BITS_PER_LEVEL)
     }
 
+    #[inline(always)]
     fn dec(self) -> Shift {
         Shift(self.0 - BITS_PER_LEVEL)
     }
 
+    #[inline(always)]
     fn capacity(self) -> usize {
         BRANCH_FACTOR << self.0
     }
@@ -86,10 +89,12 @@ impl PartialOrd<usize> for Index {
 }
 
 impl Index {
+    #[inline(always)]
     fn child(self, shift: Shift) -> usize {
         (self.0 >> shift.0) & (BRANCH_FACTOR - 1)
     }
 
+    #[inline(always)]
     fn element(self) -> usize {
         self.0 & (BRANCH_FACTOR - 1)
     }

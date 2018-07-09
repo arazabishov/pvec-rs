@@ -23,11 +23,12 @@ impl<T: Clone + Debug> PVec<T> {
         }
     }
 
+    #[cold]
     pub fn push(&mut self, item: T) {
         self.tail[self.tail_len] = Some(item);
         self.tail_len += 1;
 
-        if self.tail_len == self.tail.len() {
+        if self.tail_len == BRANCH_FACTOR {
             let tail = mem::replace(&mut self.tail, new_branch!());
 
             self.tree.push(tail, self.tail_len);
