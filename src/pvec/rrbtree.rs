@@ -45,14 +45,17 @@ macro_rules! debug {
 struct Shift(usize);
 
 impl Shift {
+    #[inline(always)]
     fn inc(self) -> Shift {
         Shift(self.0 + BITS_PER_LEVEL)
     }
 
+    #[inline(always)]
     fn dec(self) -> Shift {
         Shift(self.0 - BITS_PER_LEVEL)
     }
 
+    #[inline(always)]
     fn capacity(self) -> usize {
         BRANCH_FACTOR << self.0
     }
@@ -86,10 +89,12 @@ impl PartialOrd<usize> for Index {
 }
 
 impl Index {
+    #[inline(always)]
     fn child(self, shift: Shift) -> usize {
         (self.0 >> shift.0) & (BRANCH_FACTOR - 1)
     }
 
+    #[inline(always)]
     fn element(self) -> usize {
         self.0 & (BRANCH_FACTOR - 1)
     }
@@ -273,26 +278,24 @@ impl<T: Clone + Debug> RrbTree<T> {
         debug!("---------------------------------------------------------------------------");
         debug!("RrbTree::push(tail={:?})", tail);
 
-        if self.root.is_none() {
-            self.root = Some(Node::Branch(
-                Arc::new(Branch { children: new_branch!(), len: 0 })
+        if let Some(ref mut root) = self.root {
+            if self.shift.capacity() == self.root_len_max.0 {
+                debug!("RrbTree::push() - growing tree; capacity={}", self.shift.capacity());
+
+                let mut nodes = new_branch!();
+                nodes[0] = Some(root.clone());
+
+                self.shift = self.shift.inc();
+                *root = Node::Branch(
+                    Arc::new(Branch { children: nodes, len: 1 })
+                );
+            }
+
+            root.push(self.root_len_max, self.shift, Leaf { elements: tail, len: tail_len });
+        } else {
+            self.root = Some(Node::Leaf(
+                Arc::new(Leaf { elements: tail, len: tail_len })
             ));
-            self.shift = self.shift.inc();
-        }
-
-        let root = self.root.as_mut().unwrap();
-        root.push(self.root_len_max, self.shift, Leaf { elements: tail, len: tail_len });
-
-        if self.shift.capacity() == self.root_len_max.0 + BRANCH_FACTOR {
-            debug!("RrbTree::push() - growing tree; capacity={}", self.shift.capacity());
-
-            let mut nodes = new_branch!();
-            nodes[0] = Some(root.clone());
-
-            self.shift = self.shift.inc();
-            *root = Node::Branch(
-                Arc::new(Branch { children: nodes, len: 1 })
-            );
         }
 
         self.root_len.0 += tail_len;
