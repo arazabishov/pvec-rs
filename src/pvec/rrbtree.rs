@@ -101,6 +101,13 @@ impl Index {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+struct RelaxedBranch<T> {
+    children: [Option<Node<T>>; BRANCH_FACTOR],
+    sizes: [Option<usize>; BRANCH_FACTOR],
+    len: usize,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 struct Branch<T> {
     children: [Option<Node<T>>; BRANCH_FACTOR],
     len: usize,
@@ -114,6 +121,7 @@ struct Leaf<T> {
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 enum Node<T> {
+    RelaxedBranch(Arc<RelaxedBranch<T>>),
     Branch(Arc<Branch<T>>),
     Leaf(Arc<Leaf<T>>),
 }
@@ -123,6 +131,7 @@ impl<T: Clone + Debug> Node<T> {
     fn as_mut_branch(&mut self) -> &mut Branch<T> {
         match self {
             Node::Leaf(..) => unreachable!(),
+            Node::RelaxedBranch(..) => unreachable!(),
             Node::Branch(ref mut branch) => Arc::make_mut(branch)
         }
     }
@@ -134,6 +143,7 @@ impl<T: Clone + Debug> Node<T> {
                 Arc::make_mut(&mut leaf_arc);
                 Arc::try_unwrap(leaf_arc).unwrap()
             }
+            Node::RelaxedBranch(..) => unreachable!(),
             Node::Branch(..) => unreachable!()
         };
     }
@@ -215,6 +225,7 @@ impl<T: Clone + Debug> Node<T> {
 
         loop {
             match *node {
+                Node::RelaxedBranch(..) => unreachable!(),
                 Node::Branch(ref branch) => {
                     debug_assert!(shift.0 > 0);
 
@@ -236,6 +247,7 @@ impl<T: Clone + Debug> Node<T> {
 
         loop {
             match *node {
+                Node::RelaxedBranch(..) => unreachable!(),
                 Node::Branch(ref mut branch_arc) => {
                     debug_assert!(shift.0 > 0);
 
@@ -373,6 +385,7 @@ mod tests {
             for i in 0..BRANCH_FACTOR {
                 if let Some(child) = self.children[i].as_ref() {
                     let child_json_value = match child {
+                        Node::RelaxedBranch(..) => unreachable!(),
                         Node::Branch(ref branch) => {
                             json!({
                                 "branch": child,
@@ -418,6 +431,7 @@ mod tests {
     impl<T> Serialize for Node<T> where T: Serialize {
         fn serialize<S>(&self, serializer: S) -> Result<<S>::Ok, <S>::Error> where S: Serializer {
             match *self {
+                Node::RelaxedBranch(..) => unreachable!(),
                 Node::Branch(ref branch) => branch.serialize(serializer),
                 Node::Leaf(ref leaf) => leaf.serialize(serializer)
             }
@@ -428,6 +442,7 @@ mod tests {
         fn serialize<S>(&self, serializer: S) -> Result<<S>::Ok, <S>::Error> where S: Serializer {
             let root_json_value = self.root.as_ref().map_or(None, |root| {
                 let json = match root {
+                    Node::RelaxedBranch(..) => unreachable!(),
                     Node::Branch(ref branch) => {
                         json!({
                             "branch": root,
