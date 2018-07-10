@@ -126,6 +126,45 @@ enum Node<T> {
     Leaf(Arc<Leaf<T>>),
 }
 
+impl<T: Clone + Debug> Leaf<T> {
+    fn merge(mut self, mut that: Leaf<T>) -> RelaxedBranch<T> {
+        let mut index_l = self.len;
+        let mut index_r = 0;
+
+        let len_r = that.len;
+
+        while index_l < BRANCH_FACTOR && index_r < len_r {
+            self.elements[index_l] = that.elements[index_r].take();
+
+            index_l += 1;
+            index_r += 1;
+
+            self.len += 1;
+            that.len -= 1;
+        }
+
+        for i in 0..that.len {
+            that.elements[i] = that.elements[index_r].take();
+            index_r += 1;
+        }
+
+        let mut branch_children = new_branch!();
+        let mut branch_sizes = new_branch!();
+
+        branch_sizes[0] = Some(self.len);
+        branch_sizes[1] = Some(that.len);
+
+        branch_children[0] = Some(Node::Leaf(Arc::new(self)));
+        branch_children[1] = Some(Node::Leaf(Arc::new(that)));
+
+        RelaxedBranch {
+            children: branch_children,
+            sizes: branch_sizes,
+            len: 2,
+        }
+    }
+}
+
 impl<T: Clone + Debug> Node<T> {
     #[inline(always)]
     fn as_mut_branch(&mut self) -> &mut Branch<T> {
@@ -536,6 +575,54 @@ mod tests {
         }
 
         debug!("{}", serde_json::to_string(&tree).unwrap());
+    }
+
+    #[test]
+    fn merge_leaves_must_return_balanced_result() {
+        let mut elements_one: [Option<usize>; BRANCH_FACTOR] = new_branch!();
+        let mut elements_two: [Option<usize>; BRANCH_FACTOR] = new_branch!();
+
+        for i in 0..BRANCH_FACTOR / 2 {
+            elements_one[i] = Some(i);
+        }
+
+        for i in 0..BRANCH_FACTOR {
+            elements_two[i] = Some(BRANCH_FACTOR / 2 + i);
+        }
+
+        let leaf_l = Leaf { elements: elements_one, len: BRANCH_FACTOR / 2 };
+        let leaf_r = Leaf { elements: elements_two, len: BRANCH_FACTOR };
+
+        println!("{:?}", leaf_l);
+        println!("{:?}", leaf_r);
+
+        let branch = leaf_l.merge(leaf_r);
+
+        let leaf_l = branch.children[0].as_ref().unwrap();
+        let leaf_r = branch.children[1].as_ref().unwrap();
+
+        if let (Node::Leaf(ref this), Node::Leaf(ref that)) = (leaf_l, leaf_r) {
+            assert_eq!(this.len, BRANCH_FACTOR);
+            assert_eq!(that.len, BRANCH_FACTOR / 2);
+
+            for i in 0..BRANCH_FACTOR {
+                assert_eq!(this.elements[i].unwrap(), i);
+            }
+
+            for i in 0..BRANCH_FACTOR / 2 {
+                assert_eq!(that.elements[i].unwrap(), BRANCH_FACTOR + i);
+            }
+
+            for i in BRANCH_FACTOR / 2..BRANCH_FACTOR {
+                assert_eq!(that.elements[i], None);
+            }
+        }
+
+        for i in 2..BRANCH_FACTOR {
+            assert_eq!(branch.children[i], None);
+        }
+
+        println!("{:?}", branch);
     }
 }
 
