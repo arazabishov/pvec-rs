@@ -177,14 +177,14 @@ impl<T: Clone + Debug> Node<T> {
 
     #[inline(always)]
     fn into_leaf(self) -> Leaf<T> {
-        return match self {
+        match self {
             Node::Leaf(mut leaf_arc) => {
                 Arc::make_mut(&mut leaf_arc);
                 Arc::try_unwrap(leaf_arc).unwrap()
             }
             Node::RelaxedBranch(..) => unreachable!(),
             Node::Branch(..) => unreachable!()
-        };
+        }
     }
 }
 
@@ -236,7 +236,7 @@ impl<T: Clone + Debug> Node<T> {
         let branch = self.as_mut_branch();
         let i = index.child(shift);
 
-        return if shift.0 == BITS_PER_LEVEL {
+        if shift.0 == BITS_PER_LEVEL {
             branch.len -= 1;
 
             let leaf_node = branch.children[i].take().unwrap();
@@ -255,7 +255,7 @@ impl<T: Clone + Debug> Node<T> {
             }
 
             (leaf, branch.len)
-        };
+        }
     }
 
     fn get(&self, index: Index, shift: Shift) -> Option<&T> {

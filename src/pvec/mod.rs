@@ -79,6 +79,12 @@ impl<T: Clone + Debug> PVec<T> {
     }
 }
 
+impl<T: Clone + Debug> Default for PVec<T> {
+    fn default() -> Self {
+        PVec::new()
+    }
+}
+
 impl<T: Clone + Debug> ops::Index<usize> for PVec<T> {
     type Output = T;
 
