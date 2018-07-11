@@ -1,5 +1,5 @@
-use pvec::rrbtree::BRANCH_FACTOR;
 use pvec::rrbtree::RrbTree;
+use pvec::rrbtree::BRANCH_FACTOR;
 use std::fmt::Debug;
 use std::mem;
 use std::ops;
@@ -89,17 +89,24 @@ impl<T: Clone + Debug> ops::Index<usize> for PVec<T> {
     type Output = T;
 
     fn index(&self, index: usize) -> &T {
-        self.get(index).unwrap_or_else(||
-            panic!("index `{}` out of bounds in PVec of length `{}`", index, self.len())
-        )
+        self.get(index).unwrap_or_else(|| {
+            panic!(
+                "index `{}` out of bounds in PVec of length `{}`",
+                index,
+                self.len()
+            )
+        })
     }
 }
 
 impl<T: Clone + Debug> ops::IndexMut<usize> for PVec<T> {
     fn index_mut(&mut self, index: usize) -> &mut T {
         let len = self.len();
-        self.get_mut(index).unwrap_or_else(||
-            panic!("index `{}` out of bounds in PVec of length `{}`", index, len)
-        )
+        self.get_mut(index).unwrap_or_else(|| {
+            panic!(
+                "index `{}` out of bounds in PVec of length `{}`",
+                index, len
+            )
+        })
     }
 }
