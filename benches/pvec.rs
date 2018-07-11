@@ -41,7 +41,6 @@ fn push_dvec(bencher: &mut test_crate::Bencher, n: usize) {
     });
 }
 
-
 fn push_im_vec(bencher: &mut test_crate::Bencher, n: usize) {
     bencher.iter(|| {
         let mut vec = Vector::new();
@@ -235,7 +234,6 @@ fn pop_im_vec(bencher: &mut test_crate::Bencher, n: usize) {
         }
     });
 }
-
 
 #[bench]
 fn pop_vec_5000(bencher: &mut test_crate::Bencher) {
@@ -592,4 +590,3 @@ fn index_randomly_dvec_500000(bencher: &mut test_crate::Bencher) {
 fn index_randomly_im_vec_500000(bencher: &mut test_crate::Bencher) {
     index_randomly_im_vec(bencher, 500000);
 }
-
