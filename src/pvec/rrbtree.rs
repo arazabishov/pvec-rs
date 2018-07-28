@@ -201,9 +201,6 @@ impl<T: Clone + Debug> Leaf<T> {
 
     #[inline(always)]
     fn rebalance(merged: Vec<Option<Node<T>>>) -> Node<T> {
-        // ToDo: add optimisation for skipping balanced nodes
-        // ToDo: you might not need this node at all
-
         let mut new_root = Branch::new();
         let mut new_subtree = Branch::new();
         let mut new_leaf = Leaf::new();
@@ -214,13 +211,12 @@ impl<T: Clone + Debug> Leaf<T> {
             let mut old_leaf = subtree.take().unwrap().into_leaf();
 
             if new_leaf.is_empty() && old_leaf.is_full() {
-                new_subtree.push(Node::Leaf(old_leaf));
-
-                // ToDo: abstract check_subtree() away, please...
                 if new_subtree.is_full() {
                     new_root.push(Node::Branch(Arc::new(new_subtree)));
                     new_subtree = Branch::new();
                 }
+
+                new_subtree.push(Node::Leaf(old_leaf));
             } else {
                 for i in 0..old_leaf.len {
                     if new_leaf.is_full() {
