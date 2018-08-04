@@ -1,3 +1,4 @@
+use std::cmp;
 use std::cmp::Ordering;
 use std::fmt::Debug;
 use std::iter::Filter;
@@ -240,8 +241,13 @@ impl<T: Clone + Debug> Leaf<T> {
 
         check_subtree(&mut new_root, &mut new_subtree);
 
-        new_subtree.push(Node::Leaf(Arc::new(new_leaf)));
-        new_root.push(Node::Branch(Arc::new(new_subtree)));
+        if !new_leaf.is_empty() {
+            new_subtree.push(Node::Leaf(Arc::new(new_leaf)));
+        }
+
+        if !new_subtree.is_empty() {
+            new_root.push(Node::Branch(Arc::new(new_subtree)));
+        }
 
         println!("Leaf::rebalance - new_root={:?}", new_root);
         Node::Branch(Arc::new(new_root))
@@ -265,13 +271,23 @@ impl<T: Clone + Debug> RelaxedBranch<T> {
     }
 
     #[inline(always)]
+    fn add(&mut self, mut child: Self, shift: &Shift) {
+        child.compute_sizes(&shift.dec());
+
+        self.children[self.len] = Some(
+            Node::RelaxedBranch(Arc::new(child))
+        );
+        self.len += 1;
+    }
+
+    #[inline(always)]
     fn push(&mut self, child: Node<T>) {
         self.children[self.len] = Some(child);
         self.len += 1;
     }
 
     #[inline(always)]
-    fn add(&mut self, child: Option<Node<T>>) {
+    fn give(&mut self, child: Option<Node<T>>) {
         self.children[self.len] = child;
         self.len += 1;
     }
@@ -293,30 +309,33 @@ impl<T: Clone + Debug> RelaxedBranch<T> {
     }
 
     // ToDo: create relaxed nodes only when necessary
+    // ToDo: make sure that shift is kept in the correct state
     #[inline(always)]
-    fn rebalance(merged: Vec<Option<Node<T>>>, shift: Shift) -> Node<T> {
+    fn rebalance(merged: Vec<Option<Node<T>>>, shift: &Shift) -> Node<T> {
         #[inline(always)]
         fn check_subtree<P: Clone + Debug>(
             root: &mut RelaxedBranch<P>,
             subtree: &mut RelaxedBranch<P>,
-            shift: Shift,
+            shift: &Shift,
         ) {
             if subtree.is_full() {
-                subtree.compute_sizes(shift);
-                root.push(Node::RelaxedBranch(Arc::new(
-                    mem::replace(subtree, RelaxedBranch::new())
-                )));
+                root.add(mem::replace(subtree, RelaxedBranch::new()), shift);
             }
         }
+
+        // Branch can contain only Branches and Leaves, but not RelaxedBranch instances
+        // We can leverage this invariant to avoid creating RelaxedBranch instances for balanced
+        // nodes. This will require some changes in the logic within this method.
+
+        // 1) you will have to aggregate nodes somewhere else except RelaxedBranch (array)
+        // 2) you will have to keep state somewhere (boolean) which tracks if any of children for
+        //    the given node are represented by RelaxedBranch or Branch
 
         let mut new_root = RelaxedBranch::new();
         let mut new_subtree = RelaxedBranch::new();
         let mut new_node = RelaxedBranch::new();
 
-        // ToDo: check if computer_sizes() called on correct branches
         for mut subtree in merged {
-            println!("Branch::rebalance - subtree {:?}", subtree);
-
             let mut old_node = subtree.take().unwrap();
 
             if new_node.is_empty() && old_node.is_full() {
@@ -328,39 +347,32 @@ impl<T: Clone + Debug> RelaxedBranch<T> {
                 for i in 0..old_branch.len {
                     if new_node.is_full() {
                         check_subtree(&mut new_root, &mut new_subtree, shift);
-                        new_node.compute_sizes(shift);
 
-                        new_subtree.push(Node::RelaxedBranch(Arc::new(new_node)));
+                        new_subtree.add(new_node, shift);
                         new_node = RelaxedBranch::new();
                     }
 
-                    new_node.add(Arc::make_mut(&mut old_branch).take(i).take());
+                    new_node.give(Arc::make_mut(&mut old_branch).take(i).take());
                 }
             }
         }
 
         check_subtree(&mut new_root, &mut new_subtree, shift);
 
-        // ToDo: bug with redundant branch might be caused by one of these statements
-        // ToDo: check if new_node is not empty before pushing it onto tree
         if !new_node.is_empty() {
-            new_subtree.push(Node::RelaxedBranch(Arc::new(new_node)));
-            new_subtree.compute_sizes(shift);
+            new_subtree.add(new_node, shift);
         }
 
         if !new_subtree.is_empty() {
-            new_root.push(Node::RelaxedBranch(Arc::new(new_subtree)));
+            new_root.add(new_subtree, shift);
         }
 
         new_root.compute_sizes(shift);
-
-        println!("new_root={:?}", new_root);
         Node::RelaxedBranch(Arc::new(new_root))
     }
 
-    // ToDo: merge or rebalance algorithms are creating a trailing, redundant node
     #[inline(always)]
-    fn compute_sizes(&mut self, shift: Shift) {
+    fn compute_sizes(&mut self, shift: &Shift) {
         if self.sizes.is_none() {
             self.sizes = Some(new_branch!());
         }
@@ -370,23 +382,21 @@ impl<T: Clone + Debug> RelaxedBranch<T> {
 
         for i in 0..self.len {
             size_sum += RelaxedBranch::size_sub_trie(
-                self.children[i].as_mut().unwrap(), shift.dec(),
+                self.children[i].as_mut().unwrap(), shift,
             );
             size_table[i] = Some(size_sum);
         }
     }
 
-    fn size_sub_trie(node: &Node<T>, shift: Shift) -> usize {
-        // ToDo: for-loopify recursive calls
-
+    fn size_sub_trie(node: &Node<T>, shift: &Shift) -> usize {
         #[inline(always)]
         fn size_sub_branch<P: Clone + Debug>(
             len: usize,
             children: &[Option<Node<P>>],
-            shift: Shift,
+            shift: &Shift,
         ) -> usize {
             let last_size = RelaxedBranch::size_sub_trie(
-                children[len - 1].as_ref().unwrap(), shift.dec(),
+                children[len - 1].as_ref().unwrap(), &shift.dec(),
             );
 
             ((len - 1) << shift.0) + last_size
@@ -441,8 +451,8 @@ trait Take<T: Clone + Debug> {
 
 impl<T: Clone + Debug> Take<T> for Arc<T> {
     fn take(mut self) -> T {
-        // ToDo: is this thread safe? Probably not because it is not atomic
-        // ToDo: investigate how to reason about thread safety.
+        // ToDo: This is definitely not thread safe, so you need to be careful with
+        // ToDo: where you call this method
         Arc::make_mut(&mut self);
         Arc::try_unwrap(self).unwrap()
     }
@@ -483,9 +493,6 @@ impl<T: Clone + Debug> Node<T> {
         }
     }
 
-    // ToDo: you need to lower the tree if root contains only a single branch to avoid
-    // ToDo: excessive growth of the tree and performance degradation
-
     // ToDo: make sure that you keep len properties of tree in sync
     // ToDo: reconsider getting rid of outer if-else block in this function
     fn merge(&mut self, mut that: Node<T>, self_shift: Shift, that_shift: Shift) -> Node<T> {
@@ -499,9 +506,9 @@ impl<T: Clone + Debug> Node<T> {
             // ToDo: avoid unnecessary allocations of empty arrays, that's pretty useless
             let mut branch_c = child_node_l.merge(that, self_shift.dec(), that_shift);
             Node::rebalance(
-                init, branch_c.as_mut_children(), &mut [], self_shift,
+                init, branch_c.as_mut_children(), &mut [], &self_shift,
             )
-        } else if that_shift < self_shift {
+        } else if self_shift < that_shift {
             let branch_r = that.as_mut_branch_internals();
 
             let (mut child_r, mut tail) =
@@ -511,7 +518,7 @@ impl<T: Clone + Debug> Node<T> {
             // ToDo: avoid unnecessary allocations
             let mut branch_c = self.merge(child_node_r, self_shift, that_shift.dec());
             Node::rebalance(
-                &mut [], branch_c.as_mut_children(), tail, that_shift,
+                &mut [], branch_c.as_mut_children(), tail, &that_shift,
             )
         } else {
             // ToDo: take care of descending correctly
@@ -540,7 +547,7 @@ impl<T: Clone + Debug> Node<T> {
                 };
 
                 Node::rebalance(
-                    init, branch_c.as_mut_children(), tail, self_shift,
+                    init, branch_c.as_mut_children(), tail, &self_shift,
                 )
             }
         }
@@ -577,7 +584,7 @@ impl<T: Clone + Debug> Node<T> {
         node_l: &mut [Option<Node<T>>],
         node_c: &mut [Option<Node<T>>],
         node_r: &mut [Option<Node<T>>],
-        shift: Shift,
+        shift: &Shift,
     ) -> Node<T> {
         let merged = Node::merge_all(
             node_l, node_c, node_r,
@@ -916,16 +923,23 @@ impl<T: Clone + Debug> RrbTree<T> {
         // you're supposed to empty up 'that' tree,
         // including all of its nodes, len and shift properties
 
-        let new_root = self
+        let mut merged_root = self
             .root
             .as_mut()
             .unwrap()
             .merge(that.root.take().unwrap(), self.shift, that.shift);
 
-        // ToDo: prune tree if necessary
+        let merged_shift = Shift(cmp::max(self.shift.0, that.shift.0));
 
-        self.root = Some(new_root);
-        self.shift = self.shift.inc();
+        let (new_root, new_shift) = if merged_root.len() == 1 {
+            // ToDo: prune tree if necessary (check if lowering actually happens)
+            (merged_root.as_mut_children()[0].take(), merged_shift)
+        } else {
+            (Some(merged_root), merged_shift.inc())
+        };
+
+        self.root = new_root;
+        self.shift = new_shift;
 
         self.root_len.0 += that.root_len.0;
         self.root_len_max.0 += that.root_len_max.0;
