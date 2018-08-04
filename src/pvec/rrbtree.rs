@@ -335,8 +335,6 @@ impl<T: Clone + Debug> BranchBuilder<T> {
         }
     }
 
-    // ToDo: make sure that shift is kept in the correct state
-    // ToDo: consider passing shift by a reference, rather than by value (or other way around)
     #[inline(always)]
     fn rebalance(merged: Vec<Option<Node<T>>>, shift: Shift) -> Node<T> {
         #[inline(always)]
