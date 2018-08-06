@@ -896,12 +896,15 @@ impl<T: Clone + Debug> RrbTree<T> {
         };
 
         self.root = new_root;
+        that.root = None;
+
         self.shift = new_shift;
+        that.shift = Shift(0);
 
         self.root_len.0 += that.root_len.0;
-        self.root_len_max.0 += that.root_len_max.0;
-
         that.root_len.0 = 0;
+
+        self.root_len_max.0 += that.root_len_max.0;
         that.root_len_max.0 = 0;
     }
 }
@@ -1252,6 +1255,7 @@ mod tests {
     #[test]
     fn concat_must_return_expected_result() {
         let mut tree_l = RrbTree::new();
+        let mut tree_c = RrbTree::new();
         let mut tree_r = RrbTree::new();
 
         let mut branch_i = 0;
@@ -1275,12 +1279,26 @@ mod tests {
                 branch_i += 1;
             }
 
+            tree_c.push(items, BRANCH_FACTOR);
+        }
+
+        for _ in 0..BRANCH_FACTOR {
+            let mut items = new_branch!();
+
+            for j in 0..BRANCH_FACTOR {
+                items[j] = Some(branch_i);
+                branch_i += 1;
+            }
+
             tree_r.push(items, BRANCH_FACTOR);
         }
 
+
         let tree_l_clone = tree_l.clone();
+        let tree_c_clone = tree_c.clone();
         let tree_r_clone = tree_r.clone();
 
+        tree_l.append(&mut tree_c);
         tree_l.append(&mut tree_r);
 
         for i in 0..tree_l_clone.len() {
@@ -1289,27 +1307,45 @@ mod tests {
 
         println!("=====");
 
-        for i in 0..tree_r_clone.len() {
-            println!("tree_r_clone: item={:?}", tree_r_clone.get(i));
+        for i in 0..tree_c_clone.len() {
+            println!("tree_c_clone: item={:?}", tree_c_clone.get(i));
         }
 
+        println!("=====");
+
+        for i in 0..tree_r_clone.len() {
+            println!("tree_r_clone: item={:?}", tree_c_clone.get(i));
+        }
+
+        println!("#####");
+
         println!("tree_l={}", serde_json::to_string(&tree_l).unwrap());
+        println!("tree_c={}", serde_json::to_string(&tree_c).unwrap());
+        println!("tree_r={}", serde_json::to_string(&tree_r).unwrap());
+
         println!(
             "tree_l_clone={}",
             serde_json::to_string(&tree_l_clone).unwrap()
+        );
+        println!(
+            "tree_c_clone={}",
+            serde_json::to_string(&tree_c_clone).unwrap()
         );
         println!(
             "tree_r_clone={}",
             serde_json::to_string(&tree_r_clone).unwrap()
         );
 
-        println!("tree_l:len={:?}", tree_l.len());
         for i in 0..tree_l.len() {
             println!("tree_l: item={:?}", tree_l.get(i))
         }
 
-        for i in 0..tree_r.len() {
-            println!("tree_r: item={:?}", tree_r.get(i))
+        for i in 0..tree_c.len() {
+            println!("tree_c: item={:?}", tree_c.get(i))
+        }
+
+        for i in 0..tree_c.len() {
+            println!("tree_r: item={:?}", tree_c.get(i))
         }
     }
 }
