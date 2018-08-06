@@ -874,38 +874,31 @@ impl<T: Clone + Debug> RrbTree<T> {
     }
 
     pub fn append(&mut self, that: &mut RrbTree<T>) {
-        // ToDo: be careful with various corner cases when tree is not full on left or right side
-        // ToDo: or even when one or both of them are empty
+        if let (Some(this_root), Some(that_root)) = (self.root.as_mut(), that.root.take()) {
+            let mut merged_root = this_root.merge(that_root, self.shift, that.shift);
+            let merged_shift = Shift(cmp::max(self.shift.0, that.shift.0));
 
-        // you're supposed to empty up 'that' tree,
-        // including all of its nodes, len and shift properties
+            let (new_root, new_shift) = if merged_root.len() == 1 {
+                (
+                    merged_root.as_mut_children().first_mut().unwrap().take(),
+                    merged_shift,
+                )
+            } else {
+                (Some(merged_root), merged_shift.inc())
+            };
 
-        let mut merged_root = self.root.as_mut().unwrap().merge(
-            that.root.take().unwrap(),
-            self.shift,
-            that.shift,
-        );
+            self.root = new_root;
+            that.root = None;
 
-        let merged_shift = Shift(cmp::max(self.shift.0, that.shift.0));
+            self.shift = new_shift;
+            that.shift = Shift(0);
 
-        let (new_root, new_shift) = if merged_root.len() == 1 {
-            // ToDo: prune tree if necessary (check if lowering actually happens)
-            (merged_root.as_mut_children()[0].take(), merged_shift)
-        } else {
-            (Some(merged_root), merged_shift.inc())
-        };
+            self.root_len.0 += that.root_len.0;
+            that.root_len.0 = 0;
 
-        self.root = new_root;
-        that.root = None;
-
-        self.shift = new_shift;
-        that.shift = Shift(0);
-
-        self.root_len.0 += that.root_len.0;
-        that.root_len.0 = 0;
-
-        self.root_len_max.0 += that.root_len_max.0;
-        that.root_len_max.0 = 0;
+            self.root_len_max.0 += that.root_len_max.0;
+            that.root_len_max.0 = 0;
+        }
     }
 }
 
@@ -914,18 +907,18 @@ mod tests {
     extern crate serde;
     extern crate serde_json;
 
-    use self::serde::ser::{Serialize, Serializer, SerializeSeq, SerializeStruct};
-    use std::sync::Arc;
-    use super::{Branch, Leaf, Node, RelaxedBranch, RrbTree};
+    use self::serde::ser::{Serialize, SerializeSeq, SerializeStruct, Serializer};
     use super::BRANCH_FACTOR;
+    use super::{Branch, Leaf, Node, RelaxedBranch, RrbTree};
+    use std::sync::Arc;
 
     impl<T> RelaxedBranch<T>
-        where
-            T: Serialize,
+    where
+        T: Serialize,
     {
         fn serialize<S>(&self, serializer: S) -> Result<<S>::Ok, <S>::Error>
-            where
-                S: Serializer,
+        where
+            S: Serializer,
         {
             let mut children_refs = Vec::with_capacity(BRANCH_FACTOR);
 
@@ -965,12 +958,12 @@ mod tests {
     }
 
     impl<T> Branch<T>
-        where
-            T: Serialize,
+    where
+        T: Serialize,
     {
         fn serialize<S>(&self, serializer: S) -> Result<<S>::Ok, <S>::Error>
-            where
-                S: Serializer,
+        where
+            S: Serializer,
         {
             let mut children_refs = Vec::with_capacity(BRANCH_FACTOR);
 
@@ -1010,12 +1003,12 @@ mod tests {
     }
 
     impl<T> Leaf<T>
-        where
-            T: Serialize,
+    where
+        T: Serialize,
     {
         fn serialize<S>(&self, serializer: S) -> Result<<S>::Ok, <S>::Error>
-            where
-                S: Serializer,
+        where
+            S: Serializer,
         {
             let mut serde_state = serializer.serialize_seq(Some(BRANCH_FACTOR))?;
 
@@ -1028,12 +1021,12 @@ mod tests {
     }
 
     impl<T> Serialize for Node<T>
-        where
-            T: Serialize,
+    where
+        T: Serialize,
     {
         fn serialize<S>(&self, serializer: S) -> Result<<S>::Ok, <S>::Error>
-            where
-                S: Serializer,
+        where
+            S: Serializer,
         {
             match *self {
                 Node::RelaxedBranch(ref relaxed_branch) => relaxed_branch.serialize(serializer),
@@ -1044,12 +1037,12 @@ mod tests {
     }
 
     impl<T> Serialize for RrbTree<T>
-        where
-            T: Serialize,
+    where
+        T: Serialize,
     {
         fn serialize<S>(&self, serializer: S) -> Result<<S>::Ok, <S>::Error>
-            where
-                S: Serializer,
+        where
+            S: Serializer,
         {
             let root_json_value = self.root.as_ref().map_or(None, |root| {
                 let json = match root {
@@ -1292,7 +1285,6 @@ mod tests {
 
             tree_r.push(items, BRANCH_FACTOR);
         }
-
 
         let tree_l_clone = tree_l.clone();
         let tree_c_clone = tree_c.clone();
