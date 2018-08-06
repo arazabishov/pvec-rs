@@ -201,7 +201,7 @@ impl<T: Clone + Debug> Leaf<T> {
     }
 
     #[inline(always)]
-    fn rebalance(merged: Vec<Option<Node<T>>>) -> Node<T> {
+    fn rebalance(merged: Vec<Node<T>>) -> Node<T> {
         #[inline(always)]
         fn check_subtree<P: Clone + Debug>(root: &mut Branch<P>, subtree: &mut Branch<P>) {
             if subtree.is_full() {
@@ -215,11 +215,7 @@ impl<T: Clone + Debug> Leaf<T> {
         let mut new_subtree = Branch::new();
         let mut new_leaf = Leaf::new();
 
-        for mut subtree in merged {
-            println!("Node::rebalance - subtree {:?}", subtree);
-
-            let old_node = subtree.take().unwrap();
-
+        for old_node in merged {
             if new_leaf.is_empty() && old_node.is_full() {
                 check_subtree(&mut new_root, &mut new_subtree);
                 new_subtree.push(old_node);
@@ -336,7 +332,7 @@ impl<T: Clone + Debug> BranchBuilder<T> {
     }
 
     #[inline(always)]
-    fn rebalance(merged: Vec<Option<Node<T>>>, shift: Shift) -> Node<T> {
+    fn rebalance(merged: Vec<Node<T>>, shift: Shift) -> Node<T> {
         #[inline(always)]
         fn check_subtree<P: Clone + Debug>(
             root: &mut BranchBuilder<P>,
@@ -351,9 +347,7 @@ impl<T: Clone + Debug> BranchBuilder<T> {
         let mut builder_subtree = BranchBuilder::new(shift.dec());
         let mut builder_node = BranchBuilder::new(shift.dec());
 
-        for mut subtree in merged {
-            let old_node = subtree.take().unwrap();
-
+        for old_node in merged {
             if builder_node.is_empty() && old_node.is_full() {
                 check_subtree(&mut builder_root, &mut builder_subtree);
                 builder_subtree.push(old_node);
@@ -466,11 +460,11 @@ impl<T: Clone + Debug> Node<T> {
         }
     }
 
-    // ToDo: make sure that you keep len properties of tree in sync
-    // ToDo: reconsider getting rid of outer if-else block in this function
+    // ToDo: merge doesn't support RelaxedBranch instances afaik
     fn merge(&mut self, mut that: Node<T>, self_shift: Shift, that_shift: Shift) -> Node<T> {
         if self_shift > that_shift {
             let branch_l = self.as_mut_branch_internals();
+
             let (init, child_l) =
                 branch_l.children.split_at_mut(branch_l.len - 1);
 
@@ -479,7 +473,7 @@ impl<T: Clone + Debug> Node<T> {
             // ToDo: avoid unnecessary allocations of empty arrays, that's pretty useless
             let mut branch_c = child_node_l.merge(that, self_shift.dec(), that_shift);
             Node::rebalance(
-                init, branch_c.as_mut_children(), &mut [], self_shift,
+                Some(init), Some(branch_c.as_mut_children()), None, self_shift,
             )
         } else if self_shift < that_shift {
             let branch_r = that.as_mut_branch_internals();
@@ -491,9 +485,10 @@ impl<T: Clone + Debug> Node<T> {
             // ToDo: avoid unnecessary allocations
             let mut branch_c = self.merge(child_node_r, self_shift, that_shift.dec());
             Node::rebalance(
-                &mut [], branch_c.as_mut_children(), tail, that_shift,
+                None, Some(branch_c.as_mut_children()), Some(tail), that_shift,
             )
         } else {
+            // ToDo: reconsider getting rid of outer if-else block in this function
             // ToDo: take care of descending correctly
             if self_shift.0 == 0 {
                 Arc::make_mut(self.as_mut_leaf())
@@ -520,43 +515,47 @@ impl<T: Clone + Debug> Node<T> {
                 };
 
                 Node::rebalance(
-                    init, branch_c.as_mut_children(), tail, self_shift,
+                    Some(init), Some(branch_c.as_mut_children()), Some(tail), self_shift,
                 )
             }
         }
     }
 
-    // ToDo: work with options rather than empty arrays (see Node::merge())
     #[inline(always)]
     fn merge_all(
-        node_l: &mut [Option<Node<T>>],
-        node_c: &mut [Option<Node<T>>],
-        node_r: &mut [Option<Node<T>>],
-    ) -> Vec<Option<Node<T>>> {
+        node_l: Option<&mut [Option<Node<T>>]>,
+        node_c: Option<&mut [Option<Node<T>>]>,
+        node_r: Option<&mut [Option<Node<T>>]>,
+    ) -> Vec<Node<T>> {
         println!("merge_all: node_l={:?}", node_l);
         println!("merge_all: node_c={:?}", node_c);
         println!("merge_all: node_r={:?}", node_r);
 
         let mut merged = Vec::with_capacity(
-            node_l.len() + node_c.len() + node_r.len()
+            node_l.as_ref().map_or(0, |it| it.len()) +
+                node_c.as_ref().map_or(0, |it| it.len()) +
+                node_r.as_ref().map_or(0, |it| it.len())
         );
 
-        let chained = node_l.iter_mut()
-            .chain(node_c.iter_mut())
-            .chain(node_r.iter_mut())
-            .map(|it| it.take());
+        let mut merge_nodes = |mut node: Option<&mut [Option<Node<T>>]>| {
+            if let Some(items) = node.as_mut() {
+                for item in items.iter_mut() {
+                    merged.push(item.take().unwrap());
+                }
+            }
+        };
 
-        for item in chained {
-            merged.push(item);
-        }
+        merge_nodes(node_l);
+        merge_nodes(node_c);
+        merge_nodes(node_r);
 
-        return merged;
+        merged
     }
 
     fn rebalance(
-        node_l: &mut [Option<Node<T>>],
-        node_c: &mut [Option<Node<T>>],
-        node_r: &mut [Option<Node<T>>],
+        node_l: Option<&mut [Option<Node<T>>]>,
+        node_c: Option<&mut [Option<Node<T>>]>,
+        node_r: Option<&mut [Option<Node<T>>]>,
         shift: Shift,
     ) -> Node<T> {
         let merged = Node::merge_all(
