@@ -111,6 +111,7 @@ struct RelaxedBranch<T> {
     len: usize,
 }
 
+#[derive(Debug)]
 struct BranchBuilder<T> {
     children: [Option<Node<T>>; BRANCH_FACTOR],
     is_relaxed: bool,
@@ -244,7 +245,7 @@ impl<T: Clone + Debug> Leaf<T> {
             new_root.push(Node::Branch(Arc::new(new_subtree)));
         }
 
-        println!("Leaf::rebalance - new_root={:?}", new_root);
+        debug!("Leaf::rebalance - new_root={:?}", new_root);
         Node::Branch(Arc::new(new_root))
     }
 }
@@ -329,12 +330,22 @@ impl<T: Clone + Debug> BranchBuilder<T> {
                     &shift.dec(),
                 );
 
+                debug!("Node::size_sub_trie() -> last_size={}", last_size);
+                debug!("Node::size_sub_trie() -> last_size_shift={}", shift.0);
+                debug!(
+                    "Node::size_sub_trie() -> last_size_calc={}",
+                    ((branch.len - 1) << shift.0) + last_size
+                );
+
                 ((branch.len - 1) << shift.0) + last_size
             }
             Node::RelaxedBranch(ref relaxed_branch) => {
                 relaxed_branch.sizes[relaxed_branch.len - 1].unwrap()
             }
-            Node::Leaf(ref leaf) => leaf.len,
+            Node::Leaf(ref leaf) => {
+                debug_assert_eq!(shift.0, 0);
+                leaf.len
+            }
         }
     }
 
@@ -350,24 +361,25 @@ impl<T: Clone + Debug> BranchBuilder<T> {
             }
         }
 
-        let mut builder_root = BranchBuilder::new(shift);
-        let mut builder_subtree = BranchBuilder::new(shift.dec());
-        let mut builder_node = BranchBuilder::new(shift.dec());
+        let builder_subtree_shift = shift.dec();
+        let builder_node_shift = builder_subtree_shift.dec();
 
-        for old_node in merged {
+        let mut builder_root = BranchBuilder::new(shift);
+        let mut builder_subtree = BranchBuilder::new(builder_subtree_shift);
+        let mut builder_node = BranchBuilder::new(builder_node_shift);
+
+        for mut old_node in merged {
             if builder_node.is_empty() && old_node.is_full() {
                 check_subtree(&mut builder_root, &mut builder_subtree);
                 builder_subtree.push(old_node);
             } else {
-                let mut old_branch = old_node.into_branch();
-
-                for i in 0..old_branch.len {
+                for old_child_node in old_node.as_mut_children() {
                     if builder_node.is_full() {
                         check_subtree(&mut builder_root, &mut builder_subtree);
                         builder_subtree.push(builder_node.build());
                     }
 
-                    builder_node.give(Arc::make_mut(&mut old_branch).take(i).take());
+                    builder_node.give(old_child_node.take());
                 }
             }
         }
@@ -532,9 +544,9 @@ impl<T: Clone + Debug> Node<T> {
         node_c: Option<&mut [Option<Node<T>>]>,
         node_r: Option<&mut [Option<Node<T>>]>,
     ) -> Vec<Node<T>> {
-        println!("merge_all: node_l={:?}", node_l);
-        println!("merge_all: node_c={:?}", node_c);
-        println!("merge_all: node_r={:?}", node_r);
+        debug!("merge_all: node_l={:?}", node_l);
+        debug!("merge_all: node_c={:?}", node_c);
+        debug!("merge_all: node_r={:?}", node_r);
 
         let mut merged = Vec::with_capacity(
             node_l.as_ref().map_or(0, |it| it.len())
@@ -869,10 +881,17 @@ impl<T: Clone + Debug> RrbTree<T> {
             .get_mut(Index(index), self.shift)
     }
 
+    #[inline(always)]
     pub fn len(&self) -> usize {
         self.root_len.0
     }
 
+    #[inline(always)]
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
+
+    // ToDo: consider handling case one either this_root or that_root are None
     pub fn append(&mut self, that: &mut RrbTree<T>) {
         if let (Some(this_root), Some(that_root)) = (self.root.as_mut(), that.root.take()) {
             let mut merged_root = this_root.merge(that_root, self.shift, that.shift);
@@ -1292,6 +1311,17 @@ mod tests {
 
         tree_l.append(&mut tree_c);
         tree_l.append(&mut tree_r);
+
+        for _ in 0..BRANCH_FACTOR {
+            let mut items = new_branch!();
+
+            for j in 0..BRANCH_FACTOR {
+                items[j] = Some(branch_i);
+                branch_i += 1;
+            }
+
+            tree_l.push(items, BRANCH_FACTOR);
+        }
 
         for i in 0..tree_l_clone.len() {
             println!("tree_l_clone: item={:?}", tree_l_clone.get(i))
