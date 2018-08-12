@@ -428,6 +428,90 @@ impl<T: Clone + Debug> Branch<T> {
     fn is_empty(&self) -> bool {
         self.len == 0
     }
+
+    #[inline(always)]
+    fn push_leaf(&mut self, index: Index, shift: Shift, leaf: Leaf<T>) {
+        debug_assert!(shift.0 >= BITS_PER_LEVEL);
+
+        let mut branch = self;
+        let mut shift = shift;
+
+        while shift.0 > BITS_PER_LEVEL {
+            let i = index.child(shift);
+
+            let child = &mut branch.children[i];
+            let len = &mut branch.len;
+
+            let node = child.get_or_insert_with(|| {
+                *len += 1;
+
+                Node::Branch(Arc::new(Branch {
+                    children: new_branch!(),
+                    len: 0,
+                }))
+            });
+
+            branch = Arc::make_mut(node.as_mut_branch());
+            shift = shift.dec();
+        }
+
+        debug_assert_eq!(shift.0, BITS_PER_LEVEL);
+
+        branch.len += 1;
+        branch.children[index.child(shift)] = Some(Node::Leaf(Arc::new(leaf)));
+    }
+}
+
+impl<T: Clone + Debug> RelaxedBranch<T> {
+    #[inline(always)]
+    fn push_leaf(&mut self, index: Index, shift: Shift, leaf: Leaf<T>) {
+        debug_assert!(shift.0 >= BITS_PER_LEVEL);
+        debug_assert!(self.len > 0);
+
+        let mut branch = self;
+        let mut index = index;
+        let mut shift = shift;
+
+        loop {
+            let last_child_size = branch.sizes[branch.len - 1].unwrap();
+
+            let last_child_count = if branch.len > 1 {
+                last_child_size - branch.sizes[branch.len - 2].unwrap()
+            } else {
+                last_child_size
+            };
+
+            if shift.dec().capacity() > last_child_count {
+                branch.sizes[branch.len - 1] = Some(last_child_size + leaf.len);
+            } else {
+                branch.children[branch.len] = Some(Node::Branch(Arc::new(Branch {
+                    children: new_branch!(),
+                    len: 0,
+                })));
+
+                branch.sizes[branch.len] = Some(last_child_size + leaf.len);
+                branch.len += 1;
+            };
+
+            let branch_index = branch.len - 1;
+            let child_node = branch.children[branch_index].as_mut().unwrap();
+
+            if branch_index != 0 {
+                index = Index(index.0 - branch.sizes[branch_index - 1].unwrap());
+            }
+
+            shift = shift.dec();
+
+            branch = match child_node {
+                Node::RelaxedBranch(ref mut branch_arc) => Arc::make_mut(branch_arc),
+                Node::Branch(ref mut branch_arc) => {
+                    Arc::make_mut(branch_arc).push_leaf(index, shift, leaf);
+                    break;
+                }
+                Node::Leaf(..) => unreachable!(),
+            }
+        }
+    }
 }
 
 trait Take<T: Clone + Debug> {
@@ -627,34 +711,15 @@ impl<T: Clone + Debug> Node<T> {
     fn push(&mut self, index: Index, shift: Shift, leaf: Leaf<T>) {
         debug_assert!(shift.0 >= BITS_PER_LEVEL);
 
-        let mut node = self;
-        let mut shift = shift;
-
-        while shift.0 > BITS_PER_LEVEL {
-            let i = index.child(shift);
-
-            let branch = Arc::make_mut(node.as_mut_branch());
-            let child = &mut branch.children[i];
-            let len = &mut branch.len;
-
-            node = child.get_or_insert_with(|| {
-                *len += 1;
-
-                Node::Branch(Arc::new(Branch {
-                    children: new_branch!(),
-                    len: 0,
-                }))
-            });
-
-            shift = shift.dec();
+        match self {
+            Node::RelaxedBranch(ref mut branch_arc) => {
+                Arc::make_mut(branch_arc).push_leaf(index, shift, leaf);
+            }
+            Node::Branch(ref mut branch_arc) => {
+                Arc::make_mut(branch_arc).push_leaf(index, shift, leaf);
+            }
+            Node::Leaf(..) => unreachable!(),
         }
-
-        debug_assert_eq!(shift.0, BITS_PER_LEVEL);
-
-        let branch = Arc::make_mut(node.as_mut_branch());
-
-        branch.len += 1;
-        branch.children[index.child(shift)] = Some(Node::Leaf(Arc::new(leaf)));
     }
 
     fn pop(&mut self, index: Index, shift: Shift) -> Leaf<T> {
@@ -793,14 +858,25 @@ impl<T: Clone + Debug> RrbTree<T> {
                     self.shift.capacity()
                 );
 
-                let mut nodes = new_branch!();
-                nodes[0] = Some(root.clone());
+                let mut children = new_branch!();
+                children[0] = Some(root.clone());
 
                 self.shift = self.shift.inc();
-                *root = Node::Branch(Arc::new(Branch {
-                    children: nodes,
-                    len: 1,
-                }));
+
+                *root = match root {
+                    Node::RelaxedBranch(ref branch) => {
+                        let mut sizes = new_branch!();
+                        sizes[0] = branch.sizes[branch.len - 1];
+
+                        Node::RelaxedBranch(Arc::new(RelaxedBranch {
+                            children,
+                            sizes,
+                            len: 1,
+                        }))
+                    }
+                    Node::Branch(..) => Node::Branch(Arc::new(Branch { children, len: 1 })),
+                    Node::Leaf(..) => Node::Branch(Arc::new(Branch { children, len: 1 })),
+                }
             }
 
             root.push(
