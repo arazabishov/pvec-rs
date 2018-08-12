@@ -414,12 +414,6 @@ impl<T: Clone + Debug> Branch<T> {
     }
 
     #[inline(always)]
-    fn take(&mut self, i: usize) -> Option<Node<T>> {
-        self.len -= 1;
-        self.children[i].take()
-    }
-
-    #[inline(always)]
     fn is_full(&self) -> bool {
         self.len == BRANCH_FACTOR
     }
@@ -606,7 +600,7 @@ impl<T: Clone + Debug> Node<T> {
                 let child_node_l = child_l.as_mut().unwrap();
                 let child_node_r = child_r.take().unwrap();
 
-                let mut branch_c = if self_shift.0 == BITS_PER_LEVEL {
+                let mut branch_c = if self_shift.is_leaf_level() {
                     Arc::make_mut(child_node_l.as_mut_leaf()).merge(child_node_r.into_leaf().take())
                 } else {
                     child_node_l.merge(child_node_r, self_shift.dec(), that_shift.dec())
@@ -696,15 +690,6 @@ impl<T: Clone + Debug> Node<T> {
             unreachable!()
         }
     }
-
-    #[inline(always)]
-    fn into_branch(self) -> Arc<Branch<T>> {
-        if let Node::Branch(branch_arc) = self {
-            branch_arc
-        } else {
-            unreachable!()
-        }
-    }
 }
 
 impl<T: Clone + Debug> Node<T> {
@@ -732,7 +717,7 @@ impl<T: Clone + Debug> Node<T> {
         let branch = Arc::make_mut(self.as_mut_branch());
         let i = index.child(shift);
 
-        if shift.0 == BITS_PER_LEVEL {
+        if shift.is_leaf_level() {
             branch.len -= 1;
 
             let leaf_node = branch.children[i].take().unwrap();
@@ -803,25 +788,53 @@ impl<T: Clone + Debug> Node<T> {
     }
 
     fn get_mut(&mut self, index: Index, shift: Shift) -> Option<&mut T> {
+        #[inline(always)]
+        fn get_branch_index(sizes: &mut [Option<usize>], index: Index) -> usize {
+            // ToDo: use binary search to optimize index look-up.
+            // ToDo: measure linear search first.
+            let mut candidate = 0;
+
+            while sizes[candidate].unwrap() <= index.0 {
+                candidate += 1
+            }
+
+            candidate
+        }
+
         let mut node = self;
         let mut shift = shift;
+        let mut idx = index;
 
         loop {
             match *node {
-                Node::RelaxedBranch(..) => unreachable!(),
+                Node::RelaxedBranch(ref mut branch_arc) => {
+                    debug_assert!(shift.0 > 0);
+
+                    let branch = Arc::make_mut(branch_arc);
+
+                    let sizes = &mut branch.sizes;
+                    let branch_index = get_branch_index(sizes, idx);
+
+                    if branch_index != 0 {
+                        idx = Index(idx.0 - sizes[branch_index - 1].unwrap());
+                    }
+
+                    node = branch.children[branch_index].as_mut().unwrap();
+                    shift = shift.dec();
+                }
                 Node::Branch(ref mut branch_arc) => {
                     debug_assert!(shift.0 > 0);
 
                     let branch = Arc::make_mut(branch_arc);
 
-                    node = branch.children[index.child(shift)].as_mut().unwrap();
+                    node = branch.children[idx.child(shift)].as_mut().unwrap();
                     shift = shift.dec();
                 }
                 Node::Leaf(ref mut leaf_arc) => {
                     debug_assert_eq!(shift.0, 0);
 
                     let leaf = Arc::make_mut(leaf_arc);
-                    return leaf.elements[index.element()].as_mut();
+                    return leaf.elements[idx.element()].as_mut();
                 }
             }
         }
