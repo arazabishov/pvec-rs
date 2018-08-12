@@ -142,12 +142,6 @@ impl<T: Clone + Debug> PVec<T> {
                     let self_tail_len = self.tail_len;
 
                     self.tail_len = that_tail_len;
-
-                    // ToDo: when pushing a tail, sizes within the tree have to be re-calculated
-                    // ToDo: otherwise all table sizes will be invalid!
-
-                    // ToDo: check how this implementation works when RelaxedBranches are enforced!
-                    // ToDo: implement serde serializers for PVec for visualisation
                     self.tree.push(self_tail, self_tail_len);
                 }
 
@@ -269,6 +263,31 @@ mod tests {
 
         for i in 0..pvec_r.len() {
             println!("pvec_r: item={:?}", pvec_r.get(i))
+        }
+    }
+
+    #[test]
+    fn append_pvec() {
+        let mut vec_one = PVec::new();
+        let mut vec_two = PVec::new();
+
+        // ToDo: fix a crash when count of elements is not power of BRANCH_FACTOR (5000, 50)
+        for i in 0..5000 {
+            vec_one.push(i);
+            vec_two.push(i);
+        }
+
+        for j in 0..256 {
+            let mut vec_three = vec_two.clone();
+
+            println!("j={}", j);
+
+            for i in 0..16 {
+                println!("append-i={}", i);
+                vec_three.append(&mut vec_one.clone());
+            }
+
+            drop(vec_three)
         }
     }
 }

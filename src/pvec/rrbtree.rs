@@ -1493,10 +1493,60 @@ mod tests {
             println!("tree_r: item={:?}", tree_c.get(i))
         }
 
-        for i in 0..(BRANCH_FACTOR / 2) + 1 {
+        for _ in 0..(BRANCH_FACTOR / 2) + 1 {
             println!("tree_l.pop() -> item={:?}", tree_l.pop());
         }
 
         println!("tree_l={}", serde_json::to_string(&tree_l).unwrap());
+    }
+
+    #[test]
+    fn interleaving_push_append_operations_must_leave_tree_in_correct_state() {
+        fn create_tree(start: usize, count: usize) -> RrbTree<usize> {
+            let mut i = start;
+            let mut tree = RrbTree::new();
+
+            for _ in 0..count {
+                let mut items = new_branch!();
+
+                for j in 0..BRANCH_FACTOR {
+                    items[j] = Some(i);
+                    i += 1;
+                }
+
+                tree.push(items, BRANCH_FACTOR);
+            }
+
+            tree
+        }
+
+        // ToDo: fix a bug when append() doesn't happen in case if root is None
+        let mut tree = create_tree(0, BRANCH_FACTOR * BRANCH_FACTOR);
+
+        for i in 0..BRANCH_FACTOR * BRANCH_FACTOR {
+            let mut that = create_tree(tree.len(), BRANCH_FACTOR * BRANCH_FACTOR);
+
+            if i % 2 == 0 {
+                tree.append(&mut that);
+            } else {
+                let mut j = 0;
+                for _ in 0..that.len() / BRANCH_FACTOR {
+                    let mut items = new_branch!();
+
+                    for x in 0..BRANCH_FACTOR {
+                        items[x] = Some(*that.get(j).unwrap());
+                        j += 1;
+                    }
+
+                    tree.push(items, BRANCH_FACTOR);
+                }
+            }
+        }
+
+        for i in 0..tree.len() {
+            println!("tree: item={:?}", tree.get(i))
+        }
+
+        println!("tree={}", serde_json::to_string(&tree).unwrap());
     }
 }
