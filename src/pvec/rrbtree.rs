@@ -714,10 +714,11 @@ impl<T: Clone + Debug> Node<T> {
     fn remove(&mut self, index: Index, shift: Shift) -> (Leaf<T>, usize) {
         debug_assert!(shift.0 >= BITS_PER_LEVEL);
 
-        let branch = Arc::make_mut(self.as_mut_branch());
         let i = index.child(shift);
 
         if shift.is_leaf_level() {
+            let branch = Arc::make_mut(self.as_mut_branch());
+
             branch.len -= 1;
 
             let leaf_node = branch.children[i].take().unwrap();
@@ -725,17 +726,43 @@ impl<T: Clone + Debug> Node<T> {
 
             (leaf, branch.len)
         } else {
-            let (leaf, child_len) = branch.children[i]
-                .as_mut()
-                .map(|child| child.remove(index, shift.dec()))
-                .unwrap();
+            match self {
+                Node::RelaxedBranch(ref mut branch_arc) => {
+                    let branch = Arc::make_mut(branch_arc);
 
-            if child_len == 0 {
-                branch.len -= 1;
-                branch.children[i] = None;
+                    let (leaf, child_len) = branch.children[i]
+                        .as_mut()
+                        .map(|child| child.remove(index, shift.dec()))
+                        .unwrap();
+
+                    let size = branch.sizes[i].as_mut().unwrap();
+                    *size -= leaf.len;
+
+                    if child_len == 0 {
+                        branch.len -= 1;
+                        branch.children[i] = None;
+                        branch.sizes[i] = None;
+                    }
+
+                    (leaf, branch.len)
+                }
+                Node::Branch(ref mut branch_arc) => {
+                    let branch = Arc::make_mut(branch_arc);
+
+                    let (leaf, child_len) = branch.children[i]
+                        .as_mut()
+                        .map(|child| child.remove(index, shift.dec()))
+                        .unwrap();
+
+                    if child_len == 0 {
+                        branch.len -= 1;
+                        branch.children[i] = None;
+                    }
+
+                    (leaf, branch.len)
+                }
+                Node::Leaf(..) => unreachable!(),
             }
-
-            (leaf, branch.len)
         }
     }
 
@@ -952,8 +979,15 @@ impl<T: Clone + Debug> RrbTree<T> {
 
             debug!("RrbTree::pop() -> trying to lower the tree");
 
-            let branch = Arc::make_mut(root.as_mut_branch());
-            *root = branch.children[0].take().unwrap();
+            *root = match root {
+                Node::RelaxedBranch(ref mut branch_arc) => {
+                    Arc::make_mut(branch_arc).children[0].take().unwrap()
+                }
+                Node::Branch(ref mut branch_arc) => {
+                    Arc::make_mut(branch_arc).children[0].take().unwrap()
+                }
+                Node::Leaf(..) => unreachable!(),
+            };
         }
 
         leaf.elements
@@ -1458,5 +1492,11 @@ mod tests {
         for i in 0..tree_c.len() {
             println!("tree_r: item={:?}", tree_c.get(i))
         }
+
+        for i in 0..(BRANCH_FACTOR / 2) + 1 {
+            println!("tree_l.pop() -> item={:?}", tree_l.pop());
+        }
+
+        println!("tree_l={}", serde_json::to_string(&tree_l).unwrap());
     }
 }
