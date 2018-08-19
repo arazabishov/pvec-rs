@@ -203,16 +203,21 @@ impl<T: Clone + Debug> Leaf<T> {
     }
 
     #[inline(always)]
-    fn rebalance(merged: Vec<Node<T>>) -> Node<T> {
+    fn rebalance(merged: Vec<Node<T>>, shift: Shift) -> Node<T> {
         #[inline(always)]
-        fn check_subtree<P: Clone + Debug>(root: &mut Branch<P>, subtree: &mut Branch<P>) {
+        fn check_subtree<P: Clone + Debug>(
+            root: &mut BranchBuilder<P>,
+            subtree: &mut BranchBuilder<P>,
+        ) {
             if subtree.is_full() {
-                root.push(Node::Branch(Arc::new(mem::replace(subtree, Branch::new()))));
+                root.push(subtree.build());
             }
         }
 
-        let mut new_root = Branch::new();
-        let mut new_subtree = Branch::new();
+        let builder_subtree_shift = shift.dec();
+
+        let mut new_root = BranchBuilder::new(shift);
+        let mut new_subtree = BranchBuilder::new(builder_subtree_shift);
         let mut new_leaf = Leaf::new();
 
         for old_node in merged {
@@ -242,11 +247,11 @@ impl<T: Clone + Debug> Leaf<T> {
         }
 
         if !new_subtree.is_empty() {
-            new_root.push(Node::Branch(Arc::new(new_subtree)));
+            new_root.push(new_subtree.build());
         }
 
         debug!("Leaf::rebalance - new_root={:?}", new_root);
-        Node::Branch(Arc::new(new_root))
+        new_root.build()
     }
 }
 
@@ -466,7 +471,10 @@ impl<T: Clone + Debug> RelaxedBranch<T> {
         let mut index = index;
         let mut shift = shift;
 
-        loop {
+        // ToDo: something is wrong here (shift has to be decremented after while loop)
+        shift = shift.dec();
+
+        while shift.0 > BITS_PER_LEVEL {
             let last_child_size = branch.sizes[branch.len - 1].unwrap();
 
             let last_child_count = if branch.len > 1 {
@@ -475,7 +483,7 @@ impl<T: Clone + Debug> RelaxedBranch<T> {
                 last_child_size
             };
 
-            if shift.dec().capacity() > last_child_count {
+            if shift.capacity() > last_child_count {
                 branch.sizes[branch.len - 1] = Some(last_child_size + leaf.len);
             } else {
                 branch.children[branch.len] = Some(Node::Branch(Arc::new(Branch {
@@ -494,17 +502,30 @@ impl<T: Clone + Debug> RelaxedBranch<T> {
                 index = Index(index.0 - branch.sizes[branch_index - 1].unwrap());
             }
 
-            shift = shift.dec();
-
             branch = match child_node {
                 Node::RelaxedBranch(ref mut branch_arc) => Arc::make_mut(branch_arc),
                 Node::Branch(ref mut branch_arc) => {
                     Arc::make_mut(branch_arc).push_leaf(index, shift, leaf);
-                    break;
+                    return;
                 }
                 Node::Leaf(..) => unreachable!(),
             }
         }
+
+        debug_assert_eq!(shift.0, BITS_PER_LEVEL);
+
+        // ToDo: update sizes of the branch you're about to modify
+
+        let branch_index = index.child(shift);
+
+        if branch_index == 0 {
+            branch.sizes[branch_index] = Some(leaf.len);
+        } else {
+            branch.sizes[branch_index] = Some(branch.sizes[branch_index - 1].unwrap() + leaf.len);
+        }
+
+        branch.len += 1;
+        branch.children[branch_index] = Some(Node::Leaf(Arc::new(leaf)));
     }
 }
 
@@ -656,7 +677,7 @@ impl<T: Clone + Debug> Node<T> {
         let merged = Node::merge_all(node_l, node_c, node_r);
 
         if shift.is_leaf_level() {
-            Leaf::rebalance(merged)
+            Leaf::rebalance(merged, shift)
         } else {
             BranchBuilder::rebalance(merged, shift)
         }
@@ -773,8 +794,13 @@ impl<T: Clone + Debug> Node<T> {
             // ToDo: measure linear search first.
             let mut candidate = 0;
 
-            while sizes[candidate].unwrap() <= index.0 {
-                candidate += 1
+            while candidate < BRANCH_FACTOR - 1 && sizes[candidate].unwrap() <= index.0 {
+                candidate += 1;
+
+                if sizes[candidate].is_none() {
+                    candidate -= 1;
+                    break;
+                }
             }
 
             candidate
@@ -1044,8 +1070,7 @@ impl<T: Clone + Debug> RrbTree<T> {
     }
 }
 
-#[cfg(test)]
-mod tests {
+mod json {
     extern crate serde;
     extern crate serde_json;
 
@@ -1072,20 +1097,22 @@ mod tests {
                                 "sizes": relaxed_branch.sizes,
                                 "refs": Arc::strong_count(relaxed_branch),
                                 "len": relaxed_branch.len
-                            }),
+                        }),
                         Node::Branch(ref branch) => json!({
                                 "branch": child,
                                 "refs": Arc::strong_count(branch),
                                 "len": branch.len
-                            }),
+                        }),
                         Node::Leaf(ref leaf) => json!({
                                 "leaf": child,
                                 "refs": Arc::strong_count(leaf),
                                 "len": leaf.len
-                            }),
+                        }),
                     };
 
                     children_refs.push(child_json_value);
+                } else {
+                    children_refs.push(json!(null));
                 }
             }
 
@@ -1117,20 +1144,22 @@ mod tests {
                                 "sizes": relaxed_branch.sizes,
                                 "refs": Arc::strong_count(relaxed_branch),
                                 "len": relaxed_branch.len
-                            }),
+                        }),
                         Node::Branch(ref branch) => json!({
                                 "branch": child,
                                 "refs": Arc::strong_count(branch),
                                 "len": branch.len
-                            }),
+                        }),
                         Node::Leaf(ref leaf) => json!({
                                 "leaf": child,
                                 "refs": Arc::strong_count(leaf),
                                 "len": leaf.len
-                            }),
+                        }),
                     };
 
                     children_refs.push(child_json_value);
+                } else {
+                    children_refs.push(json!(null));
                 }
             }
 
@@ -1217,6 +1246,15 @@ mod tests {
             serde_state.end()
         }
     }
+}
+
+#[cfg(test)]
+mod tests {
+    extern crate serde;
+    extern crate serde_json;
+
+    use super::RrbTree;
+    use super::BRANCH_FACTOR;
 
     #[test]
     fn serialized_state_should_match_to_valid_rb_tree_after_clone() {
@@ -1541,6 +1579,42 @@ mod tests {
                     tree.push(items, BRANCH_FACTOR);
                 }
             }
+        }
+
+        for i in 0..tree.len() {
+            println!("tree: item={:?}", tree.get(i))
+        }
+
+        println!("tree={}", serde_json::to_string(&tree).unwrap());
+    }
+
+    #[test]
+    fn some_test() {
+        fn create_tree(start: usize) -> (RrbTree<usize>, usize) {
+            let mut tree = RrbTree::new();
+
+            let mut items_one = [
+                Some(start),
+                Some(start + 1),
+                Some(start + 2),
+                Some(start + 3),
+            ];
+            let mut items_two = [Some(start + 4), None, None, None];
+
+            tree.push(items_one, 4);
+            tree.push(items_two, 1);
+
+            (tree, start + 5)
+        }
+
+        let (mut tree, mut tree_i) = create_tree(0);
+
+        for i in 0..1024 {
+            let (mut tree_two, tree_two_i) = create_tree(tree_i);
+
+            tree.append(&mut tree_two);
+
+            tree_i = tree_two_i;
         }
 
         for i in 0..tree.len() {

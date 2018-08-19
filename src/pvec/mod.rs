@@ -109,29 +109,26 @@ impl<T: Clone + Debug> PVec<T> {
                         self.tail_len += 1;
                     }
                 } else {
-                    let mut self_tail_i = self.tail_len;
+                    let mut self_tail = mem::replace(&mut self.tail, new_branch!());
+                    let mut self_tail_i = mem::replace(&mut self.tail_len, 0);
                     let mut that_tail_i = 0;
 
                     while self_tail_i < BRANCH_FACTOR && that_tail_i < that_tail_len {
-                        self.tail[self_tail_i] = that_tail[that_tail_i].take();
+                        self_tail[self_tail_i] = that_tail[that_tail_i].take();
 
                         self_tail_i += 1;
                         that_tail_i += 1;
                     }
 
-                    let self_tail = mem::replace(&mut self.tail, new_branch!());
-                    let self_tail_len = self.tail_len;
+                    self.tree.push(self_tail, self_tail_i);
 
-                    self.tail_len = 0;
-
-                    for i in 0..that_tail_len {
+                    let that_tail_elements_left = that_tail_len - that_tail_i;
+                    for i in 0..that_tail_elements_left {
                         self.tail[i] = that_tail[that_tail_i].take();
-                        self.tail_len += 1;
-
                         that_tail_i += 1;
                     }
 
-                    self.tree.push(self_tail, self_tail_len);
+                    self.tail_len = that_tail_elements_left;
                 }
             } else {
                 if self.tail_len == 0 {
@@ -183,8 +180,35 @@ impl<T: Clone + Debug> ops::IndexMut<usize> for PVec<T> {
     }
 }
 
+mod json {
+    extern crate serde;
+    extern crate serde_json;
+
+    use self::serde::ser::{Serialize, SerializeStruct, Serializer};
+    use super::PVec;
+
+    impl<T> Serialize for PVec<T>
+    where
+        T: Serialize,
+    {
+        fn serialize<S>(&self, serializer: S) -> Result<<S>::Ok, <S>::Error>
+        where
+            S: Serializer,
+        {
+            let mut serde_state = serializer.serialize_struct("PVec", 1)?;
+            serde_state.serialize_field("tree", &self.tree)?;
+            serde_state.serialize_field("tail", &self.tail)?;
+            serde_state.serialize_field("tail_len", &self.tail_len)?;
+            serde_state.end()
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
+    extern crate serde;
+    extern crate serde_json;
+
     use super::PVec;
     use super::BRANCH_FACTOR;
 
@@ -266,28 +290,120 @@ mod tests {
         }
     }
 
+    fn append_vec_must_maintain_correct_internal_structure(vec_size: usize) {
+        println!("vec_size={}", vec_size);
+
+        let mut vec_one = PVec::new();
+        let mut vec_two_item = 0;
+
+        for i in 0..1024 {
+            // println!("i={}", i);
+
+            let mut vec_two = PVec::new();
+
+            for _ in 0..vec_size {
+                vec_two.push(vec_two_item);
+                vec_two_item += 1;
+            }
+
+            assert_eq!(vec_two.len(), vec_size);
+
+            vec_one.append(&mut vec_two);
+
+            assert_eq!(vec_two.len(), 0);
+            assert_eq!(vec_one.len(), vec_two_item);
+
+            if i == 2 {
+                println!("vec_one={}", serde_json::to_string(&vec_one).unwrap());
+            }
+
+            for i in 0..vec_one.len() {
+                assert_eq!(*vec_one.get(i).unwrap(), i);
+            }
+        }
+
+        assert_eq!(vec_one.len(), vec_two_item);
+
+        println!("vec_one.len()={}", vec_one.len());
+        println!(
+            "vec_one -> self={}",
+            serde_json::to_string(&vec_one).unwrap()
+        );
+
+        // todo: make assertions regarding the state of both vectors, not just one
+        // todo: add a test case where both vectors (or either of them) are empty and appended one to another
+        // todo: add a test case with cloning both vectors in process of modification
+    }
+
+    #[test]
+    fn append_vec_must_maintain_correct_internal_structure_for_different_sizes() {
+        // todo: shit hits the fan when vec_size is BRANCH_FACTOR + 1 (i.e. 5 when BRANCH_FACTOR is 4)
+
+        append_vec_must_maintain_correct_internal_structure(5);
+
+        //        for vec_size in 0..128 {
+        //            append_vec_must_maintain_correct_internal_structure(vec_size);
+        //        }
+    }
+
     #[test]
     fn append_pvec() {
         let mut vec_one = PVec::new();
         let mut vec_two = PVec::new();
 
-        // ToDo: fix a crash when count of elements is not power of BRANCH_FACTOR (5000, 50)
-        for i in 0..5000 {
+        // ToDo: BRANCH_FACTOR == 32: crashes at 50 with called `Option::unwrap()` on a `None` value
+        // ToDo: BRANCH_FACTOR == 32: crashes at 1000 with unreachable code
+        // ToDo: BRANCH_FACTOR == 32: crashes at 5000 with `assertion failed: shift.0 >= BITS_PER_LEVEL`
+
+        // ToDo: BRANCH_FACTOR == 4: crashes at 9 with unreachable code (sort of fixed)
+        // ToDo: BRANCH_FACTOR == 4: crashes at 33 with `assertion failed: shift.0 >= BITS_PER_LEVEL` (sort of fixed)
+
+        // ToDo: BRANCH_FACTOR == 4: crashes at 70 with 'called `Option::unwrap()` on a `None` value
+        // ToDo: (pay attention to vec_two_before_append, it has invalid leaves after rebalancing)
+
+        // Weird observation when running test on size 21 is that there is a RelaxedBranch created
+        // for completely balanced node.. This might happen when tree starts from RelaxedBranch, and
+        // then more leaves are pushed down into it and it becomes full. It is still strange though...
+
+        // 3, 21
+        for i in 0..70 {
             vec_one.push(i);
             vec_two.push(i);
         }
 
-        for j in 0..256 {
-            let mut vec_three = vec_two.clone();
+        // ToDo: patch get_mut as well as you did the get()
 
-            println!("j={}", j);
+        // println!("vec_one={}", serde_json::to_string(&vec_one).unwrap());
+        // println!("vec_two={}", serde_json::to_string(&vec_two).unwrap());
+
+        for j in 0..256 {
+            // println!("******** j={}", j);
 
             for i in 0..16 {
-                println!("append-i={}", i);
-                vec_three.append(&mut vec_one.clone());
-            }
+                // println!("######## append-i={}", i);
 
-            drop(vec_three)
+                vec_two.append(&mut vec_one.clone());
+
+                // println!("vec_two={}", serde_json::to_string(&vec_two).unwrap());
+                //
+                //                if i == 1 {
+                //                    break;
+                //                }
+
+                // println!("vec_two={}", serde_json::to_string(&vec_two).unwrap());
+            }
+            //
+            //            if j == 0 {
+            //                break;
+            //            }
+        }
+
+        println!("vec_two_len={}", vec_two.len());
+        // println!("vec_two={}", serde_json::to_string(&vec_two).unwrap());
+
+        for i in 0..vec_two.len() {
+            // vec_two.get(i).unwrap();
+            // println!("vec_two.get({}) -> {:?}", i, vec_two.get(i));
         }
     }
 }
