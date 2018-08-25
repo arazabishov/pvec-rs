@@ -146,13 +146,15 @@ impl<T: Clone + Debug + Serialize> PVec<T> {
                     self.tree.push(self_tail, self_tail_len);
                 }
 
-//                println!(
-//                    "self_before_append={}",
-//                    serde_json::to_string(self).unwrap()
-//                );
-
                 self.tree.append(&mut that.tree);
             }
+        }
+
+        if self.tail_len == BRANCH_FACTOR {
+            let tail = mem::replace(&mut self.tail, new_branch!());
+
+            self.tree.push(tail, self.tail_len);
+            self.tail_len = 0;
         }
     }
 }
@@ -306,18 +308,26 @@ mod tests {
         let mut vec_two_item = 0;
 
         for i in 0..1024 {
-            let mut vec_two = PVec::new();
+            if i % 2 == 0 {
+                let mut vec_two = PVec::new();
 
-            for _ in 0..vec_size {
-                vec_two.push(vec_two_item);
-                vec_two_item += 1;
+                for _ in 0..vec_size {
+                    vec_two.push(vec_two_item);
+                    vec_two_item += 1;
+                }
+
+                assert_eq!(vec_two.len(), vec_size);
+
+                vec_one.append(&mut vec_two);
+
+                assert_eq!(vec_two.len(), 0);
+            } else {
+                for _ in 0..(vec_size + vec_size) {
+                    vec_one.push(vec_two_item);
+                    vec_two_item += 1;
+                }
             }
 
-            assert_eq!(vec_two.len(), vec_size);
-
-            vec_one.append(&mut vec_two);
-
-            assert_eq!(vec_two.len(), 0);
             assert_eq!(vec_one.len(), vec_two_item);
 
             for i in 0..vec_one.len() {
@@ -334,44 +344,8 @@ mod tests {
 
     #[test]
     fn append_pvec_must_maintain_correct_internal_structure_for_different_sizes() {
-        for vec_size in 0..128 {
+        for vec_size in 0..40 {
             append_pvec_must_maintain_correct_internal_structure(vec_size);
-        }
-    }
-
-    fn append_vec_must_maintain_correct_internal_structure(vec_size: usize) {
-        println!("vec_size={}", vec_size);
-
-        let mut vec_one = Vec::new();
-        let mut vec_two_item = 0;
-
-        for i in 0..1024 {
-            let mut vec_two = Vec::new();
-
-            for _ in 0..vec_size {
-                vec_two.push(vec_two_item);
-                vec_two_item += 1;
-            }
-
-            assert_eq!(vec_two.len(), vec_size);
-
-            vec_one.append(&mut vec_two);
-
-            assert_eq!(vec_two.len(), 0);
-            assert_eq!(vec_one.len(), vec_two_item);
-
-            for i in 0..vec_one.len() {
-                assert_eq!(*vec_one.get(i).unwrap(), i);
-            }
-        }
-
-        assert_eq!(vec_one.len(), vec_two_item);
-    }
-
-    #[test]
-    fn append_vec_must_maintain_correct_internal_structure_for_different_sizes() {
-        for vec_size in 0..128 {
-            append_vec_must_maintain_correct_internal_structure(vec_size);
         }
     }
 
