@@ -4,12 +4,15 @@ version = "0.1.0"
 authors = ["Araz Abishov <araz@abishov.com>"]
 
 [dependencies]
+serde = { version = "1.0.73", features = ["rc"] }
+serde_json = "1.0.26"
+serde_derive = "1.0.73"
 
 [dev-dependencies]
 rand = "0.3.14"
 dogged = "0.2.0"
 im = { git = "https://github.com/bodil/im-rs" }
 
-serde = { version = "1.0.66", features = ["rc"] }
-serde_json = "1.0.20"
-serde_derive = "1.0.66"
+serde = { version = "1.0.73", features = ["rc"] }
+serde_json = "1.0.26"
+serde_derive = "1.0.73"

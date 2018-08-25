@@ -646,16 +646,16 @@ fn append_im_vec(bencher: &mut test_crate::Bencher, n: usize) {
 }
 
 #[bench]
-fn append_vec_32000(bencher: &mut test_crate::Bencher) {
-    append_vec(bencher, 32000);
+fn append_vec_500000(bencher: &mut test_crate::Bencher) {
+    append_vec(bencher, 500000);
 }
 
 #[bench]
-fn append_pvec_32000(bencher: &mut test_crate::Bencher) {
-    append_pvec(bencher, 32000);
+fn append_pvec_500000(bencher: &mut test_crate::Bencher) {
+    append_pvec(bencher, 500000);
 }
 
 #[bench]
-fn append_im_vec_32000(bencher: &mut test_crate::Bencher) {
-    append_im_vec(bencher, 32000);
+fn append_im_vec_500000(bencher: &mut test_crate::Bencher) {
+    append_im_vec(bencher, 500000);
 }
