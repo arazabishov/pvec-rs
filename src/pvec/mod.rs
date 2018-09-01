@@ -1,9 +1,9 @@
 extern crate serde;
 extern crate serde_json;
 
-use pvec::rrbtree::BRANCH_FACTOR;
-use pvec::rrbtree::RrbTree;
 use self::serde::ser::Serialize;
+use pvec::rrbtree::RrbTree;
+use pvec::rrbtree::BRANCH_FACTOR;
 use std::fmt::Debug;
 use std::mem;
 use std::ops;
@@ -195,16 +195,16 @@ mod json {
     extern crate serde;
     extern crate serde_json;
 
-    use self::serde::ser::{Serialize, Serializer, SerializeStruct};
+    use self::serde::ser::{Serialize, SerializeStruct, Serializer};
     use super::PVec;
 
     impl<T> Serialize for PVec<T>
-        where
-            T: Serialize,
+    where
+        T: Serialize,
     {
         fn serialize<S>(&self, serializer: S) -> Result<<S>::Ok, <S>::Error>
-            where
-                S: Serializer,
+        where
+            S: Serializer,
         {
             let mut serde_state = serializer.serialize_struct("PVec", 1)?;
             serde_state.serialize_field("tree", &self.tree)?;
@@ -220,8 +220,8 @@ mod tests {
     extern crate serde;
     extern crate serde_json;
 
-    use super::BRANCH_FACTOR;
     use super::PVec;
+    use super::BRANCH_FACTOR;
 
     #[test]
     fn concat_must_return_expected_result() {
@@ -335,6 +335,8 @@ mod tests {
             }
         }
 
+        println!("vec_one -> shift={}", vec_one.tree.height());
+
         assert_eq!(vec_one.len(), vec_two_item);
 
         // todo: make assertions regarding the state of both vectors, not just one
@@ -344,65 +346,66 @@ mod tests {
 
     #[test]
     fn append_pvec_must_maintain_correct_internal_structure_for_different_sizes() {
-        for vec_size in 0..40 {
+        for vec_size in 0..64 {
             append_pvec_must_maintain_correct_internal_structure(vec_size);
         }
     }
+
+    #[test]
+    fn some_test() {
+        let mut vec_two_item = 0;
+        let mut vec_two = PVec::new();
+
+        for i in 0..32 {
+            if i % 2 == 0 || i % 3 == 0 {
+                for _ in 0..357 {
+                    vec_two.push(vec_two_item);
+                    vec_two_item += 1;
+                }
+            } else {
+                let mut vec_one = PVec::new();
+
+                for _ in 0..50000 {
+                    vec_one.push(vec_two_item);
+                    vec_two_item += 1;
+                }
+
+                vec_two.append(&mut vec_one);
+            }
+
+            for i in 0..vec_two.len() {
+                assert_eq!(*vec_two.get(i).unwrap(), i);
+            }
+        }
+    }
+
+    // ToDo: BRANCH_FACTOR == 32: crashes at 50 with called `Option::unwrap()` on a `None` value
+    // ToDo: BRANCH_FACTOR == 32: crashes at 1000 with unreachable code
+    // ToDo: BRANCH_FACTOR == 32: crashes at 5000 with `assertion failed: shift.0 >= BITS_PER_LEVEL`
+
+    // ToDo: BRANCH_FACTOR == 4: crashes at 9 with unreachable code (sort of fixed)
+    // ToDo: BRANCH_FACTOR == 4: crashes at 33 with `assertion failed: shift.0 >= BITS_PER_LEVEL` (sort of fixed)
+
+    // ToDo: BRANCH_FACTOR == 4: crashes at 70 with 'called `Option::unwrap()` on a `None` value
+    // ToDo: (pay attention to vec_two_before_append, it has invalid leaves after rebalancing)
+
+    // ToDo: patch get_mut as well as you did the get()
 
     #[test]
     fn append_pvec() {
         let mut vec_one = PVec::new();
         let mut vec_two = PVec::new();
 
-        // ToDo: BRANCH_FACTOR == 32: crashes at 50 with called `Option::unwrap()` on a `None` value
-        // ToDo: BRANCH_FACTOR == 32: crashes at 1000 with unreachable code
-        // ToDo: BRANCH_FACTOR == 32: crashes at 5000 with `assertion failed: shift.0 >= BITS_PER_LEVEL`
-
-        // ToDo: BRANCH_FACTOR == 4: crashes at 9 with unreachable code (sort of fixed)
-        // ToDo: BRANCH_FACTOR == 4: crashes at 33 with `assertion failed: shift.0 >= BITS_PER_LEVEL` (sort of fixed)
-
-        // ToDo: BRANCH_FACTOR == 4: crashes at 70 with 'called `Option::unwrap()` on a `None` value
-        // ToDo: (pay attention to vec_two_before_append, it has invalid leaves after rebalancing)
-
-        // Weird observation when running test on size 21 is that there is a RelaxedBranch created
-        // for completely balanced node.. This might happen when tree starts from RelaxedBranch, and
-        // then more leaves are pushed down into it and it becomes full. It is still strange though...
-
-        // 3, 21
         for i in 0..70 {
             vec_one.push(i);
             vec_two.push(i);
         }
 
-        // ToDo: patch get_mut as well as you did the get()
-
-        // println!("vec_one={}", serde_json::to_string(&vec_one).unwrap());
-        // println!("vec_two={}", serde_json::to_string(&vec_two).unwrap());
-
         for j in 0..256 {
-            // println!("******** j={}", j);
-
             for i in 0..16 {
-                // println!("######## append-i={}", i);
-
                 vec_two.append(&mut vec_one.clone());
-
-                // println!("vec_two={}", serde_json::to_string(&vec_two).unwrap());
-                //
-                //                if i == 1 {
-                //                    break;
-                //                }
-
-                // println!("vec_two={}", serde_json::to_string(&vec_two).unwrap());
             }
-            //
-            //            if j == 0 {
-            //                break;
-            //            }
         }
-
-        // println!("vec_two_len={}", vec_two.len());
-        // println!("vec_two={}", serde_json::to_string(&vec_two).unwrap());
 
         for i in 0..vec_two.len() {
             // vec_two.get(i).unwrap();

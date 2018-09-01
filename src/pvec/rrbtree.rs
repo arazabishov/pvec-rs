@@ -472,7 +472,13 @@ impl<T: Clone + Debug> Branch<T> {
 
 impl<T: Clone + Debug> RelaxedBranch<T> {
     #[inline(always)]
-    fn push_leaf(&mut self, index: Index, shift: Shift, shift_new_branch: Option<Shift>, leaf: Leaf<T>) {
+    fn push_leaf(
+        &mut self,
+        index: Index,
+        shift: Shift,
+        shift_new_branch: Option<Shift>,
+        leaf: Leaf<T>,
+    ) {
         debug_assert!(shift.0 >= BITS_PER_LEVEL);
         debug_assert!(self.len > 0);
 
@@ -501,7 +507,12 @@ impl<T: Clone + Debug> RelaxedBranch<T> {
             if let Some(ref size) = child_node_size {
                 branch.sizes[branch_index] = Some(size + leaf.len);
             } else {
-                branch.sizes[branch_index] = Some(leaf.len);
+                if branch_index == 0 {
+                    branch.sizes[branch_index] = Some(leaf.len);
+                } else {
+                    branch.sizes[branch_index] =
+                        Some(branch.sizes[branch_index - 1].unwrap() + leaf.len);
+                }
             }
 
             let node = child_node.get_or_insert_with(|| {
@@ -574,7 +585,7 @@ impl<T: Clone + Debug> Node<T> {
     fn is_relaxed_node(&self) -> bool {
         match self {
             Node::RelaxedBranch(..) => true,
-            Node::Branch(..) => false,
+            Node::Branch(ref branch) => branch.len != BRANCH_FACTOR,
             Node::Leaf(ref leaf) => leaf.len != BRANCH_FACTOR,
         }
     }
@@ -626,9 +637,15 @@ impl<T: Clone + Debug> Node<T> {
                 }
                 Node::Branch(ref branch) => {
                     debug_assert!(shift.0 > 0);
-                    return (!(idx.0 >> shift.inc().0 > 0), None);
+                    let branch_has_enough_capacity = !(idx.0 >> shift.inc().0 > 0);
+
+                    if !branch_has_enough_capacity && shift_has_enough_capacity {
+                        return (shift_has_enough_capacity, Some(shift_new_branch));
+                    }
+
+                    return (branch_has_enough_capacity, None);
                 }
-                Node::Leaf(..) => unreachable!()
+                Node::Leaf(..) => unreachable!(),
             }
         }
 
@@ -969,31 +986,24 @@ impl<T: Clone + Debug + Serialize> RrbTree<T> {
         }
     }
 
+    pub fn height(&self) -> usize {
+        self.shift.0
+    }
+
     #[cold]
     pub fn push(&mut self, tail: [Option<T>; BRANCH_FACTOR], tail_len: usize) {
-        debug!("---------------------------------------------------------------------------");
-        debug!("RrbTree::push(tail={:?})", tail);
-
-        // println!("tree_before_root_push={}", serde_json::to_string(self).unwrap());
+        // todo: add assert statements to make sure that height of
+        // todo: the tree doesn't grow excessively
+        // debug_assert!(self.shift.0 < 18);
 
         let shift = self.shift;
         let root_len = self.root_len;
 
         if let Some(ref mut root) = self.root {
-            // println!("root.has_enough_capacity() -> {}", root.has_enough_capacity(shift, root_len));
-
-            let (
-                shift_has_enough_capacity,
-                shift_new_branch
-            ) = root.has_enough_capacity(shift, root_len);
+            let (shift_has_enough_capacity, shift_new_branch) =
+                root.has_enough_capacity(shift, root_len);
 
             if !shift_has_enough_capacity {
-                // println!("=====================================================");
-                debug!(
-                    "RrbTree::push() - growing tree; capacity={}",
-                    self.shift.capacity()
-                );
-
                 let mut new_children = new_branch!();
                 new_children[0] = Some(root.clone());
 
@@ -1005,12 +1015,10 @@ impl<T: Clone + Debug + Serialize> RrbTree<T> {
                         new_sizes[0] = branch.sizes[branch.len - 1];
                         new_sizes[1] = branch.sizes[branch.len - 1];
 
-                        new_children[1] = Some(Node::Branch(Arc::new(
-                            Branch {
-                                children: new_branch!(),
-                                len: 0,
-                            }
-                        )));
+                        new_children[1] = Some(Node::Branch(Arc::new(Branch {
+                            children: new_branch!(),
+                            len: 0,
+                        })));
 
                         Node::RelaxedBranch(Arc::new(RelaxedBranch {
                             children: new_children,
@@ -1018,8 +1026,14 @@ impl<T: Clone + Debug + Serialize> RrbTree<T> {
                             len: 2,
                         }))
                     }
-                    Node::Branch(..) => Node::Branch(Arc::new(Branch { children: new_children, len: 1 })),
-                    Node::Leaf(..) => Node::Branch(Arc::new(Branch { children: new_children, len: 1 })),
+                    Node::Branch(..) => Node::Branch(Arc::new(Branch {
+                        children: new_children,
+                        len: 1,
+                    })),
+                    Node::Leaf(..) => Node::Branch(Arc::new(Branch {
+                        children: new_children,
+                        len: 1,
+                    })),
                 }
             }
 
@@ -1040,65 +1054,63 @@ impl<T: Clone + Debug + Serialize> RrbTree<T> {
         }
 
         self.root_len.0 += tail_len;
-
-        // println!("tree_after_root_push={}", serde_json::to_string(self).unwrap());
     }
 
     pub fn pop(&mut self) -> [Option<T>; BRANCH_FACTOR] {
         unimplemented!("todo: update pop() function with root_len_max absent");
 
-//        debug!("---------------------------------------------------------------------------");
-//        debug!(
-//            "RrbTree::pop() capacity={} root_len_max={} shift={}",
-//            self.shift.capacity(),
-//            self.root_len_max.0,
-//            self.shift.0
-//        );
-//
-//        self.root_len_max.0 -= BRANCH_FACTOR;
-//
-//        let leaf = self
-//            .root
-//            .as_mut()
-//            .unwrap()
-//            .pop(self.root_len_max, self.shift);
-//
-//        self.root_len.0 -= leaf.len;
-//
-//        debug!("RrbTree::pop() -> ({:?})", leaf.elements);
-//        debug!("RrbTree::pop() -> len ({:?})", leaf.len);
-//
-//        if self.root_len_max.0 == 0 {
-//            self.root = None;
-//            self.shift = self.shift.dec();
-//
-//            debug!("RrbTree::lower_trie -> ()");
-//
-//            return leaf.elements;
-//        }
-//
-//        let root = self.root.as_mut().unwrap();
-//
-//        debug!("RrbTree::pop() -> self.shift.dec().capacity()={} self.root_len_max + BRANCH_FACTOR={} shift={}",
-//               self.shift.dec().capacity(), self.root_len_max.0 + BRANCH_FACTOR, self.shift.0);
-//
-//        if self.shift.dec().capacity() == self.root_len_max.0 + BRANCH_FACTOR {
-//            self.shift = self.shift.dec();
-//
-//            debug!("RrbTree::pop() -> trying to lower the tree");
-//
-//            *root = match root {
-//                Node::RelaxedBranch(ref mut branch_arc) => {
-//                    Arc::make_mut(branch_arc).children[0].take().unwrap()
-//                }
-//                Node::Branch(ref mut branch_arc) => {
-//                    Arc::make_mut(branch_arc).children[0].take().unwrap()
-//                }
-//                Node::Leaf(..) => unreachable!(),
-//            };
-//        }
-//
-//        leaf.elements
+        //        debug!("---------------------------------------------------------------------------");
+        //        debug!(
+        //            "RrbTree::pop() capacity={} root_len_max={} shift={}",
+        //            self.shift.capacity(),
+        //            self.root_len_max.0,
+        //            self.shift.0
+        //        );
+        //
+        //        self.root_len_max.0 -= BRANCH_FACTOR;
+        //
+        //        let leaf = self
+        //            .root
+        //            .as_mut()
+        //            .unwrap()
+        //            .pop(self.root_len_max, self.shift);
+        //
+        //        self.root_len.0 -= leaf.len;
+        //
+        //        debug!("RrbTree::pop() -> ({:?})", leaf.elements);
+        //        debug!("RrbTree::pop() -> len ({:?})", leaf.len);
+        //
+        //        if self.root_len_max.0 == 0 {
+        //            self.root = None;
+        //            self.shift = self.shift.dec();
+        //
+        //            debug!("RrbTree::lower_trie -> ()");
+        //
+        //            return leaf.elements;
+        //        }
+        //
+        //        let root = self.root.as_mut().unwrap();
+        //
+        //        debug!("RrbTree::pop() -> self.shift.dec().capacity()={} self.root_len_max + BRANCH_FACTOR={} shift={}",
+        //               self.shift.dec().capacity(), self.root_len_max.0 + BRANCH_FACTOR, self.shift.0);
+        //
+        //        if self.shift.dec().capacity() == self.root_len_max.0 + BRANCH_FACTOR {
+        //            self.shift = self.shift.dec();
+        //
+        //            debug!("RrbTree::pop() -> trying to lower the tree");
+        //
+        //            *root = match root {
+        //                Node::RelaxedBranch(ref mut branch_arc) => {
+        //                    Arc::make_mut(branch_arc).children[0].take().unwrap()
+        //                }
+        //                Node::Branch(ref mut branch_arc) => {
+        //                    Arc::make_mut(branch_arc).children[0].take().unwrap()
+        //                }
+        //                Node::Leaf(..) => unreachable!(),
+        //            };
+        //        }
+        //
+        //        leaf.elements
     }
 
     pub fn get(&self, index: usize) -> Option<&T> {
@@ -1153,18 +1165,18 @@ mod json {
     extern crate serde;
     extern crate serde_json;
 
-    use self::serde::ser::{Serialize, Serializer, SerializeSeq, SerializeStruct};
-    use std::sync::Arc;
-    use super::{Branch, Leaf, Node, RelaxedBranch, RrbTree};
+    use self::serde::ser::{Serialize, SerializeSeq, SerializeStruct, Serializer};
     use super::BRANCH_FACTOR;
+    use super::{Branch, Leaf, Node, RelaxedBranch, RrbTree};
+    use std::sync::Arc;
 
     impl<T> RelaxedBranch<T>
-        where
-            T: Serialize,
+    where
+        T: Serialize,
     {
         fn serialize<S>(&self, serializer: S) -> Result<<S>::Ok, <S>::Error>
-            where
-                S: Serializer,
+        where
+            S: Serializer,
         {
             let mut children_refs = Vec::with_capacity(BRANCH_FACTOR);
 
@@ -1206,12 +1218,12 @@ mod json {
     }
 
     impl<T> Branch<T>
-        where
-            T: Serialize,
+    where
+        T: Serialize,
     {
         fn serialize<S>(&self, serializer: S) -> Result<<S>::Ok, <S>::Error>
-            where
-                S: Serializer,
+        where
+            S: Serializer,
         {
             let mut children_refs = Vec::with_capacity(BRANCH_FACTOR);
 
@@ -1253,12 +1265,12 @@ mod json {
     }
 
     impl<T> Leaf<T>
-        where
-            T: Serialize,
+    where
+        T: Serialize,
     {
         fn serialize<S>(&self, serializer: S) -> Result<<S>::Ok, <S>::Error>
-            where
-                S: Serializer,
+        where
+            S: Serializer,
         {
             let mut serde_state = serializer.serialize_seq(Some(BRANCH_FACTOR))?;
 
@@ -1271,12 +1283,12 @@ mod json {
     }
 
     impl<T> Serialize for Node<T>
-        where
-            T: Serialize,
+    where
+        T: Serialize,
     {
         fn serialize<S>(&self, serializer: S) -> Result<<S>::Ok, <S>::Error>
-            where
-                S: Serializer,
+        where
+            S: Serializer,
         {
             match *self {
                 Node::RelaxedBranch(ref relaxed_branch) => relaxed_branch.serialize(serializer),
@@ -1287,12 +1299,12 @@ mod json {
     }
 
     impl<T> Serialize for RrbTree<T>
-        where
-            T: Serialize,
+    where
+        T: Serialize,
     {
         fn serialize<S>(&self, serializer: S) -> Result<<S>::Ok, <S>::Error>
-            where
-                S: Serializer,
+        where
+            S: Serializer,
         {
             let root_json_value = self.root.as_ref().map_or(None, |root| {
                 let json = match root {
@@ -1331,8 +1343,8 @@ mod tests {
     extern crate serde;
     extern crate serde_json;
 
-    use super::BRANCH_FACTOR;
     use super::RrbTree;
+    use super::BRANCH_FACTOR;
 
     #[test]
     fn serialized_state_should_match_to_valid_rb_tree_after_clone() {
