@@ -1,7 +1,3 @@
-extern crate serde;
-extern crate serde_json;
-
-use self::serde::ser::Serialize;
 use pvec::rrbtree::RrbTree;
 use pvec::rrbtree::BRANCH_FACTOR;
 use std::fmt::Debug;
@@ -18,7 +14,7 @@ pub struct PVec<T> {
     tail_len: usize,
 }
 
-impl<T: Clone + Debug + Serialize> PVec<T> {
+impl<T: Clone + Debug> PVec<T> {
     pub fn new() -> Self {
         PVec {
             tree: RrbTree::new(),
@@ -159,13 +155,13 @@ impl<T: Clone + Debug + Serialize> PVec<T> {
     }
 }
 
-impl<T: Clone + Debug + Serialize> Default for PVec<T> {
+impl<T: Clone + Debug> Default for PVec<T> {
     fn default() -> Self {
         PVec::new()
     }
 }
 
-impl<T: Clone + Debug + Serialize> ops::Index<usize> for PVec<T> {
+impl<T: Clone + Debug> ops::Index<usize> for PVec<T> {
     type Output = T;
 
     fn index(&self, index: usize) -> &T {
@@ -179,7 +175,7 @@ impl<T: Clone + Debug + Serialize> ops::Index<usize> for PVec<T> {
     }
 }
 
-impl<T: Clone + Debug + Serialize> ops::IndexMut<usize> for PVec<T> {
+impl<T: Clone + Debug> ops::IndexMut<usize> for PVec<T> {
     fn index_mut(&mut self, index: usize) -> &mut T {
         let len = self.len();
         self.get_mut(index).unwrap_or_else(|| {
@@ -191,7 +187,7 @@ impl<T: Clone + Debug + Serialize> ops::IndexMut<usize> for PVec<T> {
     }
 }
 
-mod json {
+mod serializer {
     extern crate serde;
     extern crate serde_json;
 
