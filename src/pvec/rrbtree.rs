@@ -478,9 +478,6 @@ impl<T: Clone + Debug> RelaxedBranch<T> {
         debug_assert!(shift.0 >= BITS_PER_LEVEL);
         debug_assert!(self.len > 0);
 
-        // ToDo: avoid measuring tree on each level
-        // ToDo: avoid measuring the whole tree before pushing a new node see RrbTree:push()
-
         let mut branch = self;
         let mut index = index;
         let mut shift = shift;
