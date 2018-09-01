@@ -866,17 +866,10 @@ impl<T: Clone + Debug> Node<T> {
     fn get(&self, index: Index, shift: Shift) -> Option<&T> {
         #[inline(always)]
         fn get_branch_index(sizes: &[Option<usize>], index: Index) -> usize {
-            // ToDo: use binary search to optimize index look-up.
-            // ToDo: measure linear search first.
             let mut candidate = 0;
 
             while candidate < BRANCH_FACTOR - 1 && sizes[candidate].unwrap() <= index.0 {
                 candidate += 1;
-
-                if sizes[candidate].is_none() {
-                    candidate -= 1;
-                    break;
-                }
             }
 
             candidate
@@ -919,8 +912,6 @@ impl<T: Clone + Debug> Node<T> {
     fn get_mut(&mut self, index: Index, shift: Shift) -> Option<&mut T> {
         #[inline(always)]
         fn get_branch_index(sizes: &mut [Option<usize>], index: Index) -> usize {
-            // ToDo: use binary search to optimize index look-up.
-            // ToDo: measure linear search first.
             let mut candidate = 0;
 
             while sizes[candidate].unwrap() <= index.0 {
@@ -1157,6 +1148,8 @@ impl<T: Clone + Debug + Serialize> RrbTree<T> {
 
             self.root_len.0 += that.root_len.0;
             that.root_len.0 = 0;
+        } else {
+            unreachable!();
         }
     }
 }

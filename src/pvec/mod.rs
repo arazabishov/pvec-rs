@@ -346,7 +346,7 @@ mod tests {
 
     #[test]
     fn append_pvec_must_maintain_correct_internal_structure_for_different_sizes() {
-        for vec_size in 0..64 {
+        for vec_size in 0..40 {
             append_pvec_must_maintain_correct_internal_structure(vec_size);
         }
     }
@@ -375,6 +375,7 @@ mod tests {
 
             for i in 0..vec_two.len() {
                 assert_eq!(*vec_two.get(i).unwrap(), i);
+                assert_eq!(*vec_two.get_mut(i).unwrap(), i);
             }
         }
     }
