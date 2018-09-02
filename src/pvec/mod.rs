@@ -42,10 +42,10 @@ impl<T: Clone + Debug> PVec<T> {
         }
 
         if self.tail_len == 0 {
-            self.tail_len = BRANCH_FACTOR;
-
-            let new_tail = self.tree.pop();
+            let (new_tail, new_tail_len) = self.tree.pop();
             mem::replace(&mut self.tail, new_tail);
+
+            self.tail_len = new_tail_len;
         }
 
         let item = self.tail[self.tail_len - 1].take();
@@ -344,6 +344,69 @@ mod tests {
     fn append_pvec_must_maintain_correct_internal_structure_for_different_sizes() {
         for vec_size in 0..40 {
             append_pvec_must_maintain_correct_internal_structure(vec_size);
+        }
+    }
+
+    fn append_push_clone_pop_pvec_must_maintain_correct_internal_structure(vec_size: usize) {
+        println!("vec_size={}", vec_size);
+
+        let mut vec_one = PVec::new();
+        let mut vec_two_item = 0;
+
+        for i in 0..1024 {
+            if i % 2 == 0 {
+                let mut vec_two = PVec::new();
+
+                for _ in 0..vec_size {
+                    vec_two.push(vec_two_item);
+                    vec_two_item += 1;
+                }
+
+                assert_eq!(vec_two.len(), vec_size);
+
+                vec_one.append(&mut vec_two);
+
+                assert_eq!(vec_two.len(), 0);
+            } else {
+                for _ in 0..(vec_size + vec_size) {
+                    vec_one.push(vec_two_item);
+                    vec_two_item += 1;
+                }
+            }
+
+            assert_eq!(vec_one.len(), vec_two_item);
+
+            let mut vec_one_clone = vec_one.clone();
+            for i in (0..vec_two_item).rev() {
+                assert_eq!(vec_one_clone.pop().unwrap(), i);
+            }
+
+            assert_eq!(vec_one_clone.len(), 0);
+            assert_eq!(vec_one_clone.tree.height(), 0);
+        }
+
+        println!("vec_one -> shift={}", vec_one.tree.height());
+
+        assert_eq!(vec_one.len(), vec_two_item);
+
+        let mut vec_one_clone = vec_one.clone();
+        for i in (0..vec_two_item).rev() {
+            assert_eq!(vec_one_clone.pop().unwrap(), i);
+
+            for j in 0..vec_one_clone.len() {
+                assert_eq!(*vec_one_clone.get(j).unwrap(), j);
+            }
+        }
+
+        // todo: make assertions regarding the state of both vectors, not just one
+        // todo: add a test case where both vectors (or either of them) are empty and appended one to another
+        // todo: add a test case with cloning both vectors in process of modification
+    }
+
+    #[test]
+    fn append_push_clone_pvec_must_maintain_correct_internal_structure_for_different_sizes() {
+        for vec_size in 0..40 {
+            append_push_clone_pop_pvec_must_maintain_correct_internal_structure(vec_size);
         }
     }
 

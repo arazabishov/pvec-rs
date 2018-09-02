@@ -60,8 +60,13 @@ impl Shift {
     }
 
     #[inline(always)]
-    fn is_leaf_level(self) -> bool {
+    fn is_level_with_leaves(self) -> bool {
         self.0 == BITS_PER_LEVEL
+    }
+
+    #[inline(always)]
+    fn is_leaf_level(self) -> bool {
+        self.0 == 0
     }
 }
 
@@ -466,27 +471,27 @@ impl<T: Clone + Debug> Branch<T> {
     }
 
     #[inline(always)]
-    fn pop_leaf(&mut self, index: Index, shift: Shift) -> (Leaf<T>, usize) {
+    fn pop_leaf(&mut self, shift: Shift) -> (Leaf<T>, usize) {
         debug_assert!(shift.0 >= BITS_PER_LEVEL);
 
-        let i = index.child(shift);
+        let index = self.len - 1;
 
-        if shift.is_leaf_level() {
+        if shift.is_level_with_leaves() {
             self.len -= 1;
 
-            let leaf_node = self.children[i].take().unwrap();
+            let leaf_node = self.children[index].take().unwrap();
             let leaf = leaf_node.into_leaf().take();
 
             (leaf, self.len)
         } else {
-            let (leaf, child_len) = self.children[i]
+            let (leaf, child_len) = self.children[index]
                 .as_mut()
-                .map(|child| child.pop_leaf(index, shift.dec()))
+                .map(|child| child.pop_leaf(shift.dec()))
                 .unwrap();
 
             if child_len == 0 {
                 self.len -= 1;
-                self.children[i] = None;
+                self.children[index] = None;
             }
 
             (leaf, self.len)
@@ -574,39 +579,34 @@ impl<T: Clone + Debug> RelaxedBranch<T> {
     }
 
     #[inline(always)]
-    fn pop_leaf(&mut self, index: Index, shift: Shift) -> (Leaf<T>, usize) {
+    fn pop_leaf(&mut self, shift: Shift) -> (Leaf<T>, usize) {
         debug_assert!(shift.0 >= BITS_PER_LEVEL);
 
-        let mut index = index;
-        let branch_index = self.len - 1;
+        let index = self.len - 1;
 
-        if branch_index != 0 {
-            index = Index(index.0 - self.sizes[branch_index - 1].unwrap())
-        }
-
-        if shift.is_leaf_level() {
+        if shift.is_level_with_leaves() {
             self.len -= 1;
 
-            let leaf_node = self.children[branch_index].take().unwrap();
+            let leaf_node = self.children[index].take().unwrap();
             let leaf = leaf_node.into_leaf().take();
 
-            let size = self.sizes[branch_index].as_mut().unwrap();
+            let size = self.sizes[index].as_mut().unwrap();
             *size -= leaf.len;
 
             (leaf, self.len)
         } else {
-            let (leaf, child_len) = self.children[branch_index]
+            let (leaf, child_len) = self.children[index]
                 .as_mut()
-                .map(|child| child.pop_leaf(index, shift.dec()))
+                .map(|child| child.pop_leaf(shift.dec()))
                 .unwrap();
 
-            let size = self.sizes[branch_index].as_mut().unwrap();
+            let size = self.sizes[index].as_mut().unwrap();
             *size -= leaf.len;
 
             if child_len == 0 {
                 self.len -= 1;
-                self.children[branch_index] = None;
-                self.sizes[branch_index] = None;
+                self.children[index] = None;
+                self.sizes[index] = None;
             }
 
             (leaf, self.len)
@@ -758,7 +758,7 @@ impl<T: Clone + Debug> Node<T> {
                 let child_node_l = child_l.as_mut().unwrap();
                 let child_node_r = child_r.take().unwrap();
 
-                let mut branch_c = if self_shift.is_leaf_level() {
+                let mut branch_c = if self_shift.is_level_with_leaves() {
                     Arc::make_mut(child_node_l.as_mut_leaf()).merge(child_node_r.into_leaf().take())
                 } else {
                     child_node_l.merge(child_node_r, self_shift.dec(), that_shift.dec())
@@ -813,7 +813,7 @@ impl<T: Clone + Debug> Node<T> {
     ) -> Node<T> {
         let merged = Node::merge_all(node_l, node_c, node_r);
 
-        if shift.is_leaf_level() {
+        if shift.is_level_with_leaves() {
             Leaf::rebalance(merged, shift)
         } else {
             BranchBuilder::rebalance(merged, shift)
@@ -865,18 +865,16 @@ impl<T: Clone + Debug> Node<T> {
         }
     }
 
-    fn pop(&mut self, index: Index, shift: Shift) -> Leaf<T> {
-        self.pop_leaf(index, shift).0
+    fn pop(&mut self, shift: Shift) -> Leaf<T> {
+        self.pop_leaf(shift).0
     }
 
-    fn pop_leaf(&mut self, index: Index, shift: Shift) -> (Leaf<T>, usize) {
+    fn pop_leaf(&mut self, shift: Shift) -> (Leaf<T>, usize) {
         debug_assert!(shift.0 >= BITS_PER_LEVEL);
 
         match self {
-            Node::RelaxedBranch(ref mut branch_arc) => {
-                Arc::make_mut(branch_arc).pop_leaf(index, shift)
-            }
-            Node::Branch(ref mut branch_arc) => Arc::make_mut(branch_arc).pop_leaf(index, shift),
+            Node::RelaxedBranch(ref mut branch_arc) => Arc::make_mut(branch_arc).pop_leaf(shift),
+            Node::Branch(ref mut branch_arc) => Arc::make_mut(branch_arc).pop_leaf(shift),
             Node::Leaf(ref mut leaf_arc) => unreachable!(),
         }
     }
@@ -1066,61 +1064,43 @@ impl<T: Clone + Debug> RrbTree<T> {
         self.root_len.0 += tail_len;
     }
 
-    pub fn pop(&mut self) -> [Option<T>; BRANCH_FACTOR] {
-        unimplemented!("todo: update pop() function with root_len_max absent");
+    pub fn pop(&mut self) -> ([Option<T>; BRANCH_FACTOR], usize) {
+        debug!("---------------------------------------------------------------------------");
+        debug!("RrbTree::pop() shift={}", self.shift.0);
 
-        //        debug!("---------------------------------------------------------------------------");
-        //        debug!(
-        //            "RrbTree::pop() capacity={} root_len_max={} shift={}",
-        //            self.shift.capacity(),
-        //            self.root_len_max.0,
-        //            self.shift.0
-        //        );
-        //
-        //        self.root_len_max.0 -= BRANCH_FACTOR;
-        //
-        //        let leaf = self
-        //            .root
-        //            .as_mut()
-        //            .unwrap()
-        //            .pop(self.root_len_max, self.shift);
-        //
-        //        self.root_len.0 -= leaf.len;
-        //
-        //        debug!("RrbTree::pop() -> ({:?})", leaf.elements);
-        //        debug!("RrbTree::pop() -> len ({:?})", leaf.len);
-        //
-        //        if self.root_len_max.0 == 0 {
-        //            self.root = None;
-        //            self.shift = self.shift.dec();
-        //
-        //            debug!("RrbTree::lower_trie -> ()");
-        //
-        //            return leaf.elements;
-        //        }
-        //
-        //        let root = self.root.as_mut().unwrap();
-        //
-        //        debug!("RrbTree::pop() -> self.shift.dec().capacity()={} self.root_len_max + BRANCH_FACTOR={} shift={}",
-        //               self.shift.dec().capacity(), self.root_len_max.0 + BRANCH_FACTOR, self.shift.0);
-        //
-        //        if self.shift.dec().capacity() == self.root_len_max.0 + BRANCH_FACTOR {
-        //            self.shift = self.shift.dec();
-        //
-        //            debug!("RrbTree::pop() -> trying to lower the tree");
-        //
-        //            *root = match root {
-        //                Node::RelaxedBranch(ref mut branch_arc) => {
-        //                    Arc::make_mut(branch_arc).children[0].take().unwrap()
-        //                }
-        //                Node::Branch(ref mut branch_arc) => {
-        //                    Arc::make_mut(branch_arc).children[0].take().unwrap()
-        //                }
-        //                Node::Leaf(..) => unreachable!(),
-        //            };
-        //        }
-        //
-        //        leaf.elements
+        // todo: do you really need to have this special corner case?
+        if self.shift.is_leaf_level() {
+            let leaf = self.root.take().unwrap().into_leaf().take();
+
+            self.root_len.0 -= leaf.len;
+            return (leaf.elements, leaf.len);
+        }
+
+        let root = self.root.as_mut().unwrap();
+
+        let leaf = root.pop(self.shift);
+        self.root_len.0 -= leaf.len;
+
+        debug!("RrbTree::pop() -> ({:?})", leaf.elements);
+        debug!("RrbTree::pop() -> len ({:?})", leaf.len);
+
+        if root.len() == 1 {
+            self.shift = self.shift.dec();
+
+            debug!("RrbTree::pop() -> trying to lower the tree");
+
+            *root = match root {
+                Node::RelaxedBranch(ref mut branch_arc) => {
+                    Arc::make_mut(branch_arc).children[0].take().unwrap()
+                }
+                Node::Branch(ref mut branch_arc) => {
+                    Arc::make_mut(branch_arc).children[0].take().unwrap()
+                }
+                Node::Leaf(..) => unreachable!(),
+            };
+        }
+
+        (leaf.elements, leaf.len)
     }
 
     pub fn get(&self, index: usize) -> Option<&T> {
