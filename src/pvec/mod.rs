@@ -461,13 +461,13 @@ mod tests {
             vec_two.push(i);
         }
 
-        for j in 0..256 {
-            for i in 0..16 {
+        for _ in 0..256 {
+            for _ in 0..16 {
                 vec_two.append(&mut vec_one.clone());
             }
         }
 
-        for i in 0..vec_two.len() {
+        for _ in 0..vec_two.len() {
             // vec_two.get(i).unwrap();
             // println!("vec_two.get({}) -> {:?}", i, vec_two.get(i));
         }

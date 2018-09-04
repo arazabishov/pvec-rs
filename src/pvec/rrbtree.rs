@@ -55,11 +55,6 @@ impl Shift {
     }
 
     #[inline(always)]
-    fn capacity(self) -> usize {
-        BRANCH_FACTOR << self.0
-    }
-
-    #[inline(always)]
     fn is_level_with_leaves(self) -> bool {
         self.0 == BITS_PER_LEVEL
     }
@@ -414,29 +409,6 @@ impl<T: Clone + Debug> BranchBuilder<T> {
 }
 
 impl<T: Clone + Debug> Branch<T> {
-    #[inline(always)]
-    fn new() -> Self {
-        Branch {
-            children: new_branch!(),
-            len: 0,
-        }
-    }
-
-    #[inline(always)]
-    fn push(&mut self, child: Node<T>) {
-        self.children[self.len] = Some(child);
-        self.len += 1;
-    }
-
-    #[inline(always)]
-    fn is_full(&self) -> bool {
-        self.len == BRANCH_FACTOR
-    }
-
-    #[inline(always)]
-    fn is_empty(&self) -> bool {
-        self.len == 0
-    }
 
     #[inline(always)]
     fn push_leaf(&mut self, index: Index, shift: Shift, leaf: Leaf<T>) {
@@ -526,9 +498,9 @@ impl<T: Clone + Debug> RelaxedBranch<T> {
 
             shift = shift.dec();
 
-            let mut len = &mut branch.len;
-            let mut child_node = &mut branch.children[branch_index];
-            let mut child_node_size = branch.sizes[branch_index];
+            let len = &mut branch.len;
+            let child_node = &mut branch.children[branch_index];
+            let child_node_size = branch.sizes[branch_index];
 
             if let Some(ref size) = child_node_size {
                 branch.sizes[branch_index] = Some(size + leaf.len);
@@ -566,7 +538,7 @@ impl<T: Clone + Debug> RelaxedBranch<T> {
 
         debug_assert_eq!(shift.0, BITS_PER_LEVEL);
 
-        let mut branch_index = branch.len;
+        let branch_index = branch.len;
 
         if branch_index == 0 {
             branch.sizes[branch_index] = Some(leaf.len);
@@ -696,7 +668,7 @@ impl<T: Clone + Debug> Node<T> {
 
                     shift = shift.dec();
                 }
-                Node::Branch(ref branch) => {
+                Node::Branch(..) => {
                     debug_assert!(shift.0 > 0);
                     let branch_has_enough_capacity = !(idx.0 >> shift.inc().0 > 0);
 
@@ -875,7 +847,7 @@ impl<T: Clone + Debug> Node<T> {
         match self {
             Node::RelaxedBranch(ref mut branch_arc) => Arc::make_mut(branch_arc).pop_leaf(shift),
             Node::Branch(ref mut branch_arc) => Arc::make_mut(branch_arc).pop_leaf(shift),
-            Node::Leaf(ref mut leaf_arc) => unreachable!(),
+            Node::Leaf(..) => unreachable!(),
         }
     }
 
