@@ -12,3 +12,7 @@ serde_derive = "1.0.73"
 rand = "0.3.14"
 dogged = "0.2.0"
 im = { git = "https://github.com/bodil/im-rs" }
+
+[features]
+default = []
+small_branch = []

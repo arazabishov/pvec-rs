@@ -2,10 +2,10 @@ extern crate persistent;
 
 use persistent::pvec::PVec;
 
-#[cfg(not(small_branch))]
+#[cfg(not(feature = "small_branch"))]
 const BRANCH_FACTOR: usize = 32;
 
-#[cfg(small_branch)]
+#[cfg(feature = "small_branch")]
 const BRANCH_FACTOR: usize = 4;
 
 #[test]
@@ -202,6 +202,7 @@ fn append_must_maintain_vectors_in_correct_state_after_clone() {
 
     for i in 0..pvec_r_clone.len() {
         assert_eq!(*pvec_r_clone.get(i).unwrap(), branch_test_value);
+        branch_test_value += 1;
     }
 }
 
@@ -234,6 +235,7 @@ fn interleaving_different_operations_must_maintain_correct_internal_state(vec_si
 
         for i in 0..vec.len() {
             assert_eq!(*vec.get(i).unwrap(), i);
+            assert_eq!(*vec.get_mut(i).unwrap(), i);
         }
 
         let mut vec_one_clone = vec.clone();
@@ -252,6 +254,7 @@ fn interleaving_different_operations_must_maintain_correct_internal_state(vec_si
 
         for j in 0..vec_clone.len() {
             assert_eq!(*vec_clone.get(j).unwrap(), j);
+            assert_eq!(*vec_clone.get_mut(j).unwrap(), j);
         }
     }
 }
@@ -260,34 +263,5 @@ fn interleaving_different_operations_must_maintain_correct_internal_state(vec_si
 fn interleaving_different_operations_must_maintain_correct_internal_state_for_var_sizes() {
     for vec_size in 0..40 {
         interleaving_different_operations_must_maintain_correct_internal_state(vec_size);
-    }
-}
-
-#[test]
-fn some_test() {
-    let mut vec_two_item = 0;
-    let mut vec_two = PVec::new();
-
-    for i in 0..32 {
-        if i % 2 == 0 || i % 3 == 0 {
-            for _ in 0..357 {
-                vec_two.push(vec_two_item);
-                vec_two_item += 1;
-            }
-        } else {
-            let mut vec_one = PVec::new();
-
-            for _ in 0..50000 {
-                vec_one.push(vec_two_item);
-                vec_two_item += 1;
-            }
-
-            vec_two.append(&mut vec_one);
-        }
-
-        for i in 0..vec_two.len() {
-            assert_eq!(*vec_two.get(i).unwrap(), i);
-            assert_eq!(*vec_two.get_mut(i).unwrap(), i);
-        }
     }
 }

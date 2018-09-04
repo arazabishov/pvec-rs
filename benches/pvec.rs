@@ -601,7 +601,7 @@ fn append_vec(bencher: &mut test_crate::Bencher, n: usize) {
     bencher.iter(|| {
         let mut vec_two = Vec::new();
 
-        for i in 0..16 {
+        for _ in 0..16 {
             vec_two.append(&mut vec_one.clone());
         }
 
@@ -619,7 +619,7 @@ fn append_pvec(bencher: &mut test_crate::Bencher, n: usize) {
     bencher.iter(|| {
         let mut vec_two = PVec::new();
 
-        for i in 0..16 {
+        for _ in 0..16 {
             vec_two.append(&mut vec_one.clone());
         }
 
@@ -637,7 +637,7 @@ fn append_im_vec(bencher: &mut test_crate::Bencher, n: usize) {
     bencher.iter(|| {
         let mut vec_two = Vector::new();
 
-        for i in 0..16 {
+        for _ in 0..16 {
             vec_two.append(vec_one.clone());
         }
 
@@ -727,16 +727,16 @@ fn append_push_im_vec(bencher: &mut test_crate::Bencher, n: usize) {
 }
 
 #[bench]
-fn append_push_vec_500000(bencher: &mut test_crate::Bencher) {
-    append_push_vec(bencher, 500000);
+fn append_push_vec_50000(bencher: &mut test_crate::Bencher) {
+    append_push_vec(bencher, 50000);
 }
 
 #[bench]
-fn append_push_pvec_500000(bencher: &mut test_crate::Bencher) {
-    append_push_pvec(bencher, 500000);
+fn append_push_pvec_50000(bencher: &mut test_crate::Bencher) {
+    append_push_pvec(bencher, 50000);
 }
 
 #[bench]
-fn append_push_im_vec_500000(bencher: &mut test_crate::Bencher) {
-    append_push_im_vec(bencher, 500000);
+fn append_push_im_vec_50000(bencher: &mut test_crate::Bencher) {
+    append_push_im_vec(bencher, 50000);
 }

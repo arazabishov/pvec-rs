@@ -4,19 +4,19 @@ use std::fmt::Debug;
 use std::mem;
 use std::sync::Arc;
 
-#[cfg(not(small_branch))]
+#[cfg(not(feature = "small_branch"))]
 pub const BRANCH_FACTOR: usize = 32;
 
-#[cfg(small_branch)]
+#[cfg(feature = "small_branch")]
 pub const BRANCH_FACTOR: usize = 4;
 
-#[cfg(not(small_branch))]
+#[cfg(not(feature = "small_branch"))]
 const BITS_PER_LEVEL: usize = 5;
 
-#[cfg(small_branch)]
+#[cfg(feature = "small_branch")]
 const BITS_PER_LEVEL: usize = 2;
 
-#[cfg(not(small_branch))]
+#[cfg(not(feature = "small_branch"))]
 macro_rules! new_branch {
     () => {
         [
@@ -27,7 +27,7 @@ macro_rules! new_branch {
     };
 }
 
-#[cfg(small_branch)]
+#[cfg(feature = "small_branch")]
 macro_rules! new_branch {
     () => {
         [None, None, None, None]
