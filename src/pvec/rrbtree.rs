@@ -268,8 +268,6 @@ impl<T: Clone + Debug> BranchBuilder<T> {
 
     #[inline(always)]
     fn build(&mut self) -> Node<T> {
-        // ToDo: parameterize this property (is_relaxed) for testing purposes
-
         let is_relaxed = mem::replace(&mut self.is_relaxed, false);
         let children = mem::replace(&mut self.children, new_branch!());
         let len = mem::replace(&mut self.len, 0);
@@ -958,10 +956,6 @@ impl<T: Clone + Debug> RrbTree<T> {
             root_len: Index(0),
             shift: Shift(0),
         }
-    }
-
-    pub fn height(&self) -> usize {
-        self.shift.0
     }
 
     #[cold]
