@@ -210,7 +210,7 @@ fn interleaving_different_operations_must_maintain_correct_internal_state(vec_si
     let mut vec = PVec::new();
     let mut vec_item = 0;
 
-    for i in 0..1024 {
+    for i in 0..128 {
         if i % 2 == 0 {
             let mut vec_temp = PVec::new();
 
@@ -261,7 +261,9 @@ fn interleaving_different_operations_must_maintain_correct_internal_state(vec_si
 
 #[test]
 fn interleaving_different_operations_must_maintain_correct_internal_state_for_var_sizes() {
-    for vec_size in 0..40 {
-        interleaving_different_operations_must_maintain_correct_internal_state(vec_size);
-    }
+    interleaving_different_operations_must_maintain_correct_internal_state(4);
+    interleaving_different_operations_must_maintain_correct_internal_state(5);
+    interleaving_different_operations_must_maintain_correct_internal_state(17);
+    interleaving_different_operations_must_maintain_correct_internal_state(32);
+    interleaving_different_operations_must_maintain_correct_internal_state(33);
 }
