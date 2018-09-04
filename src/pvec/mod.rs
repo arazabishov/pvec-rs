@@ -28,6 +28,11 @@ impl<T: Clone + Debug> PVec<T> {
         self.tail[self.tail_len] = Some(item);
         self.tail_len += 1;
 
+        self.push_tail();
+    }
+
+    #[inline(always)]
+    fn push_tail(&mut self) {
         if self.tail_len == BRANCH_FACTOR {
             let tail = mem::replace(&mut self.tail, new_branch!());
 
@@ -78,11 +83,6 @@ impl<T: Clone + Debug> PVec<T> {
         self.len() == 0
     }
 
-    // ToDo: get rid of unnecessary allocations of RrbTree in corner cases.
-    // ToDo: this can be solved by making tree optional (see todoist for the task)
-
-    // ToDo: abstract push_tail function away
-    // ToDo: consider switching out tail (array) in PVec with Leaf
     pub fn append(&mut self, that: &mut PVec<T>) {
         if self.is_empty() {
             self.tail = mem::replace(&mut that.tail, new_branch!());
@@ -146,12 +146,7 @@ impl<T: Clone + Debug> PVec<T> {
             }
         }
 
-        if self.tail_len == BRANCH_FACTOR {
-            let tail = mem::replace(&mut self.tail, new_branch!());
-
-            self.tree.push(tail, self.tail_len);
-            self.tail_len = 0;
-        }
+        self.push_tail();
     }
 }
 
@@ -447,9 +442,6 @@ mod tests {
     // ToDo: BRANCH_FACTOR == 4: crashes at 33 with `assertion failed: shift.0 >= BITS_PER_LEVEL` (sort of fixed)
 
     // ToDo: BRANCH_FACTOR == 4: crashes at 70 with 'called `Option::unwrap()` on a `None` value
-    // ToDo: (pay attention to vec_two_before_append, it has invalid leaves after rebalancing)
-
-    // ToDo: patch get_mut as well as you did the get()
 
     #[test]
     fn append_pvec() {

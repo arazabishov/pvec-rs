@@ -268,9 +268,6 @@ impl<T: Clone + Debug> BranchBuilder<T> {
 
     #[inline(always)]
     fn build(&mut self) -> Node<T> {
-        // ToDo: fix faulty logic for verifying whether node is relaxed or not
-        // ToDo: think twice, if it is actually worth having this logic
-
         // ToDo: parameterize this property (is_relaxed) for testing purposes
 
         let is_relaxed = mem::replace(&mut self.is_relaxed, false);
@@ -409,7 +406,6 @@ impl<T: Clone + Debug> BranchBuilder<T> {
 }
 
 impl<T: Clone + Debug> Branch<T> {
-
     #[inline(always)]
     fn push_leaf(&mut self, index: Index, shift: Shift, leaf: Leaf<T>) {
         debug_assert!(shift.0 >= BITS_PER_LEVEL);
@@ -592,8 +588,7 @@ trait Take<T: Clone + Debug> {
 
 impl<T: Clone + Debug> Take<T> for Arc<T> {
     fn take(mut self) -> T {
-        // ToDo: This is definitely not thread safe, so you need to be careful with
-        // ToDo: where you call this method
+        // ToDo: you have to verify whether this method is thread-safe
         Arc::make_mut(&mut self);
         Arc::try_unwrap(self).unwrap()
     }
@@ -972,10 +967,6 @@ impl<T: Clone + Debug> RrbTree<T> {
 
     #[cold]
     pub fn push(&mut self, tail: [Option<T>; BRANCH_FACTOR], tail_len: usize) {
-        // todo: add assert statements to make sure that height of
-        // todo: the tree doesn't grow excessively
-        // debug_assert!(self.shift.0 < 18);
-
         let shift = self.shift;
         let root_len = self.root_len;
 
@@ -1040,7 +1031,6 @@ impl<T: Clone + Debug> RrbTree<T> {
         debug!("---------------------------------------------------------------------------");
         debug!("RrbTree::pop() shift={}", self.shift.0);
 
-        // todo: do you really need to have this special corner case?
         if self.shift.is_leaf_level() {
             let leaf = self.root.take().unwrap().into_leaf().take();
 
@@ -1096,7 +1086,6 @@ impl<T: Clone + Debug> RrbTree<T> {
         self.len() == 0
     }
 
-    // ToDo: consider handling case one either this_root or that_root are None
     pub fn append(&mut self, that: &mut RrbTree<T>) {
         if let (Some(this_root), Some(that_root)) = (self.root.as_mut(), that.root.take()) {
             let mut merged_root = this_root.merge(that_root, self.shift, that.shift);
