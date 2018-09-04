@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/ArazAbishov/persistent-rs.svg?branch=master)](https://travis-ci.org/ArazAbishov/persistent-rs)
+[![Build Status](https://travis-ci.org/ArazAbishov/pvec-rs.svg?branch=master)](https://travis-ci.org/ArazAbishov/pvec-rs)
 
-# persistent-rs
-Persistent, drop-in replacement for standard library collections in Rust. Inspired by the [dogged](https://github.com/nikomatsakis/dogged) library of Niko Matsakis.
+# pvec-rs
+Persistent vector implementation for Rust based on RRB tree. Inspired by the [dogged](https://github.com/nikomatsakis/dogged) library of Niko Matsakis.

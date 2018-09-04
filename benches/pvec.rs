@@ -2,13 +2,13 @@
 
 extern crate dogged;
 extern crate im;
-extern crate persistent;
+extern crate pvec;
 extern crate rand;
 extern crate test as test_crate;
 
 use dogged::DVec;
 use im::Vector;
-use persistent::pvec::PVec;
+use pvec::pvec::PVec;
 use rand::{Rng, SeedableRng, XorShiftRng};
 
 fn push_vec(bencher: &mut test_crate::Bencher, n: usize) {

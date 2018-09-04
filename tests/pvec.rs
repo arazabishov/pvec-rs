@@ -1,6 +1,6 @@
-extern crate persistent;
+extern crate pvec;
 
-use persistent::pvec::PVec;
+use pvec::pvec::PVec;
 
 #[cfg(not(feature = "small_branch"))]
 const BRANCH_FACTOR: usize = 32;
