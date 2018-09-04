@@ -846,7 +846,6 @@ impl<T: Clone + Debug> Node<T> {
         }
     }
 
-    // ToDo: split get and get_mut() into functions within RelaxedBranch, Branch, Leaf
     fn get(&self, index: Index, shift: Shift) -> Option<&T> {
         #[inline(always)]
         fn get_branch_index(sizes: &[Option<usize>], index: Index) -> usize {
