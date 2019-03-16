@@ -8,8 +8,9 @@ extern crate test as test_crate;
 
 use dogged::DVec;
 use im::Vector;
-use pvec::pvec::PVec;
 use rand::{Rng, SeedableRng, XorShiftRng};
+
+use pvec::pvec::PVec;
 
 macro_rules! push {
     ($mod_name: ident, $N: expr) => {
@@ -69,82 +70,77 @@ push!(push_5000, 5000);
 push!(push_50000, 50000);
 push!(push_500000, 500000);
 
+macro_rules! push_clone {
+    ($mod_name: ident, $N: expr) => {
+        mod $mod_name {
+            use super::*;
 
-fn push_clone_vec(bencher: &mut test_crate::Bencher, n: usize) {
-    bencher.iter(|| {
-        let mut vec = Vec::new();
-        let mut vec_one = vec.clone();
+            const N: usize = $N;
 
-        for i in 0..n {
-            vec.push(i);
-            vec_one = vec.clone();
+            #[bench]
+            fn standard(bencher: &mut test_crate::Bencher) {
+                bencher.iter(|| {
+                    let mut vec = Vec::new();
+                    let mut vec_one = vec.clone();
+
+                    for i in 0..N {
+                        vec.push(i);
+                        vec_one = vec.clone();
+                    }
+
+                    drop(vec_one);
+                });
+            }
+
+            #[bench]
+            fn dogged(bencher: &mut test_crate::Bencher) {
+                bencher.iter(|| {
+                    let mut vec = DVec::new();
+                    let mut vec_one = vec.clone();
+
+                    for i in 0..N {
+                        vec.push(i);
+                        vec_one = vec.clone();
+                    }
+
+                    drop(vec_one);
+                });
+            }
+
+            #[bench]
+            fn pvec(bencher: &mut test_crate::Bencher) {
+                bencher.iter(|| {
+                    let mut vec = PVec::new();
+                    let mut vec_one = vec.clone();
+
+                    for i in 0..N {
+                        vec.push(i);
+                        vec_one = vec.clone();
+                    }
+
+                    drop(vec_one);
+                });
+            }
+
+            #[bench]
+            fn im(bencher: &mut test_crate::Bencher) {
+                bencher.iter(|| {
+                    let mut vec = Vector::new();
+                    let mut vec_one = vec.clone();
+
+                    for i in 0..N {
+                        vec.push_back(i);
+                        vec_one = vec.clone();
+                    }
+
+                    drop(vec_one);
+                });
+            }
         }
-
-        drop(vec_one);
-    });
+    }
 }
 
-fn push_clone_pvec(bencher: &mut test_crate::Bencher, n: usize) {
-    bencher.iter(|| {
-        let mut vec = PVec::new();
-        let mut vec_one = vec.clone();
-
-        for i in 0..n {
-            vec.push(i);
-            vec_one = vec.clone();
-        }
-
-        drop(vec_one);
-    });
-}
-
-fn push_clone_dvec(bencher: &mut test_crate::Bencher, n: usize) {
-    bencher.iter(|| {
-        let mut vec = DVec::new();
-        let mut vec_one = vec.clone();
-
-        for i in 0..n {
-            vec.push(i);
-            vec_one = vec.clone();
-        }
-
-        drop(vec_one);
-    });
-}
-
-fn push_clone_im_vec(bencher: &mut test_crate::Bencher, n: usize) {
-    bencher.iter(|| {
-        let mut vec = Vector::new();
-        let mut vec_one = vec.clone();
-
-        for i in 0..n {
-            vec.push_back(i);
-            vec_one = vec.clone();
-        }
-
-        drop(vec_one);
-    });
-}
-
-#[bench]
-fn push_clone_vec_5000(bencher: &mut test_crate::Bencher) {
-    push_clone_vec(bencher, 5000);
-}
-
-#[bench]
-fn push_clone_pvec_5000(bencher: &mut test_crate::Bencher) {
-    push_clone_pvec(bencher, 5000);
-}
-
-#[bench]
-fn push_clone_dvec_5000(bencher: &mut test_crate::Bencher) {
-    push_clone_dvec(bencher, 5000);
-}
-
-#[bench]
-fn push_clone_im_vec_5000(bencher: &mut test_crate::Bencher) {
-    push_clone_im_vec(bencher, 5000);
-}
+push_clone!(push_clone_5000, 5000);
 
 fn pop_vec(bencher: &mut test_crate::Bencher, n: usize) {
     let mut vec = Vec::new();
