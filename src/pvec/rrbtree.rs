@@ -1255,21 +1255,21 @@ mod serializer {
             let root_json_value = self.root.as_ref().map_or(None, |root| {
                 let json = match root {
                     Node::RelaxedBranch(ref relaxed_branch) => json!({
-                                "relaxedBranch": root,
-                                "sizes": relaxed_branch.sizes,
-                                "refs": Arc::strong_count(relaxed_branch),
-                                "len": relaxed_branch.len
-                            }),
+                        "relaxedBranch": root,
+                        "sizes": relaxed_branch.sizes,
+                        "refs": Arc::strong_count(relaxed_branch),
+                        "len": relaxed_branch.len
+                    }),
                     Node::Branch(ref branch) => json!({
-                            "branch": root,
-                            "refs":  Arc::strong_count(branch),
-                            "len": branch.len
-                        }),
+                        "branch": root,
+                        "refs":  Arc::strong_count(branch),
+                        "len": branch.len
+                    }),
                     Node::Leaf(ref leaf) => json!({
-                            "leaf": root,
-                            "refs": Arc::strong_count(leaf),
-                            "len": leaf.len
-                        }),
+                        "leaf": root,
+                        "refs": Arc::strong_count(leaf),
+                        "len": leaf.len
+                    }),
                 };
 
                 Some(json)
