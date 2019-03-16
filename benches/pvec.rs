@@ -11,105 +11,64 @@ use im::Vector;
 use pvec::pvec::PVec;
 use rand::{Rng, SeedableRng, XorShiftRng};
 
-fn push_vec(bencher: &mut test_crate::Bencher, n: usize) {
-    bencher.iter(|| {
-        let mut vec = Vec::new();
+macro_rules! push {
+    ($mod_name: ident, $N: expr) => {
+        mod $mod_name {
+            use super::*;
 
-        for i in 0..n {
-            vec.push(i);
+            const N: usize = $N;
+
+            #[bench]
+            fn standard(bencher: &mut test_crate::Bencher) {
+                bencher.iter(|| {
+                    let mut vec = Vec::new();
+
+                    for i in 0 .. N {
+                        vec.push(i);
+                    }
+                });
+            }
+
+            #[bench]
+            fn dogged(bencher: &mut test_crate::Bencher) {
+                bencher.iter(|| {
+                    let mut vec = DVec::new();
+
+                    for i in 0 .. N {
+                        vec.push(i);
+                    }
+                });
+            }
+
+            #[bench]
+            fn pvec(bencher: &mut test_crate::Bencher) {
+                bencher.iter(|| {
+                    let mut vec = PVec::new();
+
+                    for i in 0 .. N {
+                        vec.push(i);
+                    }
+                });
+            }
+
+            #[bench]
+            fn im(bencher: &mut test_crate::Bencher) {
+                bencher.iter(|| {
+                    let mut vec = Vector::new();
+
+                    for i in 0..N {
+                        vec.push_back(i);
+                    }
+                });
+            }
         }
-    });
+    }
 }
 
-fn push_pvec(bencher: &mut test_crate::Bencher, n: usize) {
-    bencher.iter(|| {
-        let mut vec = PVec::new();
+push!(push_5000, 5000);
+push!(push_50000, 50000);
+push!(push_500000, 500000);
 
-        for i in 0..n {
-            vec.push(i);
-        }
-    });
-}
-
-fn push_dvec(bencher: &mut test_crate::Bencher, n: usize) {
-    bencher.iter(|| {
-        let mut vec = DVec::new();
-
-        for i in 0..n {
-            vec.push(i);
-        }
-    });
-}
-
-fn push_im_vec(bencher: &mut test_crate::Bencher, n: usize) {
-    bencher.iter(|| {
-        let mut vec = Vector::new();
-
-        for i in 0..n {
-            vec.push_back(i);
-        }
-    });
-}
-
-#[bench]
-fn push_vec_5000(bencher: &mut test_crate::Bencher) {
-    push_vec(bencher, 5000);
-}
-
-#[bench]
-fn push_pvec_5000(bencher: &mut test_crate::Bencher) {
-    push_pvec(bencher, 5000);
-}
-
-#[bench]
-fn push_dvec_5000(bencher: &mut test_crate::Bencher) {
-    push_dvec(bencher, 5000);
-}
-
-#[bench]
-fn push_im_vec_5000(bencher: &mut test_crate::Bencher) {
-    push_im_vec(bencher, 5000);
-}
-
-#[bench]
-fn push_vec_50000(bencher: &mut test_crate::Bencher) {
-    push_vec(bencher, 50000);
-}
-
-#[bench]
-fn push_pvec_50000(bencher: &mut test_crate::Bencher) {
-    push_pvec(bencher, 50000);
-}
-
-#[bench]
-fn push_dvec_50000(bencher: &mut test_crate::Bencher) {
-    push_dvec(bencher, 50000);
-}
-
-#[bench]
-fn push_im_vec_50000(bencher: &mut test_crate::Bencher) {
-    push_im_vec(bencher, 50000);
-}
-
-#[bench]
-fn push_vec_500000(bencher: &mut test_crate::Bencher) {
-    push_vec(bencher, 500000);
-}
-
-#[bench]
-fn push_pvec_500000(bencher: &mut test_crate::Bencher) {
-    push_pvec(bencher, 500000);
-}
-
-#[bench]
-fn push_dvec_500000(bencher: &mut test_crate::Bencher) {
-    push_dvec(bencher, 500000);
-}
-
-#[bench]
-fn push_im_vec_500000(bencher: &mut test_crate::Bencher) {
-    push_im_vec(bencher, 500000);
-}
 
 fn push_clone_vec(bencher: &mut test_crate::Bencher, n: usize) {
     bencher.iter(|| {
