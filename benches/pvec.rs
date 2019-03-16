@@ -66,10 +66,6 @@ macro_rules! push {
     };
 }
 
-push!(push_5000, 5000);
-push!(push_50000, 50000);
-push!(push_500000, 500000);
-
 macro_rules! push_clone {
     ($mod_name: ident, $N: expr) => {
         mod $mod_name {
@@ -140,8 +136,6 @@ macro_rules! push_clone {
     };
 }
 
-push_clone!(push_clone_5000, 5000);
-
 macro_rules! pop {
     ($mod_name: ident, $N: expr) => {
         mod $mod_name {
@@ -202,10 +196,6 @@ macro_rules! pop {
         }
     };
 }
-
-pop!(pop_5000, 5000);
-pop!(pop_50000, 50000);
-pop!(pop_500000, 500000);
 
 macro_rules! pop_clone {
     ($mod_name: ident, $N: expr) => {
@@ -280,8 +270,6 @@ macro_rules! pop_clone {
     };
 }
 
-pop_clone!(pop_clone_5000, 5000);
-
 macro_rules! index_sequentially {
     ($mod_name: ident, $N: expr) => {
         mod $mod_name {
@@ -351,10 +339,6 @@ macro_rules! index_sequentially {
         }
     };
 }
-
-index_sequentially!(index_sequentially_5000, 5000);
-index_sequentially!(index_sequentially_50000, 50000);
-index_sequentially!(index_sequentially_500000, 500000);
 
 macro_rules! index_randomly {
     ($mod_name: ident, $N: expr) => {
@@ -430,10 +414,6 @@ macro_rules! index_randomly {
     };
 }
 
-index_randomly!(index_randomly_5000, 5000);
-index_randomly!(index_randomly_50000, 50000);
-index_randomly!(index_randomly_500000, 500000);
-
 macro_rules! append {
     ($mod_name: ident, $N: expr) => {
         mod $mod_name {
@@ -500,8 +480,6 @@ macro_rules! append {
         }
     };
 }
-
-append!(append_500000, 500000);
 
 macro_rules! append_push {
     ($mod_name: ident, $N: expr) => {
@@ -582,4 +560,23 @@ macro_rules! append_push {
     };
 }
 
+push!(push_5000, 5000);
+push!(push_50000, 50000);
+push!(push_500000, 500000);
+push_clone!(push_clone_5000, 5000);
+
+pop!(pop_5000, 5000);
+pop!(pop_50000, 50000);
+pop!(pop_500000, 500000);
+pop_clone!(pop_clone_5000, 5000);
+
+index_sequentially!(index_sequentially_5000, 5000);
+index_sequentially!(index_sequentially_50000, 50000);
+index_sequentially!(index_sequentially_500000, 500000);
+
+index_randomly!(index_randomly_5000, 5000);
+index_randomly!(index_randomly_50000, 50000);
+index_randomly!(index_randomly_500000, 500000);
+
+append!(append_500000, 500000);
 append_push!(append_push_50000, 50000);
