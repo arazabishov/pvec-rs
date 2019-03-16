@@ -207,196 +207,154 @@ pop!(pop_5000, 5000);
 pop!(pop_50000, 50000);
 pop!(pop_500000, 500000);
 
-fn pop_clone_vec(bencher: &mut test_crate::Bencher, n: usize) {
-    let mut vec = Vec::new();
+macro_rules! pop_clone {
+    ($mod_name: ident, $N: expr) => {
+        mod $mod_name {
+            use super::*;
 
-    for i in 0..n {
-        vec.push(i * 2);
-    }
+            const N: usize = $N;
 
-    bencher.iter(|| {
-        let mut vec_one = vec.clone();
-        let mut vec_two = vec_one.clone();
+            #[bench]
+            fn standard(bencher: &mut test_crate::Bencher) {
+                let mut vec = Vec::new();
 
-        for i in (0..n).rev() {
-            assert_eq!(vec_one.pop().unwrap(), i * 2);
-            vec_two = vec_one.clone();
+                for i in 0..N {
+                    vec.push(i * 2);
+                }
+
+                bencher.iter(|| {
+                    let mut vec_one = vec.clone();
+                    let mut vec_two = vec_one.clone();
+
+                    for i in (0..N).rev() {
+                        assert_eq!(vec_one.pop().unwrap(), i * 2);
+                        vec_two = vec_one.clone();
+                    }
+
+                    drop(vec_two);
+                });
+            }
+
+            #[bench]
+            fn pvec(bencher: &mut test_crate::Bencher) {
+                let mut vec = PVec::new();
+
+                for i in 0..N {
+                    vec.push(i * 2);
+                }
+
+                bencher.iter(|| {
+                    let mut vec_one = vec.clone();
+                    let mut vec_two = vec_one.clone();
+
+                    for i in (0..N).rev() {
+                        assert_eq!(vec_one.pop().unwrap(), i * 2);
+                        vec_two = vec_one.clone();
+                    }
+
+                    drop(vec_two);
+                });
+            }
+
+            #[bench]
+            fn im(bencher: &mut test_crate::Bencher) {
+                let mut vec = Vector::new();
+
+                for i in 0..N {
+                    vec.push_back(i * 2);
+                }
+
+                bencher.iter(|| {
+                    let mut vec_one = vec.clone();
+                    let mut vec_two = vec_one.clone();
+
+                    for i in (0..N).rev() {
+                        assert_eq!(vec_one.pop_back().unwrap(), i * 2);
+                        vec_two = vec_one.clone();
+                    }
+
+                    drop(vec_two);
+                });
+            }
         }
-
-        drop(vec_two);
-    });
-}
-
-fn pop_clone_pvec(bencher: &mut test_crate::Bencher, n: usize) {
-    let mut vec = PVec::new();
-
-    for i in 0..n {
-        vec.push(i * 2);
     }
-
-    bencher.iter(|| {
-        let mut vec_one = vec.clone();
-        let mut vec_two = vec_one.clone();
-
-        for i in (0..n).rev() {
-            assert_eq!(vec_one.pop().unwrap(), i * 2);
-            vec_two = vec_one.clone();
-        }
-
-        drop(vec_two);
-    });
 }
 
-fn pop_clone_im_vec(bencher: &mut test_crate::Bencher, n: usize) {
-    let mut vec = Vector::new();
+pop_clone!(pop_clone_5000, 5000);
 
-    for i in 0..n {
-        vec.push_back(i * 2);
+macro_rules! index_sequentially {
+    ($mod_name: ident, $N: expr) => {
+        mod $mod_name {
+            use super::*;
+
+            const N: usize = $N;
+
+            #[bench]
+            fn standard(bencher: &mut test_crate::Bencher) {
+                let mut vec = Vec::new();
+
+                for i in 0..N {
+                    vec.push(i * 2);
+                }
+
+                bencher.iter(|| {
+                    for i in 0..N {
+                        assert_eq!(vec[i], i * 2);
+                    }
+                });
+            }
+
+            #[bench]
+            fn dogged(bencher: &mut test_crate::Bencher) {
+                let mut vec = DVec::new();
+
+                for i in 0..N {
+                    vec.push(i * 2);
+                }
+
+                bencher.iter(|| {
+                    for i in 0..N {
+                        assert_eq!(vec[i], i * 2);
+                    }
+                });
+            }
+
+            #[bench]
+            fn pvec(bencher: &mut test_crate::Bencher) {
+                let mut vec = PVec::new();
+
+                for i in 0..N {
+                    vec.push(i * 2);
+                }
+
+                bencher.iter(|| {
+                    for i in 0..N {
+                        assert_eq!(vec[i], i * 2);
+                    }
+                });
+            }
+
+            #[bench]
+            fn im(bencher: &mut test_crate::Bencher) {
+                let mut vec = Vector::new();
+
+                for i in 0..N {
+                    vec.push_back(i * 2);
+                }
+
+                bencher.iter(|| {
+                    for i in 0..N {
+                        assert_eq!(vec[i], i * 2);
+                    }
+                });
+            }
+        }
     }
-
-    bencher.iter(|| {
-        let mut vec_one = vec.clone();
-        let mut vec_two = vec_one.clone();
-
-        for i in (0..n).rev() {
-            assert_eq!(vec_one.pop_back().unwrap(), i * 2);
-            vec_two = vec_one.clone();
-        }
-
-        drop(vec_two);
-    });
 }
 
-#[bench]
-fn pop_clone_vec_5000(bencher: &mut test_crate::Bencher) {
-    pop_clone_vec(bencher, 5000);
-}
-
-#[bench]
-fn pop_clone_pvec_5000(bencher: &mut test_crate::Bencher) {
-    pop_clone_pvec(bencher, 5000);
-}
-
-#[bench]
-fn pop_clone_im_vec_5000(bencher: &mut test_crate::Bencher) {
-    pop_clone_im_vec(bencher, 5000);
-}
-
-fn index_sequentially_vec(bencher: &mut test_crate::Bencher, n: usize) {
-    let mut vec = Vec::new();
-
-    for i in 0..n {
-        vec.push(i * 2);
-    }
-
-    bencher.iter(|| {
-        for i in 0..n {
-            assert_eq!(vec[i], i * 2);
-        }
-    });
-}
-
-fn index_sequentially_pvec(bencher: &mut test_crate::Bencher, n: usize) {
-    let mut vec = PVec::new();
-
-    for i in 0..n {
-        vec.push(i * 2);
-    }
-
-    bencher.iter(|| {
-        for i in 0..n {
-            assert_eq!(vec[i], i * 2);
-        }
-    });
-}
-
-fn index_sequentially_dvec(bencher: &mut test_crate::Bencher, n: usize) {
-    let mut vec = DVec::new();
-
-    for i in 0..n {
-        vec.push(i * 2);
-    }
-
-    bencher.iter(|| {
-        for i in 0..n {
-            assert_eq!(vec[i], i * 2);
-        }
-    });
-}
-
-fn index_sequentially_im_vec(bencher: &mut test_crate::Bencher, n: usize) {
-    let mut vec = Vector::new();
-
-    for i in 0..n {
-        vec.push_back(i * 2);
-    }
-
-    bencher.iter(|| {
-        for i in 0..n {
-            assert_eq!(vec[i], i * 2);
-        }
-    });
-}
-
-#[bench]
-fn index_sequentially_vec_5000(bencher: &mut test_crate::Bencher) {
-    index_sequentially_vec(bencher, 5000);
-}
-
-#[bench]
-fn index_sequentially_pvec_5000(bencher: &mut test_crate::Bencher) {
-    index_sequentially_pvec(bencher, 5000);
-}
-
-#[bench]
-fn index_sequentially_dvec_5000(bencher: &mut test_crate::Bencher) {
-    index_sequentially_dvec(bencher, 5000);
-}
-
-#[bench]
-fn index_sequentially_im_vec_5000(bencher: &mut test_crate::Bencher) {
-    index_sequentially_im_vec(bencher, 5000);
-}
-
-#[bench]
-fn index_sequentially_vec_50000(bencher: &mut test_crate::Bencher) {
-    index_sequentially_vec(bencher, 50000);
-}
-
-#[bench]
-fn index_sequentially_pvec_50000(bencher: &mut test_crate::Bencher) {
-    index_sequentially_pvec(bencher, 50000);
-}
-
-#[bench]
-fn index_sequentially_dvec_50000(bencher: &mut test_crate::Bencher) {
-    index_sequentially_dvec(bencher, 50000);
-}
-
-#[bench]
-fn index_sequentially_im_vec_50000(bencher: &mut test_crate::Bencher) {
-    index_sequentially_im_vec(bencher, 50000);
-}
-
-#[bench]
-fn index_sequentially_vec_500000(bencher: &mut test_crate::Bencher) {
-    index_sequentially_vec(bencher, 500000);
-}
-
-#[bench]
-fn index_sequentially_pvec_500000(bencher: &mut test_crate::Bencher) {
-    index_sequentially_pvec(bencher, 500000);
-}
-
-#[bench]
-fn index_sequentially_dvec_500000(bencher: &mut test_crate::Bencher) {
-    index_sequentially_dvec(bencher, 500000);
-}
-
-#[bench]
-fn index_sequentially_im_vec_500000(bencher: &mut test_crate::Bencher) {
-    index_sequentially_im_vec(bencher, 500000);
-}
+index_sequentially!(index_sequentially_5000, 5000);
+index_sequentially!(index_sequentially_50000, 50000);
+index_sequentially!(index_sequentially_500000, 500000);
 
 fn index_randomly_vec(bencher: &mut test_crate::Bencher, n: usize) {
     let mut vec = Vec::new();
