@@ -24,7 +24,7 @@ macro_rules! push {
                 bencher.iter(|| {
                     let mut vec = Vec::new();
 
-                    for i in 0 .. N {
+                    for i in 0..N {
                         vec.push(i);
                     }
                 });
@@ -35,7 +35,7 @@ macro_rules! push {
                 bencher.iter(|| {
                     let mut vec = DVec::new();
 
-                    for i in 0 .. N {
+                    for i in 0..N {
                         vec.push(i);
                     }
                 });
@@ -46,7 +46,7 @@ macro_rules! push {
                 bencher.iter(|| {
                     let mut vec = PVec::new();
 
-                    for i in 0 .. N {
+                    for i in 0..N {
                         vec.push(i);
                     }
                 });
@@ -63,7 +63,7 @@ macro_rules! push {
                 });
             }
         }
-    }
+    };
 }
 
 push!(push_5000, 5000);
@@ -137,7 +137,7 @@ macro_rules! push_clone {
                 });
             }
         }
-    }
+    };
 }
 
 push_clone!(push_clone_5000, 5000);
@@ -200,7 +200,7 @@ macro_rules! pop {
                 });
             }
         }
-    }
+    };
 }
 
 pop!(pop_5000, 5000);
@@ -277,7 +277,7 @@ macro_rules! pop_clone {
                 });
             }
         }
-    }
+    };
 }
 
 pop_clone!(pop_clone_5000, 5000);
@@ -349,7 +349,7 @@ macro_rules! index_sequentially {
                 });
             }
         }
-    }
+    };
 }
 
 index_sequentially!(index_sequentially_5000, 5000);
@@ -427,7 +427,7 @@ macro_rules! index_randomly {
                 });
             }
         }
-    }
+    };
 }
 
 index_randomly!(index_randomly_5000, 5000);
@@ -498,7 +498,7 @@ macro_rules! append {
                 });
             }
         }
-    }
+    };
 }
 
 append!(append_500000, 500000);
@@ -579,8 +579,7 @@ macro_rules! append_push {
                 });
             }
         }
-    }
+    };
 }
 
 append_push!(append_push_50000, 50000);
-
