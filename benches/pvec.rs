@@ -356,125 +356,83 @@ index_sequentially!(index_sequentially_5000, 5000);
 index_sequentially!(index_sequentially_50000, 50000);
 index_sequentially!(index_sequentially_500000, 500000);
 
-fn index_randomly_vec(bencher: &mut test_crate::Bencher, n: usize) {
-    let mut vec = Vec::new();
-    for i in 0..n {
-        vec.push(i * 2);
-    }
+macro_rules! index_randomly {
+    ($mod_name: ident, $N: expr) => {
+        mod $mod_name {
+            use super::*;
 
-    let mut rng = XorShiftRng::from_seed([0, 1, 2, 3]);
-    bencher.iter(|| {
-        for _ in 0..n {
-            let j = (rng.next_u32() as usize) % n;
-            assert_eq!(*vec.get(j).unwrap(), j * 2);
+            const N: usize = $N;
+
+            #[bench]
+            fn standard(bencher: &mut test_crate::Bencher) {
+                let mut vec = Vec::new();
+                for i in 0..N {
+                    vec.push(i * 2);
+                }
+
+                let mut rng = XorShiftRng::from_seed([0, 1, 2, 3]);
+                bencher.iter(|| {
+                    for _ in 0..N {
+                        let j = (rng.next_u32() as usize) % N;
+                        assert_eq!(*vec.get(j).unwrap(), j * 2);
+                    }
+                });
+            }
+
+            #[bench]
+            fn dogged(bencher: &mut test_crate::Bencher) {
+                let mut vec = DVec::new();
+                for i in 0..N {
+                    vec.push(i * 2);
+                }
+
+                let mut rng = XorShiftRng::from_seed([0, 1, 2, 3]);
+                bencher.iter(|| {
+                    for _ in 0..N {
+                        let j = (rng.next_u32() as usize) % N;
+                        assert_eq!(*vec.get(j).unwrap(), j * 2);
+                    }
+                });
+            }
+
+            #[bench]
+            fn pvec(bencher: &mut test_crate::Bencher) {
+                let mut vec = PVec::new();
+                for i in 0..N {
+                    vec.push(i * 2);
+                }
+
+                let mut rng = XorShiftRng::from_seed([0, 1, 2, 3]);
+                bencher.iter(|| {
+                    for _ in 0..N {
+                        let j = (rng.next_u32() as usize) % N;
+                        assert_eq!(*vec.get(j).unwrap(), j * 2);
+                    }
+                });
+            }
+
+            #[bench]
+            fn im(bencher: &mut test_crate::Bencher) {
+                let mut vec = Vector::new();
+                for i in 0..N {
+                    vec.push_back(i * 2);
+                }
+
+                let mut rng = XorShiftRng::from_seed([0, 1, 2, 3]);
+                bencher.iter(|| {
+                    for _ in 0..N {
+                        let j = (rng.next_u32() as usize) % N;
+                        assert_eq!(*vec.get(j).unwrap(), j * 2);
+                    }
+                });
+            }
         }
-    });
-}
-
-fn index_randomly_pvec(bencher: &mut test_crate::Bencher, n: usize) {
-    let mut vec = PVec::new();
-    for i in 0..n {
-        vec.push(i * 2);
     }
-
-    let mut rng = XorShiftRng::from_seed([0, 1, 2, 3]);
-    bencher.iter(|| {
-        for _ in 0..n {
-            let j = (rng.next_u32() as usize) % n;
-            assert_eq!(*vec.get(j).unwrap(), j * 2);
-        }
-    });
 }
 
-fn index_randomly_dvec(bencher: &mut test_crate::Bencher, n: usize) {
-    let mut vec = DVec::new();
-    for i in 0..n {
-        vec.push(i * 2);
-    }
-
-    let mut rng = XorShiftRng::from_seed([0, 1, 2, 3]);
-    bencher.iter(|| {
-        for _ in 0..n {
-            let j = (rng.next_u32() as usize) % n;
-            assert_eq!(*vec.get(j).unwrap(), j * 2);
-        }
-    });
-}
-
-fn index_randomly_im_vec(bencher: &mut test_crate::Bencher, n: usize) {
-    let mut vec = Vector::new();
-    for i in 0..n {
-        vec.push_back(i * 2);
-    }
-
-    let mut rng = XorShiftRng::from_seed([0, 1, 2, 3]);
-    bencher.iter(|| {
-        for _ in 0..n {
-            let j = (rng.next_u32() as usize) % n;
-            assert_eq!(*vec.get(j).unwrap(), j * 2);
-        }
-    });
-}
-
-#[bench]
-fn index_randomly_vec_5000(bencher: &mut test_crate::Bencher) {
-    index_randomly_vec(bencher, 5000);
-}
-
-#[bench]
-fn index_randomly_pvec_5000(bencher: &mut test_crate::Bencher) {
-    index_randomly_pvec(bencher, 5000);
-}
-
-#[bench]
-fn index_randomly_dvec_5000(bencher: &mut test_crate::Bencher) {
-    index_randomly_dvec(bencher, 5000);
-}
-
-#[bench]
-fn index_randomly_im_vec_5000(bencher: &mut test_crate::Bencher) {
-    index_randomly_im_vec(bencher, 5000);
-}
-
-#[bench]
-fn index_randomly_vec_50000(bencher: &mut test_crate::Bencher) {
-    index_randomly_vec(bencher, 50000);
-}
-
-#[bench]
-fn index_randomly_pvec_50000(bencher: &mut test_crate::Bencher) {
-    index_randomly_pvec(bencher, 50000);
-}
-
-#[bench]
-fn index_randomly_dvec_50000(bencher: &mut test_crate::Bencher) {
-    index_randomly_dvec(bencher, 50000);
-}
-
-#[bench]
-fn index_randomly_im_vec_50000(bencher: &mut test_crate::Bencher) {
-    index_randomly_im_vec(bencher, 50000);
-}
-
-#[bench]
-fn index_randomly_vec_500000(bencher: &mut test_crate::Bencher) {
-    index_randomly_vec(bencher, 500000);
-}
-
-#[bench]
-fn index_randomly_pvec_500000(bencher: &mut test_crate::Bencher) {
-    index_randomly_pvec(bencher, 500000);
-}
-
-#[bench]
-fn index_randomly_dvec_500000(bencher: &mut test_crate::Bencher) {
-    index_randomly_dvec(bencher, 500000);
-}
-
-#[bench]
-fn index_randomly_im_vec_500000(bencher: &mut test_crate::Bencher) {
-    index_randomly_im_vec(bencher, 500000);
-}
+index_randomly!(index_randomly_5000, 5000);
+index_randomly!(index_randomly_50000, 50000);
+index_randomly!(index_randomly_500000, 500000);
 
 fn append_vec(bencher: &mut test_crate::Bencher, n: usize) {
     let mut vec_one = Vec::new();
