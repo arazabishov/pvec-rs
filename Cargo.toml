@@ -9,6 +9,7 @@ serde_json = "1.0.26"
 serde_derive = "1.0.73"
 
 [dev-dependencies]
+criterion = "0.2.10"
 rand = "0.3.14"
 dogged = "0.2.0"
 im = { git = "https://github.com/bodil/im-rs" }
@@ -16,3 +17,7 @@ im = { git = "https://github.com/bodil/im-rs" }
 [features]
 default = []
 small_branch = []
+
+[[bench]]
+name = "pvec-criterion"
+harness = false
