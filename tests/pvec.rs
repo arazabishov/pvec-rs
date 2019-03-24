@@ -260,10 +260,26 @@ fn interleaving_different_operations_must_maintain_correct_internal_state(vec_si
 }
 
 #[test]
-fn interleaving_different_operations_must_maintain_correct_internal_state_for_var_sizes() {
+fn interleaving_different_operations_must_maintain_correct_internal_state_for_var_sizes_4() {
     interleaving_different_operations_must_maintain_correct_internal_state(4);
+}
+
+#[test]
+fn interleaving_different_operations_must_maintain_correct_internal_state_for_var_sizes_5() {
     interleaving_different_operations_must_maintain_correct_internal_state(5);
+}
+
+#[test]
+fn interleaving_different_operations_must_maintain_correct_internal_state_for_var_sizes_17() {
     interleaving_different_operations_must_maintain_correct_internal_state(17);
+}
+
+#[test]
+fn interleaving_different_operations_must_maintain_correct_internal_state_for_var_sizes_32() {
     interleaving_different_operations_must_maintain_correct_internal_state(32);
+}
+
+#[test]
+fn interleaving_different_operations_must_maintain_correct_internal_state_for_var_sizes_33() {
     interleaving_different_operations_must_maintain_correct_internal_state(33);
 }
