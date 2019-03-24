@@ -270,6 +270,11 @@ fn interleaving_different_operations_must_maintain_correct_internal_state_for_va
 }
 
 #[test]
+fn interleaving_different_operations_must_maintain_correct_internal_state_for_var_sizes_16() {
+    interleaving_different_operations_must_maintain_correct_internal_state(16);
+}
+
+#[test]
 fn interleaving_different_operations_must_maintain_correct_internal_state_for_var_sizes_17() {
     interleaving_different_operations_must_maintain_correct_internal_state(17);
 }
