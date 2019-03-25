@@ -292,11 +292,6 @@ fn interleaving_different_operations_must_maintain_correct_internal_state_for_va
 }
 
 #[test]
-fn small_pvec_struct_size() {
-    assert_eq!(size_of::<PVec<u8>>(), 104);
-}
-
-#[test]
 fn zero_sized_values() {
     let mut v = PVec::new();
     assert_eq!(v.len(), 0);
