@@ -1,5 +1,7 @@
 extern crate pvec;
 
+use std::mem::size_of;
+
 use pvec::pvec::PVec;
 
 #[cfg(not(feature = "small_branch"))]
@@ -288,3 +290,56 @@ fn interleaving_different_operations_must_maintain_correct_internal_state_for_va
 fn interleaving_different_operations_must_maintain_correct_internal_state_for_var_sizes_33() {
     interleaving_different_operations_must_maintain_correct_internal_state(33);
 }
+
+#[test]
+fn small_pvec_struct_size() {
+    assert_eq!(size_of::<PVec<u8>>(), 104);
+}
+
+#[test]
+fn zero_sized_values() {
+    let mut v = PVec::new();
+    assert_eq!(v.len(), 0);
+
+    v.push(());
+    assert_eq!(v.len(), 1);
+
+    v.push(());
+    assert_eq!(v.len(), 2);
+    assert_eq!(v.pop(), Some(()));
+    assert_eq!(v.pop(), Some(()));
+    assert_eq!(v.pop(), None);
+
+    assert_eq!(v.len(), 0);
+
+    v.push(());
+    assert_eq!(v.len(), 1);
+
+    v.push(());
+    assert_eq!(v.len(), 2);
+
+    for i in 0..v.len() {
+        v.get(i);
+    }
+    assert_eq!(v.len(), 2);
+
+    v.push(());
+    assert_eq!(v.len(), 3);
+
+    v.push(());
+    assert_eq!(v.len(), 4);
+
+    for i in 0..v.len() {
+        v.get_mut(i);
+    }
+    assert_eq!(v.len(), 4);
+}
+
+//
+//#[test]
+//fn test_split_off() {
+//    let mut vec = vec![1, 2, 3, 4, 5, 6];
+//    let vec2 = vec.split_off(4);
+//    assert_eq!(vec, [1, 2, 3, 4]);
+//    assert_eq!(vec2, [5, 6]);
+//}
