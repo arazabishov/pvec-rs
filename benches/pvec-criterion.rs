@@ -10,7 +10,7 @@ extern crate test as test_crate;
 
 use criterion::{Criterion, ParameterizedBenchmark};
 use dogged::DVec;
-use im::Vector;
+use im::Vector as IVec;
 use rand::{Rng, SeedableRng, XorShiftRng};
 
 use pvec::pvec::PVec;
@@ -42,7 +42,7 @@ fn push(criterion: &mut Criterion) {
         })
         .with_function("im", |bencher, n| {
             bencher.iter(|| {
-                let mut vec = Vector::new();
+                let mut vec = IVec::new();
 
                 for i in 0..*n {
                     vec.push_back(i);
@@ -96,7 +96,7 @@ fn push_clone(criterion: &mut Criterion) {
         })
         .with_function("im", |bencher, n| {
             bencher.iter(|| {
-                let mut vec = Vector::new();
+                let mut vec = IVec::new();
                 let mut vec_one = vec.clone();
 
                 for i in 0..*n {
@@ -149,8 +149,8 @@ fn pop_clone(criterion: &mut Criterion) {
             },
             vec![100, 500, 1000, 5000, 10000, 20000],
         )
-        .with_function("im", |bencher, n| {
-            let mut vec = Vector::new();
+        .with_function("im-rs", |bencher, n| {
+            let mut vec = IVec::new();
 
             for i in 0..*n {
                 vec.push_back(i * 2);
@@ -223,8 +223,8 @@ fn index_sequentially(criterion: &mut Criterion) {
                 }
             });
         })
-        .with_function("im", |bencher, n| {
-            let mut vec = Vector::new();
+        .with_function("im-rs", |bencher, n| {
+            let mut vec = IVec::new();
 
             for i in 0..*n {
                 vec.push_back(i * 2);
@@ -287,8 +287,8 @@ fn index_randomly(criterion: &mut Criterion) {
                 }
             });
         })
-        .with_function("im", |bencher, n| {
-            let mut vec = Vector::new();
+        .with_function("im-rs", |bencher, n| {
+            let mut vec = IVec::new();
             for i in 0..*n {
                 vec.push_back(i * 2);
             }
@@ -342,15 +342,15 @@ fn append(criterion: &mut Criterion) {
             },
             vec![100, 500, 1000, 5000, 10000, 50000, 100000, 200000, 500000],
         )
-        .with_function("im", |bencher, n| {
-            let mut vec_one = Vector::new();
+        .with_function("im-rs", |bencher, n| {
+            let mut vec_one = IVec::new();
 
             for i in 0..*n {
                 vec_one.push_back(i);
             }
 
             bencher.iter(|| {
-                let mut vec_two = Vector::new();
+                let mut vec_two = IVec::new();
 
                 for _ in 0..16 {
                     vec_two.append(vec_one.clone());
@@ -407,15 +407,15 @@ fn append_push(criterion: &mut Criterion) {
             },
             vec![100, 500, 1000, 5000, 10000, 50000],
         )
-        .with_function("im", |bencher, n| {
-            let mut vec_one = Vector::new();
+        .with_function("im-rs", |bencher, n| {
+            let mut vec_one = IVec::new();
 
             for i in 0..*n {
                 vec_one.push_back(i);
             }
 
             bencher.iter(|| {
-                let mut vec_two = Vector::new();
+                let mut vec_two = IVec::new();
 
                 for i in 0..1024 {
                     if i % 2 == 0 {
