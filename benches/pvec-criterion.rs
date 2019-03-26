@@ -123,6 +123,73 @@ fn push_clone(criterion: &mut Criterion) {
     );
 }
 
+fn pop_clone(criterion: &mut Criterion) {
+    criterion.bench(
+        "pop_clone",
+        ParameterizedBenchmark::new(
+            "std",
+            |bencher, n| {
+                let mut vec = Vec::new();
+
+                for i in 0..*n {
+                    vec.push(i * 2);
+                }
+
+                bencher.iter(|| {
+                    let mut vec_one = vec.clone();
+                    let mut vec_two = vec_one.clone();
+
+                    for _ in 0..*n {
+                        vec_one.pop();
+                        vec_two = vec_one.clone();
+                    }
+
+                    drop(vec_two);
+                })
+            },
+            vec![100, 500, 1000, 5000, 10000, 20000],
+        )
+        .with_function("im", |bencher, n| {
+            let mut vec = Vector::new();
+
+            for i in 0..*n {
+                vec.push_back(i * 2);
+            }
+
+            bencher.iter(|| {
+                let mut vec_one = vec.clone();
+                let mut vec_two = vec_one.clone();
+
+                for _ in 0..*n {
+                    vec_one.pop_back();
+                    vec_two = vec_one.clone();
+                }
+
+                drop(vec_two);
+            });
+        })
+        .with_function("pvec", |bencher, n| {
+            let mut vec = PVec::new();
+
+            for i in 0..*n {
+                vec.push(i * 2);
+            }
+
+            bencher.iter(|| {
+                let mut vec_one = vec.clone();
+                let mut vec_two = vec_one.clone();
+
+                for _ in 0..*n {
+                    vec_one.pop();
+                    vec_two = vec_one.clone();
+                }
+
+                drop(vec_two);
+            })
+        }),
+    );
+}
+
 fn index_sequentially(criterion: &mut Criterion) {
     criterion.bench(
         "index_sequentially",
@@ -389,6 +456,7 @@ criterion_group!(
     benches,
     push,
     push_clone,
+    pop_clone,
     index_sequentially,
     index_randomly,
     append,
