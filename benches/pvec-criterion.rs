@@ -29,7 +29,7 @@ fn push(criterion: &mut Criterion) {
                     }
                 })
             },
-            vec![1000, 5000, 10000, 50000, 100000, 200000, 500000],
+            vec![100, 500, 1000, 5000, 10000, 50000, 100000, 200000, 500000],
         )
         .with_function("dvec", |bencher, n| {
             bencher.iter(|| {
@@ -79,7 +79,7 @@ fn push_clone(criterion: &mut Criterion) {
                     drop(vec_one);
                 })
             },
-            vec![1000, 5000, 10000, 20000],
+            vec![100, 500, 1000, 5000, 10000, 20000],
         )
         .with_function("dvec", |bencher, n| {
             bencher.iter(|| {
@@ -208,7 +208,7 @@ fn index_sequentially(criterion: &mut Criterion) {
                     }
                 })
             },
-            vec![1000, 5000, 10000, 50000, 100000, 200000, 500000],
+            vec![100, 500, 1000, 5000, 10000, 50000, 100000, 200000, 500000],
         )
         .with_function("dvec", |bencher, n| {
             let mut vec = DVec::new();
@@ -271,7 +271,7 @@ fn index_randomly(criterion: &mut Criterion) {
                     }
                 });
             },
-            vec![1000, 5000, 10000, 50000, 100000, 200000, 500000],
+            vec![100, 500, 1000, 5000, 10000, 50000, 100000, 200000, 500000],
         )
         .with_function("dvec", |bencher, n| {
             let mut vec = DVec::new();
@@ -340,7 +340,7 @@ fn append(criterion: &mut Criterion) {
                     drop(vec_two)
                 });
             },
-            vec![1000, 5000, 10000, 50000, 100000, 200000, 500000],
+            vec![100, 500, 1000, 5000, 10000, 50000, 100000, 200000, 500000],
         )
         .with_function("im", |bencher, n| {
             let mut vec_one = Vector::new();
@@ -405,7 +405,7 @@ fn append_push(criterion: &mut Criterion) {
                     drop(vec_two)
                 });
             },
-            vec![1000, 5000, 10000, 50000],
+            vec![100, 500, 1000, 5000, 10000, 50000],
         )
         .with_function("im", |bencher, n| {
             let mut vec_one = Vector::new();
