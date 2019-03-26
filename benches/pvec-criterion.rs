@@ -140,7 +140,7 @@ fn pop_clone(criterion: &mut Criterion) {
                     let mut vec_two = vec_one.clone();
 
                     for _ in 0..*n {
-                        vec_one.pop();
+                        let _ = vec_one.pop();
                         vec_two = vec_one.clone();
                     }
 
@@ -161,7 +161,7 @@ fn pop_clone(criterion: &mut Criterion) {
                 let mut vec_two = vec_one.clone();
 
                 for _ in 0..*n {
-                    vec_one.pop_back();
+                    let _ = vec_one.pop_back();
                     vec_two = vec_one.clone();
                 }
 
@@ -180,7 +180,7 @@ fn pop_clone(criterion: &mut Criterion) {
                 let mut vec_two = vec_one.clone();
 
                 for _ in 0..*n {
-                    vec_one.pop();
+                    let _ = vec_one.pop();
                     vec_two = vec_one.clone();
                 }
 
@@ -204,7 +204,7 @@ fn index_sequentially(criterion: &mut Criterion) {
 
                 bencher.iter(|| {
                     for i in 0..*n {
-                        assert_eq!(vec[i], i * 2);
+                        let _ = vec[i];
                     }
                 })
             },
@@ -219,7 +219,7 @@ fn index_sequentially(criterion: &mut Criterion) {
 
             bencher.iter(|| {
                 for i in 0..*n {
-                    assert_eq!(vec[i], i * 2);
+                    let _ = vec[i];
                 }
             });
         })
@@ -232,7 +232,7 @@ fn index_sequentially(criterion: &mut Criterion) {
 
             bencher.iter(|| {
                 for i in 0..*n {
-                    assert_eq!(vec[i], i * 2);
+                    let _ = vec[i];
                 }
             });
         })
@@ -245,7 +245,7 @@ fn index_sequentially(criterion: &mut Criterion) {
 
             bencher.iter(|| {
                 for i in 0..*n {
-                    assert_eq!(vec[i], i * 2);
+                    let _ = vec[i];
                 }
             });
         }),
@@ -267,7 +267,7 @@ fn index_randomly(criterion: &mut Criterion) {
                 bencher.iter(|| {
                     for _ in 0..*n {
                         let j = (rng.next_u32() as usize) % *n;
-                        assert_eq!(*vec.get(j).unwrap(), j * 2);
+                        let _ = vec.get(j);
                     }
                 });
             },
@@ -283,7 +283,7 @@ fn index_randomly(criterion: &mut Criterion) {
             bencher.iter(|| {
                 for _ in 0..*n {
                     let j = (rng.next_u32() as usize) % *n;
-                    assert_eq!(*vec.get(j).unwrap(), j * 2);
+                    let _ = vec.get(j);
                 }
             });
         })
@@ -297,7 +297,7 @@ fn index_randomly(criterion: &mut Criterion) {
             bencher.iter(|| {
                 for _ in 0..*n {
                     let j = (rng.next_u32() as usize) % *n;
-                    assert_eq!(*vec.get(j).unwrap(), j * 2);
+                    let _ = vec.get(j);
                 }
             });
         })
@@ -311,7 +311,7 @@ fn index_randomly(criterion: &mut Criterion) {
             bencher.iter(|| {
                 for _ in 0..*n {
                     let j = (rng.next_u32() as usize) % *n;
-                    assert_eq!(*vec.get(j).unwrap(), j * 2);
+                    let _ = vec.get(j);
                 }
             });
         }),
