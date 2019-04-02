@@ -735,7 +735,8 @@ impl<T: Clone + Debug> Node<T> {
                 let child_node_r = child_r.take().unwrap();
 
                 let mut branch_c = if self_shift.is_level_with_leaves() {
-                    SharedPtr::make_mut(child_node_l.as_mut_leaf()).merge(child_node_r.into_leaf().take())
+                    SharedPtr::make_mut(child_node_l.as_mut_leaf())
+                        .merge(child_node_r.into_leaf().take())
                 } else {
                     child_node_l.merge(child_node_r, self_shift.dec(), that_shift.dec())
                 };
@@ -849,7 +850,9 @@ impl<T: Clone + Debug> Node<T> {
         debug_assert!(shift.0 >= BITS_PER_LEVEL);
 
         match self {
-            Node::RelaxedBranch(ref mut branch_arc) => SharedPtr::make_mut(branch_arc).pop_leaf(shift),
+            Node::RelaxedBranch(ref mut branch_arc) => {
+                SharedPtr::make_mut(branch_arc).pop_leaf(shift)
+            }
             Node::Branch(ref mut branch_arc) => SharedPtr::make_mut(branch_arc).pop_leaf(shift),
             Node::Leaf(..) => unreachable!(),
         }
@@ -1123,9 +1126,9 @@ mod serializer {
     extern crate serde_json;
 
     use self::serde::ser::{Serialize, SerializeSeq, SerializeStruct, Serializer};
+    use super::SharedPtr;
     use super::BRANCH_FACTOR;
     use super::{Branch, Leaf, Node, RelaxedBranch, RrbTree};
-    use super::SharedPtr;
 
     impl<T> RelaxedBranch<T>
     where
