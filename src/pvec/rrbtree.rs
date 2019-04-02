@@ -2,7 +2,18 @@ use std::cmp;
 use std::cmp::Ordering;
 use std::fmt::Debug;
 use std::mem;
+
+#[cfg(feature = "arc")]
 use std::sync::Arc;
+
+#[cfg(not(feature = "arc"))]
+use std::rc::Rc;
+
+#[cfg(feature = "arc")]
+type SharedPtr<K> = Arc<K>;
+
+#[cfg(not(feature = "arc"))]
+type SharedPtr<K> = Rc<K>;
 
 #[cfg(not(feature = "small_branch"))]
 pub const BRANCH_FACTOR: usize = 32;
@@ -133,9 +144,9 @@ struct Leaf<T> {
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 enum Node<T> {
-    RelaxedBranch(Arc<RelaxedBranch<T>>),
-    Branch(Arc<Branch<T>>),
-    Leaf(Arc<Leaf<T>>),
+    RelaxedBranch(SharedPtr<RelaxedBranch<T>>),
+    Branch(SharedPtr<Branch<T>>),
+    Leaf(SharedPtr<Leaf<T>>),
 }
 
 impl<T: Clone + Debug> Leaf<T> {
@@ -196,10 +207,10 @@ impl<T: Clone + Debug> Leaf<T> {
 
         let mut children = new_branch!();
 
-        children[0] = Some(Node::Leaf(Arc::new(leaf_l)));
-        children[1] = Some(Node::Leaf(Arc::new(leaf_r)));
+        children[0] = Some(Node::Leaf(SharedPtr::new(leaf_l)));
+        children[1] = Some(Node::Leaf(SharedPtr::new(leaf_r)));
 
-        Node::Branch(Arc::new(Branch { children, len: 2 }))
+        Node::Branch(SharedPtr::new(Branch { children, len: 2 }))
     }
 
     #[inline(always)]
@@ -231,11 +242,11 @@ impl<T: Clone + Debug> Leaf<T> {
                     if new_leaf.is_full() {
                         check_subtree(&mut new_root, &mut new_subtree);
 
-                        new_subtree.push(Node::Leaf(Arc::new(new_leaf)));
+                        new_subtree.push(Node::Leaf(SharedPtr::new(new_leaf)));
                         new_leaf = Leaf::new();
                     }
 
-                    new_leaf.add(Arc::make_mut(&mut old_leaf).take(i).take());
+                    new_leaf.add(SharedPtr::make_mut(&mut old_leaf).take(i).take());
                 }
             }
         }
@@ -243,7 +254,7 @@ impl<T: Clone + Debug> Leaf<T> {
         check_subtree(&mut new_root, &mut new_subtree);
 
         if !new_leaf.is_empty() {
-            new_subtree.push(Node::Leaf(Arc::new(new_leaf)));
+            new_subtree.push(Node::Leaf(SharedPtr::new(new_leaf)));
         }
 
         if !new_subtree.is_empty() {
@@ -274,13 +285,13 @@ impl<T: Clone + Debug> BranchBuilder<T> {
 
         if is_relaxed {
             let sizes = BranchBuilder::compute_sizes(&children, &self.shift, &len);
-            Node::RelaxedBranch(Arc::new(RelaxedBranch {
+            Node::RelaxedBranch(SharedPtr::new(RelaxedBranch {
                 children,
                 sizes,
                 len,
             }))
         } else {
-            Node::Branch(Arc::new(Branch { children, len }))
+            Node::Branch(SharedPtr::new(Branch { children, len }))
         }
     }
 
@@ -420,20 +431,20 @@ impl<T: Clone + Debug> Branch<T> {
             let node = child.get_or_insert_with(|| {
                 *len += 1;
 
-                Node::Branch(Arc::new(Branch {
+                Node::Branch(SharedPtr::new(Branch {
                     children: new_branch!(),
                     len: 0,
                 }))
             });
 
-            branch = Arc::make_mut(node.as_mut_branch());
+            branch = SharedPtr::make_mut(node.as_mut_branch());
             shift = shift.dec();
         }
 
         debug_assert_eq!(shift.0, BITS_PER_LEVEL);
 
         branch.len += 1;
-        branch.children[index.child(shift)] = Some(Node::Leaf(Arc::new(leaf)));
+        branch.children[index.child(shift)] = Some(Node::Leaf(SharedPtr::new(leaf)));
     }
 
     #[inline(always)]
@@ -510,7 +521,7 @@ impl<T: Clone + Debug> RelaxedBranch<T> {
             let node = child_node.get_or_insert_with(|| {
                 *len += 1;
 
-                Node::Branch(Arc::new(Branch {
+                Node::Branch(SharedPtr::new(Branch {
                     children: new_branch!(),
                     len: 0,
                 }))
@@ -521,9 +532,9 @@ impl<T: Clone + Debug> RelaxedBranch<T> {
             }
 
             branch = match node {
-                Node::RelaxedBranch(ref mut branch_arc) => Arc::make_mut(branch_arc),
+                Node::RelaxedBranch(ref mut branch_arc) => SharedPtr::make_mut(branch_arc),
                 Node::Branch(ref mut branch_arc) => {
-                    Arc::make_mut(branch_arc).push_leaf(index, shift, leaf);
+                    SharedPtr::make_mut(branch_arc).push_leaf(index, shift, leaf);
                     return;
                 }
                 Node::Leaf(..) => unreachable!(),
@@ -541,7 +552,7 @@ impl<T: Clone + Debug> RelaxedBranch<T> {
         }
 
         branch.len += 1;
-        branch.children[branch_index] = Some(Node::Leaf(Arc::new(leaf)));
+        branch.children[branch_index] = Some(Node::Leaf(SharedPtr::new(leaf)));
     }
 
     #[inline(always)]
@@ -584,11 +595,11 @@ trait Take<T: Clone + Debug> {
     fn take(self) -> T;
 }
 
-impl<T: Clone + Debug> Take<T> for Arc<T> {
+impl<T: Clone + Debug> Take<T> for SharedPtr<T> {
     fn take(mut self) -> T {
         // ToDo: you have to verify whether this method is thread-safe
-        Arc::make_mut(&mut self);
-        Arc::try_unwrap(self).unwrap()
+        SharedPtr::make_mut(&mut self);
+        SharedPtr::try_unwrap(self).unwrap()
     }
 }
 
@@ -620,11 +631,11 @@ impl<T: Clone + Debug> Node<T> {
     fn as_mut_children(&mut self) -> &mut [Option<Node<T>>] {
         match self {
             Node::Branch(ref mut node) => {
-                let branch = Arc::make_mut(node);
+                let branch = SharedPtr::make_mut(node);
                 &mut branch.children[..branch.len]
             }
             Node::RelaxedBranch(ref mut node) => {
-                let branch = Arc::make_mut(node);
+                let branch = SharedPtr::make_mut(node);
                 &mut branch.children[..branch.len]
             }
             Node::Leaf(..) => unreachable!(),
@@ -712,7 +723,7 @@ impl<T: Clone + Debug> Node<T> {
             )
         } else {
             if self_shift.0 == 0 {
-                Arc::make_mut(self.as_mut_leaf()).merge(that.into_leaf().take())
+                SharedPtr::make_mut(self.as_mut_leaf()).merge(that.into_leaf().take())
             } else {
                 let branch_l = self.as_mut_children();
                 let branch_r = that.as_mut_children();
@@ -724,7 +735,7 @@ impl<T: Clone + Debug> Node<T> {
                 let child_node_r = child_r.take().unwrap();
 
                 let mut branch_c = if self_shift.is_level_with_leaves() {
-                    Arc::make_mut(child_node_l.as_mut_leaf()).merge(child_node_r.into_leaf().take())
+                    SharedPtr::make_mut(child_node_l.as_mut_leaf()).merge(child_node_r.into_leaf().take())
                 } else {
                     child_node_l.merge(child_node_r, self_shift.dec(), that_shift.dec())
                 };
@@ -788,7 +799,7 @@ impl<T: Clone + Debug> Node<T> {
 
 impl<T: Clone + Debug> Node<T> {
     #[inline(always)]
-    fn as_mut_branch(&mut self) -> &mut Arc<Branch<T>> {
+    fn as_mut_branch(&mut self) -> &mut SharedPtr<Branch<T>> {
         if let Node::Branch(ref mut branch_arc) = self {
             branch_arc
         } else {
@@ -797,7 +808,7 @@ impl<T: Clone + Debug> Node<T> {
     }
 
     #[inline(always)]
-    fn as_mut_leaf(&mut self) -> &mut Arc<Leaf<T>> {
+    fn as_mut_leaf(&mut self) -> &mut SharedPtr<Leaf<T>> {
         if let Node::Leaf(ref mut leaf_arc) = self {
             leaf_arc
         } else {
@@ -806,7 +817,7 @@ impl<T: Clone + Debug> Node<T> {
     }
 
     #[inline(always)]
-    fn into_leaf(self) -> Arc<Leaf<T>> {
+    fn into_leaf(self) -> SharedPtr<Leaf<T>> {
         if let Node::Leaf(leaf_arc) = self {
             leaf_arc
         } else {
@@ -821,10 +832,10 @@ impl<T: Clone + Debug> Node<T> {
 
         match self {
             Node::RelaxedBranch(ref mut branch_arc) => {
-                Arc::make_mut(branch_arc).push_leaf(index, shift, shift_new_branch, leaf);
+                SharedPtr::make_mut(branch_arc).push_leaf(index, shift, shift_new_branch, leaf);
             }
             Node::Branch(ref mut branch_arc) => {
-                Arc::make_mut(branch_arc).push_leaf(index, shift, leaf);
+                SharedPtr::make_mut(branch_arc).push_leaf(index, shift, leaf);
             }
             Node::Leaf(..) => unreachable!(),
         }
@@ -838,8 +849,8 @@ impl<T: Clone + Debug> Node<T> {
         debug_assert!(shift.0 >= BITS_PER_LEVEL);
 
         match self {
-            Node::RelaxedBranch(ref mut branch_arc) => Arc::make_mut(branch_arc).pop_leaf(shift),
-            Node::Branch(ref mut branch_arc) => Arc::make_mut(branch_arc).pop_leaf(shift),
+            Node::RelaxedBranch(ref mut branch_arc) => SharedPtr::make_mut(branch_arc).pop_leaf(shift),
+            Node::Branch(ref mut branch_arc) => SharedPtr::make_mut(branch_arc).pop_leaf(shift),
             Node::Leaf(..) => unreachable!(),
         }
     }
@@ -911,7 +922,7 @@ impl<T: Clone + Debug> Node<T> {
                 Node::RelaxedBranch(ref mut branch_arc) => {
                     debug_assert!(shift.0 > 0);
 
-                    let branch = Arc::make_mut(branch_arc);
+                    let branch = SharedPtr::make_mut(branch_arc);
 
                     let sizes = &mut branch.sizes;
                     let branch_index = get_branch_index(sizes, idx);
@@ -926,7 +937,7 @@ impl<T: Clone + Debug> Node<T> {
                 Node::Branch(ref mut branch_arc) => {
                     debug_assert!(shift.0 > 0);
 
-                    let branch = Arc::make_mut(branch_arc);
+                    let branch = SharedPtr::make_mut(branch_arc);
 
                     node = branch.children[idx.child(shift)].as_mut().unwrap();
                     shift = shift.dec();
@@ -934,7 +945,7 @@ impl<T: Clone + Debug> Node<T> {
                 Node::Leaf(ref mut leaf_arc) => {
                     debug_assert_eq!(shift.0, 0);
 
-                    let leaf = Arc::make_mut(leaf_arc);
+                    let leaf = SharedPtr::make_mut(leaf_arc);
                     return leaf.elements[idx.element()].as_mut();
                 }
             }
@@ -979,22 +990,22 @@ impl<T: Clone + Debug> RrbTree<T> {
                         new_sizes[0] = branch.sizes[branch.len - 1];
                         new_sizes[1] = branch.sizes[branch.len - 1];
 
-                        new_children[1] = Some(Node::Branch(Arc::new(Branch {
+                        new_children[1] = Some(Node::Branch(SharedPtr::new(Branch {
                             children: new_branch!(),
                             len: 0,
                         })));
 
-                        Node::RelaxedBranch(Arc::new(RelaxedBranch {
+                        Node::RelaxedBranch(SharedPtr::new(RelaxedBranch {
                             children: new_children,
                             sizes: new_sizes,
                             len: 2,
                         }))
                     }
-                    Node::Branch(..) => Node::Branch(Arc::new(Branch {
+                    Node::Branch(..) => Node::Branch(SharedPtr::new(Branch {
                         children: new_children,
                         len: 1,
                     })),
-                    Node::Leaf(..) => Node::Branch(Arc::new(Branch {
+                    Node::Leaf(..) => Node::Branch(SharedPtr::new(Branch {
                         children: new_children,
                         len: 1,
                     })),
@@ -1011,7 +1022,7 @@ impl<T: Clone + Debug> RrbTree<T> {
                 },
             );
         } else {
-            self.root = Some(Node::Leaf(Arc::new(Leaf {
+            self.root = Some(Node::Leaf(SharedPtr::new(Leaf {
                 elements: tail,
                 len: tail_len,
             })));
@@ -1046,10 +1057,10 @@ impl<T: Clone + Debug> RrbTree<T> {
 
             *root = match root {
                 Node::RelaxedBranch(ref mut branch_arc) => {
-                    Arc::make_mut(branch_arc).children[0].take().unwrap()
+                    SharedPtr::make_mut(branch_arc).children[0].take().unwrap()
                 }
                 Node::Branch(ref mut branch_arc) => {
-                    Arc::make_mut(branch_arc).children[0].take().unwrap()
+                    SharedPtr::make_mut(branch_arc).children[0].take().unwrap()
                 }
                 Node::Leaf(..) => unreachable!(),
             };
@@ -1114,7 +1125,7 @@ mod serializer {
     use self::serde::ser::{Serialize, SerializeSeq, SerializeStruct, Serializer};
     use super::BRANCH_FACTOR;
     use super::{Branch, Leaf, Node, RelaxedBranch, RrbTree};
-    use std::sync::Arc;
+    use super::SharedPtr;
 
     impl<T> RelaxedBranch<T>
     where
@@ -1132,17 +1143,17 @@ mod serializer {
                         Node::RelaxedBranch(ref relaxed_branch) => json!({
                                 "relaxedBranch": child,
                                 "sizes": relaxed_branch.sizes,
-                                "refs": Arc::strong_count(relaxed_branch),
+                                "refs": SharedPtr::strong_count(relaxed_branch),
                                 "len": relaxed_branch.len
                         }),
                         Node::Branch(ref branch) => json!({
                                 "branch": child,
-                                "refs": Arc::strong_count(branch),
+                                "refs": SharedPtr::strong_count(branch),
                                 "len": branch.len
                         }),
                         Node::Leaf(ref leaf) => json!({
                                 "leaf": child,
-                                "refs": Arc::strong_count(leaf),
+                                "refs": SharedPtr::strong_count(leaf),
                                 "len": leaf.len
                         }),
                     };
@@ -1179,17 +1190,17 @@ mod serializer {
                         Node::RelaxedBranch(ref relaxed_branch) => json!({
                                 "relaxedBranch": child,
                                 "sizes": relaxed_branch.sizes,
-                                "refs": Arc::strong_count(relaxed_branch),
+                                "refs": SharedPtr::strong_count(relaxed_branch),
                                 "len": relaxed_branch.len
                         }),
                         Node::Branch(ref branch) => json!({
                                 "branch": child,
-                                "refs": Arc::strong_count(branch),
+                                "refs": SharedPtr::strong_count(branch),
                                 "len": branch.len
                         }),
                         Node::Leaf(ref leaf) => json!({
                                 "leaf": child,
-                                "refs": Arc::strong_count(leaf),
+                                "refs": SharedPtr::strong_count(leaf),
                                 "len": leaf.len
                         }),
                     };
@@ -1257,17 +1268,17 @@ mod serializer {
                     Node::RelaxedBranch(ref relaxed_branch) => json!({
                         "relaxedBranch": root,
                         "sizes": relaxed_branch.sizes,
-                        "refs": Arc::strong_count(relaxed_branch),
+                        "refs": SharedPtr::strong_count(relaxed_branch),
                         "len": relaxed_branch.len
                     }),
                     Node::Branch(ref branch) => json!({
                         "branch": root,
-                        "refs":  Arc::strong_count(branch),
+                        "refs":  SharedPtr::strong_count(branch),
                         "len": branch.len
                     }),
                     Node::Leaf(ref leaf) => json!({
                         "leaf": root,
-                        "refs": Arc::strong_count(leaf),
+                        "refs": SharedPtr::strong_count(leaf),
                         "len": leaf.len
                     }),
                 };
