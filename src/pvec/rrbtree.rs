@@ -2,12 +2,10 @@ use std::cmp;
 use std::cmp::Ordering;
 use std::fmt::Debug;
 use std::mem;
-
-#[cfg(feature = "arc")]
-use std::sync::Arc;
-
 #[cfg(not(feature = "arc"))]
 use std::rc::Rc;
+#[cfg(feature = "arc")]
+use std::sync::Arc;
 
 #[cfg(feature = "arc")]
 type SharedPtr<K> = Arc<K>;
@@ -192,25 +190,43 @@ impl<T: Clone + Debug> Leaf<T> {
         let mut index_l = leaf_l.len;
         let mut index_r = 0;
 
-        while index_l < BRANCH_FACTOR && index_r < that.len {
+        let that_len = that.len;
+
+        while index_l < BRANCH_FACTOR && index_r < that_len {
             leaf_l.add(that.take(index_r));
 
             index_l += 1;
             index_r += 1;
         }
 
-        for _ in 0..that.len {
-            leaf_r.add(that.take(index_r));
+        let that_len = that.len;
 
+        for _ in 0..that_len {
+            leaf_r.add(that.take(index_r));
             index_r += 1;
         }
 
-        let mut children = new_branch!();
+        if leaf_l.is_full() && leaf_r.is_full() {
+            let mut children = new_branch!();
+            children[0] = Some(Node::Leaf(SharedPtr::new(leaf_l)));
+            children[1] = Some(Node::Leaf(SharedPtr::new(leaf_r)));
 
-        children[0] = Some(Node::Leaf(SharedPtr::new(leaf_l)));
-        children[1] = Some(Node::Leaf(SharedPtr::new(leaf_r)));
+            Node::Branch(SharedPtr::new(Branch { children, len: 2 }))
+        } else {
+            let mut sizes = new_branch!();
+            sizes[0] = Some(leaf_l.len);
+            sizes[1] = Some(leaf_l.len + leaf_r.len);
 
-        Node::Branch(SharedPtr::new(Branch { children, len: 2 }))
+            let mut children = new_branch!();
+            children[0] = Some(Node::Leaf(SharedPtr::new(leaf_l)));
+            children[1] = Some(Node::Leaf(SharedPtr::new(leaf_r)));
+
+            Node::RelaxedBranch(SharedPtr::new(RelaxedBranch {
+                children,
+                sizes,
+                len: 2,
+            }))
+        }
     }
 
     #[inline(always)]
@@ -1125,10 +1141,11 @@ mod serializer {
     extern crate serde;
     extern crate serde_json;
 
-    use self::serde::ser::{Serialize, SerializeSeq, SerializeStruct, Serializer};
     use super::SharedPtr;
     use super::BRANCH_FACTOR;
     use super::{Branch, Leaf, Node, RelaxedBranch, RrbTree};
+
+    use self::serde::ser::{Serialize, SerializeSeq, SerializeStruct, Serializer};
 
     impl<T> RelaxedBranch<T>
     where
