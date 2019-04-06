@@ -292,6 +292,29 @@ fn interleaving_different_operations_must_maintain_correct_internal_state_for_va
 }
 
 #[test]
+fn interleaving_push_and_append_operations_must_maintain_correct_internal_state_for_var_sizes_32() {
+    let mut vec_one = PVec::new();
+
+    for i in 0..32 {
+        vec_one.push(i);
+    }
+
+    let mut vec_two = PVec::new();
+
+    for i in 0..1024 {
+        if i % 2 == 0 {
+            vec_two.push(i);
+        } else {
+            vec_two.append(&mut vec_one.clone());
+        }
+
+        for k in 0..vec_two.len() {
+            vec_two.get(k).unwrap();
+        }
+    }
+}
+
+#[test]
 fn zero_sized_values() {
     let mut v = PVec::new();
     assert_eq!(v.len(), 0);
