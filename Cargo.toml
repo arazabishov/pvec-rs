@@ -16,6 +16,7 @@ im = { git = "https://github.com/bodil/im-rs" }
 
 [features]
 default = []
+arc = []
 small_branch = []
 
 [[bench]]
