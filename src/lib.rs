@@ -12,6 +12,7 @@ use std::ops;
 
 #[macro_use]
 mod rrbtree;
+mod sharedptr;
 
 #[derive(Clone, Debug, Ord, PartialOrd, Eq, PartialEq)]
 pub struct PVec<T> {

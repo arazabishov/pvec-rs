@@ -1,17 +1,7 @@
+use sharedptr::{SharedPtr, Take};
 use std::cmp;
-use std::cmp::Ordering;
 use std::fmt::Debug;
 use std::mem;
-#[cfg(not(feature = "arc"))]
-use std::rc::Rc;
-#[cfg(feature = "arc")]
-use std::sync::Arc;
-
-#[cfg(feature = "arc")]
-type SharedPtr<K> = Arc<K>;
-
-#[cfg(not(feature = "arc"))]
-type SharedPtr<K> = Rc<K>;
 
 #[cfg(not(feature = "small_branch"))]
 pub const BRANCH_FACTOR: usize = 32;
@@ -566,18 +556,6 @@ impl<T: Clone + Debug> RelaxedBranch<T> {
 
             (leaf, self.len)
         }
-    }
-}
-
-trait Take<T: Clone + Debug> {
-    fn take(self) -> T;
-}
-
-impl<T: Clone + Debug> Take<T> for SharedPtr<T> {
-    fn take(mut self) -> T {
-        // ToDo: you have to verify whether this method is thread-safe
-        SharedPtr::make_mut(&mut self);
-        SharedPtr::try_unwrap(self).unwrap()
     }
 }
 
