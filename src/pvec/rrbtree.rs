@@ -43,12 +43,6 @@ macro_rules! new_branch {
     };
 }
 
-macro_rules! debug {
-    ($($t:tt)*) => {
-        // println!($($t)*);
-    };
-}
-
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 struct Shift(usize);
 
@@ -277,7 +271,6 @@ impl<T: Clone + Debug> Leaf<T> {
             new_root.push(new_subtree.build());
         }
 
-        debug!("Leaf::rebalance - new_root={:?}", new_root);
         new_root.build()
     }
 }
@@ -360,13 +353,6 @@ impl<T: Clone + Debug> BranchBuilder<T> {
                 let last_size = BranchBuilder::size_sub_trie(
                     branch.children[branch.len - 1].as_ref().unwrap(),
                     &shift.dec(),
-                );
-
-                debug!("Node::size_sub_trie() -> last_size={}", last_size);
-                debug!("Node::size_sub_trie() -> last_size_shift={}", shift.0);
-                debug!(
-                    "Node::size_sub_trie() -> last_size_calc={}",
-                    ((branch.len - 1) << shift.0) + last_size
                 );
 
                 ((branch.len - 1) << shift.0) + last_size
@@ -773,10 +759,6 @@ impl<T: Clone + Debug> Node<T> {
         node_c: Option<&mut [Option<Node<T>>]>,
         node_r: Option<&mut [Option<Node<T>>]>,
     ) -> Vec<Node<T>> {
-        debug!("merge_all: node_l={:?}", node_l);
-        debug!("merge_all: node_c={:?}", node_c);
-        debug!("merge_all: node_r={:?}", node_r);
-
         let mut merged = Vec::with_capacity(
             node_l.as_ref().map_or(0, |it| it.len())
                 + node_c.as_ref().map_or(0, |it| it.len())
@@ -1051,9 +1033,6 @@ impl<T: Clone + Debug> RrbTree<T> {
     }
 
     pub fn pop(&mut self) -> ([Option<T>; BRANCH_FACTOR], usize) {
-        debug!("---------------------------------------------------------------------------");
-        debug!("RrbTree::pop() shift={}", self.shift.0);
-
         if self.shift.is_leaf_level() {
             let leaf = self.root.take().unwrap().into_leaf().take();
 
@@ -1066,13 +1045,8 @@ impl<T: Clone + Debug> RrbTree<T> {
         let leaf = root.pop(self.shift);
         self.root_len.0 -= leaf.len;
 
-        debug!("RrbTree::pop() -> ({:?})", leaf.elements);
-        debug!("RrbTree::pop() -> len ({:?})", leaf.len);
-
         if root.len() == 1 {
             self.shift = self.shift.dec();
-
-            debug!("RrbTree::pop() -> trying to lower the tree");
 
             *root = match root {
                 Node::RelaxedBranch(ref mut branch_arc) => {
