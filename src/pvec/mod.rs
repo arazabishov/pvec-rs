@@ -208,7 +208,7 @@ impl<T: Clone + Debug> IntoIterator for PVec<T> {
     fn into_iter(self) -> Self::IntoIter {
         PVecIter {
             len: self.len(),
-            pvec: self, 
+            pvec: self,
         }
     }
 }
