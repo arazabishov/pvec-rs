@@ -11,7 +11,7 @@ pub type SharedPtr<K> = Arc<K>;
 #[cfg(not(feature = "arc"))]
 pub type SharedPtr<K> = Rc<K>;
 
-pub trait Take<T: Clone + Debug> {
+pub trait Take<T: Clone> {
     fn take(self) -> T;
 }
 

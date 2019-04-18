@@ -25,7 +25,7 @@ pub struct RrbTreeIter<T> {
 // }
 // }
 
-impl<T: Clone + Debug> Iterator for RrbTreeIter<T> {
+impl<T: Clone> Iterator for RrbTreeIter<T> {
     type Item = ([Option<T>; BRANCH_FACTOR], usize);
 
     fn next(&mut self) -> Option<Self::Item> {
