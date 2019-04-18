@@ -12,6 +12,8 @@ use std::ops;
 
 #[macro_use]
 mod rrbtree;
+mod iter;
+mod serializer;
 mod sharedptr;
 
 #[derive(Clone, Debug, Ord, PartialOrd, Eq, PartialEq)]
@@ -186,60 +188,5 @@ impl<T: Clone + Debug> ops::IndexMut<usize> for PVec<T> {
                 index, len
             )
         })
-    }
-}
-
-#[derive(Debug, Clone)]
-pub struct PVecIter<T> {
-    // - you should avoid heap allocation in iterators
-    pvec: PVec<T>,
-    len: usize,
-}
-
-impl<T: Clone + Debug> Iterator for PVecIter<T> {
-    type Item = T;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        return None;
-    }
-
-    fn size_hint(&self) -> (usize, Option<usize>) {
-        (self.len, Some(self.len))
-    }
-}
-
-impl<T: Clone + Debug> IntoIterator for PVec<T> {
-    type Item = T;
-    type IntoIter = PVecIter<T>;
-
-    fn into_iter(self) -> Self::IntoIter {
-        PVecIter {
-            len: self.len(),
-            pvec: self,
-        }
-    }
-}
-
-mod serializer {
-    extern crate serde;
-    extern crate serde_json;
-
-    use self::serde::ser::{Serialize, SerializeStruct, Serializer};
-    use super::PVec;
-
-    impl<T> Serialize for PVec<T>
-    where
-        T: Serialize,
-    {
-        fn serialize<S>(&self, serializer: S) -> Result<<S>::Ok, <S>::Error>
-        where
-            S: Serializer,
-        {
-            let mut serde_state = serializer.serialize_struct("PVec", 1)?;
-            serde_state.serialize_field("tree", &self.tree)?;
-            serde_state.serialize_field("tail", &self.tail)?;
-            serde_state.serialize_field("tail_len", &self.tail_len)?;
-            serde_state.end()
-        }
     }
 }
