@@ -16,9 +16,7 @@ pub trait Take<T: Clone> {
 }
 
 impl<T: Clone + Debug> Take<T> for SharedPtr<T> {
-    fn take(mut self) -> T {
-        // ToDo: you have to verify whether this method is thread-safe
-        SharedPtr::make_mut(&mut self);
-        SharedPtr::try_unwrap(self).unwrap()
+    fn take(self) -> T {
+        SharedPtr::try_unwrap(self).unwrap_or_else(|ptr| (*ptr).clone())
     }
 }

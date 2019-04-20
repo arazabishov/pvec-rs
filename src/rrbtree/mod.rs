@@ -1,6 +1,3 @@
-mod iter;
-mod serializer;
-
 use sharedptr::{SharedPtr, Take};
 use std::cmp;
 use std::fmt::Debug;
@@ -1067,3 +1064,6 @@ impl<T: Clone + Debug> RrbTree<T> {
         }
     }
 }
+
+pub mod iter;
+mod serializer;
