@@ -636,14 +636,14 @@ fn iterator(criterion: &mut Criterion) {
 
 criterion_group!(
     benches,
-    // push,
-    // push_clone,
-    // pop_clone,
+    push,
+    push_clone,
+    pop_clone,
     index_sequentially,
     iterator,
-    // index_randomly,
-    // append,
-    // append_clone,
-    // append_push
+    index_randomly,
+    append,
+    append_clone,
+    append_push
 );
 criterion_main!(benches);
