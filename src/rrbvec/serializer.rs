@@ -2,9 +2,9 @@ extern crate serde;
 extern crate serde_json;
 
 use self::serde::ser::{Serialize, SerializeStruct, Serializer};
-use super::PVec;
+use super::RrbVec;
 
-impl<T> Serialize for PVec<T>
+impl<T> Serialize for RrbVec<T>
 where
     T: Serialize,
 {
@@ -12,7 +12,7 @@ where
     where
         S: Serializer,
     {
-        let mut serde_state = serializer.serialize_struct("PVec", 1)?;
+        let mut serde_state = serializer.serialize_struct("RrbVec", 1)?;
         serde_state.serialize_field("tree", &self.tree)?;
         serde_state.serialize_field("tail", &self.tail)?;
         serde_state.serialize_field("tail_len", &self.tail_len)?;

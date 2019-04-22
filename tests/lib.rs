@@ -86,10 +86,6 @@ fn mutate_in_place_must_not_mutate_cloned_pvec() {
     for i in N / 2..N {
         assert_eq!(*pvec.get(i).unwrap(), i);
         assert_eq!(*pvec_0.get(i).unwrap(), i);
-        assert_eq!(
-            pvec.get(i).unwrap() as *const usize,
-            pvec_0.get(i).unwrap() as *const usize
-        );
     }
 }
 

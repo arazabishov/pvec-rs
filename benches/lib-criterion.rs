@@ -374,7 +374,7 @@ fn append(criterion: &mut Criterion) {
                     BatchSize::SmallInput,
                 );
             },
-            vec![100, 500, 1000, 5000, 10000, 50000, 100000, 200000, 500000],
+            vec![8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096, 8192],
         )
         .with_function("im-rs", |bencher, n| {
             bencher.iter_batched(
@@ -636,14 +636,14 @@ fn iterator(criterion: &mut Criterion) {
 
 criterion_group!(
     benches,
-    push,
-    push_clone,
-    pop_clone,
-    index_sequentially,
-    iterator,
-    index_randomly,
+    // push,
+    // push_clone,
+    // pop_clone,
+    // index_sequentially,
+    // iterator,
+    // index_randomly,
     append,
-    append_clone,
-    append_push
+    // append_clone,
+    // append_push
 );
 criterion_main!(benches);

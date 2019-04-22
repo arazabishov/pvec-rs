@@ -1,83 +1,85 @@
-use super::Flavor;
-use super::PVec;
-use rrbvec::RrbVec;
+use super::RrbVec;
+use rrbtree::iter::RrbTreeIter;
+use rrbtree::BRANCH_FACTOR;
 use std::fmt::Debug;
 
-#[cfg(test)]
-use rrbtree::BRANCH_FACTOR;
-
-use rrbvec::iter::RrbVecIter;
-use sharedptr::Take;
-use std::vec::IntoIter as VecIter;
-
 #[derive(Debug, Clone)]
-pub struct PVecIter<T> {
-    iter_vec: Option<VecIter<T>>,
-    iter_rrbvec: Option<RrbVecIter<T>>,
+pub struct RrbVecIter<T> {
+    // - you should avoid heap allocation in iterators
+    tree_iter: RrbTreeIter<T>,
+    tree_len: usize,
+    tail: [Option<T>; BRANCH_FACTOR],
+    tail_len: usize,
+    index: usize,
+    chunk: Option<([Option<T>; BRANCH_FACTOR], usize)>,
+    chunk_index: usize,
 }
 
-impl<T: Clone + Debug> PVecIter<T> {
-    fn from_vec(vec: Vec<T>) -> Self {
-        PVecIter {
-            iter_vec: Some(vec.into_iter()),
-            iter_rrbvec: None,
-        }
-    }
-
-    fn from_rrbvec(rrbvec: RrbVec<T>) -> Self {
-        PVecIter {
-            iter_vec: None,
-            iter_rrbvec: Some(rrbvec.into_iter()),
-        }
-    }
-}
-
-impl<T: Clone + Debug> Iterator for PVecIter<T> {
+impl<T: Clone + Debug> Iterator for RrbVecIter<T> {
     type Item = T;
 
     fn next(&mut self) -> Option<Self::Item> {
-        if let Some(iter_vec) = self.iter_vec.as_mut() {
-            iter_vec.next()
-        } else if let Some(iter_rrbvec) = self.iter_rrbvec.as_mut() {
-            iter_rrbvec.next()
+        return if self.index < self.tree_len {
+            if self.chunk.is_none() {
+                self.chunk = self.tree_iter.next();
+            }
+
+            let chunk = self.chunk.as_mut().unwrap();
+            if self.chunk_index >= chunk.1 {
+                self.chunk_index = 0;
+                self.chunk = self.tree_iter.next();
+            }
+
+            let chunk = self.chunk.as_mut().unwrap();
+            let value = chunk.0[self.chunk_index].take();
+
+            self.chunk_index += 1;
+            self.index += 1;
+
+            value
+        } else if self.index < self.tree_len + self.tail_len {
+            let index = self.index - self.tree_len;
+
+            self.index += 1;
+            self.tail[index].take()
         } else {
             None
-        }
+        };
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
-        if let Some(iter_vec) = self.iter_vec.as_ref() {
-            iter_vec.size_hint()
-        } else if let Some(iter_rrbvec) = self.iter_rrbvec.as_ref() {
-            iter_rrbvec.size_hint()
-        } else {
-            (0, None)
-        }
+        let len = self.tree_len + self.tail_len;
+        (len, Some(len))
     }
 }
 
-impl<T: Clone + Debug> IntoIterator for PVec<T> {
+impl<T: Clone + Debug> IntoIterator for RrbVec<T> {
     type Item = T;
-    type IntoIter = PVecIter<T>;
+    type IntoIter = RrbVecIter<T>;
 
     fn into_iter(self) -> Self::IntoIter {
-        return match self.0 {
-            Flavor::Standard(vec_arc) => PVecIter::from_vec(vec_arc.take()),
-            Flavor::Persistent(pvec) => PVecIter::from_rrbvec(pvec),
-        };
+        RrbVecIter {
+            tree_len: self.tree.len(),
+            tree_iter: self.tree.into_iter(),
+            tail_len: self.tail_len,
+            tail: self.tail,
+            index: 0,
+            chunk: None,
+            chunk_index: 0,
+        }
     }
 }
 
 #[cfg(test)]
 #[macro_use]
 mod test {
-    use super::PVec;
+    use super::RrbVec;
     use super::BRANCH_FACTOR;
 
     #[test]
-    fn empty_pvec() {
-        let pvec: PVec<usize> = PVec::new();
-        let mut iter = pvec.into_iter();
+    fn empty_rrbvec() {
+        let rrbvec: RrbVec<usize> = RrbVec::new();
+        let mut iter = rrbvec.into_iter();
 
         let size = iter.size_hint();
         let next = iter.next();
@@ -87,34 +89,34 @@ mod test {
     }
 
     #[test]
-    fn pvec_has_tail_only() {
-        let mut pvec = PVec::new();
+    fn rrbvec_has_tail_only() {
+        let mut rrbvec = RrbVec::new();
 
         for i in 0..BRANCH_FACTOR {
-            pvec.push(i);
+            rrbvec.push(i);
         }
 
-        for (i, val) in pvec.into_iter().enumerate() {
+        for (i, val) in rrbvec.into_iter().enumerate() {
             assert_eq!(i, val);
         }
     }
 
     #[test]
     fn underlying_tree_has_multiple_levels() {
-        let mut pvec = PVec::new();
+        let mut rrbvec = RrbVec::new();
 
         let mut val = 0;
         for _ in 0..(BRANCH_FACTOR * BRANCH_FACTOR * BRANCH_FACTOR) {
-            pvec.push(val);
+            rrbvec.push(val);
             val += 1;
         }
 
         for _ in 0..(BRANCH_FACTOR / 2) {
-            pvec.push(val);
+            rrbvec.push(val);
             val += 1;
         }
 
-        for (i, val) in pvec.into_iter().enumerate() {
+        for (i, val) in rrbvec.into_iter().enumerate() {
             assert_eq!(i, val);
         }
     }
@@ -123,12 +125,12 @@ mod test {
     fn underlying_tree_is_relaxed() {
         let vec_size = 33;
 
-        let mut vec = PVec::new();
+        let mut vec = RrbVec::new();
         let mut vec_item = 0;
 
         for i in 0..128 {
             if i % 2 == 0 {
-                let mut vec_temp = PVec::new();
+                let mut vec_temp = RrbVec::new();
 
                 for _ in 0..vec_size {
                     vec_temp.push(vec_item);

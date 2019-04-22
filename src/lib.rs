@@ -4,158 +4,143 @@
 extern crate serde_json;
 extern crate serde;
 
-use rrbtree::RrbTree;
-use rrbtree::BRANCH_FACTOR;
 use std::fmt::Debug;
-use std::mem;
 use std::ops;
 
 #[macro_use]
 mod rrbtree;
+mod rrbvec;
+
 mod iter;
-mod serializer;
 mod sharedptr;
 
-#[derive(Clone, Debug, Ord, PartialOrd, Eq, PartialEq)]
-pub struct PVec<T> {
-    tree: RrbTree<T>,
-    tail: [Option<T>; BRANCH_FACTOR],
-    tail_len: usize,
+use rrbvec::RrbVec;
+use sharedptr::SharedPtr;
+
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+enum Flavor<T> {
+    Standard(SharedPtr<Vec<T>>),
+    Persistent(RrbVec<T>),
 }
+
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+pub struct PVec<T>(Flavor<T>);
 
 impl<T: Clone + Debug> PVec<T> {
     pub fn new() -> Self {
-        PVec {
-            tree: RrbTree::new(),
-            tail: new_branch!(),
-            tail_len: 0,
-        }
+        PVec(Flavor::Standard(SharedPtr::new(Vec::new())))
     }
 
     #[cold]
     pub fn push(&mut self, item: T) {
-        self.tail[self.tail_len] = Some(item);
-        self.tail_len += 1;
+        if self.is_standard() && self.len() > 2048 {
+            self.upgrade();
+        }
 
-        self.push_tail();
-    }
-
-    #[inline(always)]
-    fn push_tail(&mut self) {
-        if self.tail_len == BRANCH_FACTOR {
-            let tail = mem::replace(&mut self.tail, new_branch!());
-
-            self.tree.push(tail, self.tail_len);
-            self.tail_len = 0;
+        match self.0 {
+            Flavor::Standard(ref mut vec_arc) => SharedPtr::make_mut(vec_arc).push(item),
+            Flavor::Persistent(ref mut pvec) => pvec.push(item),
         }
     }
 
     pub fn pop(&mut self) -> Option<T> {
-        if self.is_empty() {
-            return None;
+        match self.0 {
+            Flavor::Standard(ref mut vec_arc) => SharedPtr::make_mut(vec_arc).pop(),
+            Flavor::Persistent(ref mut pvec) => pvec.pop(),
         }
-
-        if self.tail_len == 0 {
-            let (new_tail, new_tail_len) = self.tree.pop();
-            mem::replace(&mut self.tail, new_tail);
-
-            self.tail_len = new_tail_len;
-        }
-
-        let item = self.tail[self.tail_len - 1].take();
-        self.tail_len -= 1;
-
-        item
     }
 
     pub fn get(&self, index: usize) -> Option<&T> {
-        if self.tree.len() > index {
-            self.tree.get(index)
-        } else {
-            self.tail[index - self.tree.len()].as_ref()
-        }
+        return match self.0 {
+            Flavor::Standard(ref vec_arc) => vec_arc.get(index),
+            Flavor::Persistent(ref pvec) => pvec.get(index),
+        };
     }
 
     pub fn get_mut(&mut self, index: usize) -> Option<&mut T> {
-        if self.tree.len() > index {
-            self.tree.get_mut(index)
-        } else {
-            self.tail[index - self.tree.len()].as_mut()
-        }
+        return match self.0 {
+            Flavor::Standard(ref mut vec_arc) => {
+                dbg!(SharedPtr::strong_count(vec_arc));
+                SharedPtr::make_mut(vec_arc).get_mut(index)
+            }
+            Flavor::Persistent(ref mut pvec) => pvec.get_mut(index),
+        };
     }
 
     pub fn len(&self) -> usize {
-        self.tree.len() + self.tail_len
+        return match self.0 {
+            Flavor::Standard(ref vec) => vec.len(),
+            Flavor::Persistent(ref pvec) => pvec.len(),
+        };
     }
 
     pub fn is_empty(&self) -> bool {
         self.len() == 0
     }
 
-    pub fn append(&mut self, that: &mut PVec<T>) {
-        if self.is_empty() {
-            self.tail = mem::replace(&mut that.tail, new_branch!());
-            self.tree = mem::replace(&mut that.tree, RrbTree::new());
-
-            self.tail_len = that.tail_len;
-            that.tail_len = 0;
-        } else if !that.is_empty() {
-            let mut that_tail = mem::replace(&mut that.tail, new_branch!());
-            let that_tail_len = that.tail_len;
-
-            that.tail_len = 0;
-
-            if that.tree.is_empty() {
-                if self.tail_len == BRANCH_FACTOR {
-                    let self_tail = mem::replace(&mut self.tail, that_tail);
-                    let self_tail_len = self.tail_len;
-
-                    self.tail_len = that_tail_len;
-                    self.tree.push(self_tail, self_tail_len);
-                } else if self.tail_len + that_tail_len <= BRANCH_FACTOR {
-                    for i in 0..that_tail_len {
-                        self.tail[self.tail_len] = that_tail[i].take();
-                        self.tail_len += 1;
-                    }
-                } else {
-                    let mut self_tail = mem::replace(&mut self.tail, new_branch!());
-                    let mut self_tail_i = mem::replace(&mut self.tail_len, 0);
-                    let mut that_tail_i = 0;
-
-                    while self_tail_i < BRANCH_FACTOR && that_tail_i < that_tail_len {
-                        self_tail[self_tail_i] = that_tail[that_tail_i].take();
-
-                        self_tail_i += 1;
-                        that_tail_i += 1;
-                    }
-
-                    self.tree.push(self_tail, self_tail_i);
-
-                    let that_tail_elements_left = that_tail_len - that_tail_i;
-                    for i in 0..that_tail_elements_left {
-                        self.tail[i] = that_tail[that_tail_i].take();
-                        that_tail_i += 1;
-                    }
-
-                    self.tail_len = that_tail_elements_left;
-                }
-            } else {
-                if self.tail_len == 0 {
-                    self.tail = that_tail;
-                    self.tail_len = that_tail_len;
-                } else {
-                    let self_tail = mem::replace(&mut self.tail, that_tail);
-                    let self_tail_len = self.tail_len;
-
-                    self.tail_len = that_tail_len;
-                    self.tree.push(self_tail, self_tail_len);
-                }
-
-                self.tree.append(&mut that.tree);
-            }
+    #[inline(always)]
+    fn is_standard(&self) -> bool {
+        match self.0 {
+            Flavor::Standard(..) => true,
+            Flavor::Persistent(..) => false,
         }
+    }
 
-        self.push_tail();
+    #[inline(always)]
+    fn as_mut_standard(&mut self) -> &mut Vec<T> {
+        match self.0 {
+            Flavor::Standard(ref mut vec_arc) => SharedPtr::make_mut(vec_arc),
+            Flavor::Persistent(..) => unreachable!(),
+        }
+    }
+
+    #[inline(always)]
+    fn as_mut_persistent(&mut self) -> &mut RrbVec<T> {
+        match self.0 {
+            Flavor::Standard(..) => unreachable!(),
+            Flavor::Persistent(ref mut rrbvec) => rrbvec,
+        }
+    }
+
+    pub fn append(&mut self, that: &mut PVec<T>) {
+        // ToDo: reconsider cases when either self or that are very big
+
+        // a(s), b(s) (upgrade a, push b into a)
+        // a(p), b(s) (push b into a)
+        // a(s), b(p) (upgrade a, a append b)
+        // a(p), b(p) (a append b)
+
+        if self.len() + that.len() > 2048 {
+            if self.is_standard() {
+                self.upgrade();
+            }
+
+            let rrbvec = self.as_mut_persistent();
+
+            match that.0 {
+                Flavor::Standard(ref mut vec_arc) => {
+                    // ToDo: drain might be causing performance issues
+                    for i in SharedPtr::make_mut(vec_arc).drain(..) {
+                        rrbvec.push(i);
+                    }
+                }
+                Flavor::Persistent(ref mut rrbvec_that) => rrbvec.append(rrbvec_that),
+            }
+        } else {
+            let self_vec = self.as_mut_standard();
+            let that_vec = that.as_mut_standard();
+
+            self_vec.append(that_vec);
+        }
+    }
+
+    fn upgrade(&mut self) {
+        let pvec = match self.0 {
+            Flavor::Standard(ref vec) => RrbVec::from(vec),
+            Flavor::Persistent(..) => unreachable!(),
+        };
+
+        self.0 = Flavor::Persistent(pvec);
     }
 }
 
