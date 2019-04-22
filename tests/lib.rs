@@ -1,8 +1,6 @@
 extern crate pvec;
 
-use std::mem::size_of;
-
-use pvec::pvec::PVec;
+use pvec::PVec;
 
 #[cfg(not(feature = "small_branch"))]
 const BRANCH_FACTOR: usize = 32;

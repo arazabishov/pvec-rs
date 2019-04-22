@@ -13,7 +13,7 @@ use dogged::DVec;
 use im::Vector as IVec;
 use rand::{Rng, SeedableRng, XorShiftRng};
 
-use pvec::pvec::PVec;
+use pvec::PVec;
 
 fn push(criterion: &mut Criterion) {
     criterion.bench(

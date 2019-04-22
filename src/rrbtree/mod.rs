@@ -1,17 +1,10 @@
+mod iter;
+mod serializer;
+
+use sharedptr::{SharedPtr, Take};
 use std::cmp;
-use std::cmp::Ordering;
 use std::fmt::Debug;
 use std::mem;
-#[cfg(not(feature = "arc"))]
-use std::rc::Rc;
-#[cfg(feature = "arc")]
-use std::sync::Arc;
-
-#[cfg(feature = "arc")]
-type SharedPtr<K> = Arc<K>;
-
-#[cfg(not(feature = "arc"))]
-type SharedPtr<K> = Rc<K>;
 
 #[cfg(not(feature = "small_branch"))]
 pub const BRANCH_FACTOR: usize = 32;
@@ -43,7 +36,7 @@ macro_rules! new_branch {
     };
 }
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 struct Shift(usize);
 
 impl Shift {
@@ -68,32 +61,8 @@ impl Shift {
     }
 }
 
-impl PartialEq<usize> for Shift {
-    fn eq(&self, other: &usize) -> bool {
-        self.0.eq(other)
-    }
-}
-
-impl PartialOrd<usize> for Shift {
-    fn partial_cmp(&self, other: &usize) -> Option<Ordering> {
-        self.0.partial_cmp(other)
-    }
-}
-
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 struct Index(usize);
-
-impl PartialEq<usize> for Index {
-    fn eq(&self, other: &usize) -> bool {
-        self.0.eq(other)
-    }
-}
-
-impl PartialOrd<usize> for Index {
-    fn partial_cmp(&self, other: &usize) -> Option<Ordering> {
-        self.0.partial_cmp(other)
-    }
-}
 
 impl Index {
     #[inline(always)]
@@ -590,18 +559,6 @@ impl<T: Clone + Debug> RelaxedBranch<T> {
 
             (leaf, self.len)
         }
-    }
-}
-
-trait Take<T: Clone + Debug> {
-    fn take(self) -> T;
-}
-
-impl<T: Clone + Debug> Take<T> for SharedPtr<T> {
-    fn take(mut self) -> T {
-        // ToDo: you have to verify whether this method is thread-safe
-        SharedPtr::make_mut(&mut self);
-        SharedPtr::try_unwrap(self).unwrap()
     }
 }
 
@@ -1107,279 +1064,6 @@ impl<T: Clone + Debug> RrbTree<T> {
             that.root_len.0 = 0;
         } else {
             unreachable!();
-        }
-    }
-}
-
-#[derive(Debug, Clone)]
-pub struct RrbTreeIter<T> {
-    // - you should avoid heap allocation in iterators
-    // - you can also preallocate space for focus, to avoid
-    // additional allocations
-
-    // keep references to pointers, nodes, or branches directly?
-    focus: Vec<Node<T>>,
-    indices: Vec<usize>,
-    len: usize,
-}
-
-// impl<T: Clone + Debug> RrbTreeIter<T> {
-// #[inline(always)]
-// fn has_next_at_level(&self, level: usize) -> bool {
-//     if let (Some(node), Some(index)) = (self.focus.get(level), self.indices.get(level)) {
-//         (index + 1) < node.len()
-//     } else {
-//         false
-//     }
-// }
-// }
-
-impl<T: Clone + Debug> Iterator for RrbTreeIter<T> {
-    type Item = ([Option<T>; BRANCH_FACTOR], usize);
-
-    fn next(&mut self) -> Option<Self::Item> {
-        if let (Some(mut node), Some(idx)) = (self.focus.last_mut(), self.indices.last_mut()) {
-            loop {
-                match *node {
-                    Node::RelaxedBranch(ref mut branch_arc) => {
-                        let branch = SharedPtr::make_mut(branch_arc);
-                        node = branch.children[0].as_mut().unwrap();
-                    }
-                    Node::Branch(ref mut branch_arc) => {
-                        let branch = SharedPtr::make_mut(branch_arc);
-                        node = branch.children[0].as_mut().unwrap();
-                    }
-                    Node::Leaf(ref mut leaf_arc) => {
-                        // let leaf = SharedPtr::make_mut(leaf_arc);
-                        //return Some((leaf.elements, leaf.len))
-                    }
-                }
-            }
-        };
-
-        return None;
-    }
-
-    fn size_hint(&self) -> (usize, Option<usize>) {
-        (self.len, Some(self.len))
-    }
-}
-
-impl<T: Clone + Debug> From<Option<Node<T>>> for RrbTreeIter<T> {
-    fn from(root: Option<Node<T>>) -> Self {
-        // experiment with predefined capacity of vectors (i.e. with_capacity)
-        let mut focus = Vec::new();
-        let mut indices = Vec::new();
-        let mut len = 0;
-
-        if let Some(root) = root {
-            len = root.len();
-            focus.push(root);
-            indices.push(0);
-        };
-
-        RrbTreeIter {
-            focus,
-            indices,
-            len,
-        }
-    }
-}
-
-impl<T: Clone + Debug> IntoIterator for RrbTree<T> {
-    type Item = ([Option<T>; BRANCH_FACTOR], usize);
-    type IntoIter = RrbTreeIter<T>;
-
-    fn into_iter(self) -> Self::IntoIter {
-        RrbTreeIter::from(self.root)
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn it_works() {
-        let tree: RrbTree<String> = RrbTree::new();
-        let vec: Vec<String> = tree.into_iter().map(|item| format!("{:?}", item)).collect();
-    }
-}
-
-mod serializer {
-    extern crate serde;
-    extern crate serde_json;
-
-    use super::SharedPtr;
-    use super::BRANCH_FACTOR;
-    use super::{Branch, Leaf, Node, RelaxedBranch, RrbTree};
-
-    use self::serde::ser::{Serialize, SerializeSeq, SerializeStruct, Serializer};
-
-    impl<T> RelaxedBranch<T>
-    where
-        T: Serialize,
-    {
-        fn serialize<S>(&self, serializer: S) -> Result<<S>::Ok, <S>::Error>
-        where
-            S: Serializer,
-        {
-            let mut children_refs = Vec::with_capacity(BRANCH_FACTOR);
-
-            for i in 0..BRANCH_FACTOR {
-                if let Some(child) = self.children[i].as_ref() {
-                    let child_json_value = match child {
-                        Node::RelaxedBranch(ref relaxed_branch) => json!({
-                                "relaxedBranch": child,
-                                "sizes": relaxed_branch.sizes,
-                                "refs": SharedPtr::strong_count(relaxed_branch),
-                                "len": relaxed_branch.len
-                        }),
-                        Node::Branch(ref branch) => json!({
-                                "branch": child,
-                                "refs": SharedPtr::strong_count(branch),
-                                "len": branch.len
-                        }),
-                        Node::Leaf(ref leaf) => json!({
-                                "leaf": child,
-                                "refs": SharedPtr::strong_count(leaf),
-                                "len": leaf.len
-                        }),
-                    };
-
-                    children_refs.push(child_json_value);
-                } else {
-                    children_refs.push(json!(null));
-                }
-            }
-
-            let mut serde_state = serializer.serialize_seq(Some(BRANCH_FACTOR))?;
-
-            for child in children_refs {
-                serde_state.serialize_element(&child)?;
-            }
-
-            return serde_state.end();
-        }
-    }
-
-    impl<T> Branch<T>
-    where
-        T: Serialize,
-    {
-        fn serialize<S>(&self, serializer: S) -> Result<<S>::Ok, <S>::Error>
-        where
-            S: Serializer,
-        {
-            let mut children_refs = Vec::with_capacity(BRANCH_FACTOR);
-
-            for i in 0..BRANCH_FACTOR {
-                if let Some(child) = self.children[i].as_ref() {
-                    let child_json_value = match child {
-                        Node::RelaxedBranch(ref relaxed_branch) => json!({
-                                "relaxedBranch": child,
-                                "sizes": relaxed_branch.sizes,
-                                "refs": SharedPtr::strong_count(relaxed_branch),
-                                "len": relaxed_branch.len
-                        }),
-                        Node::Branch(ref branch) => json!({
-                                "branch": child,
-                                "refs": SharedPtr::strong_count(branch),
-                                "len": branch.len
-                        }),
-                        Node::Leaf(ref leaf) => json!({
-                                "leaf": child,
-                                "refs": SharedPtr::strong_count(leaf),
-                                "len": leaf.len
-                        }),
-                    };
-
-                    children_refs.push(child_json_value);
-                } else {
-                    children_refs.push(json!(null));
-                }
-            }
-
-            let mut serde_state = serializer.serialize_seq(Some(BRANCH_FACTOR))?;
-
-            for child in children_refs {
-                serde_state.serialize_element(&child)?;
-            }
-
-            return serde_state.end();
-        }
-    }
-
-    impl<T> Leaf<T>
-    where
-        T: Serialize,
-    {
-        fn serialize<S>(&self, serializer: S) -> Result<<S>::Ok, <S>::Error>
-        where
-            S: Serializer,
-        {
-            let mut serde_state = serializer.serialize_seq(Some(BRANCH_FACTOR))?;
-
-            for element in self.elements.iter() {
-                serde_state.serialize_element(&element)?;
-            }
-
-            return serde_state.end();
-        }
-    }
-
-    impl<T> Serialize for Node<T>
-    where
-        T: Serialize,
-    {
-        fn serialize<S>(&self, serializer: S) -> Result<<S>::Ok, <S>::Error>
-        where
-            S: Serializer,
-        {
-            match *self {
-                Node::RelaxedBranch(ref relaxed_branch) => relaxed_branch.serialize(serializer),
-                Node::Branch(ref branch) => branch.serialize(serializer),
-                Node::Leaf(ref leaf) => leaf.serialize(serializer),
-            }
-        }
-    }
-
-    impl<T> Serialize for RrbTree<T>
-    where
-        T: Serialize,
-    {
-        fn serialize<S>(&self, serializer: S) -> Result<<S>::Ok, <S>::Error>
-        where
-            S: Serializer,
-        {
-            let root_json_value = self.root.as_ref().map_or(None, |root| {
-                let json = match root {
-                    Node::RelaxedBranch(ref relaxed_branch) => json!({
-                        "relaxedBranch": root,
-                        "sizes": relaxed_branch.sizes,
-                        "refs": SharedPtr::strong_count(relaxed_branch),
-                        "len": relaxed_branch.len
-                    }),
-                    Node::Branch(ref branch) => json!({
-                        "branch": root,
-                        "refs":  SharedPtr::strong_count(branch),
-                        "len": branch.len
-                    }),
-                    Node::Leaf(ref leaf) => json!({
-                        "leaf": root,
-                        "refs": SharedPtr::strong_count(leaf),
-                        "len": leaf.len
-                    }),
-                };
-
-                Some(json)
-            });
-
-            let mut serde_state = serializer.serialize_struct("RrbTree", 1)?;
-            serde_state.serialize_field("root_len", &self.root_len.0)?;
-            serde_state.serialize_field("shift", &self.shift.0)?;
-            serde_state.serialize_field("root", &root_json_value)?;
-            serde_state.end()
         }
     }
 }
