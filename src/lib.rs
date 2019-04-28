@@ -92,6 +92,10 @@ impl<T: Clone + Debug> PVec<T> {
         self.len() == 0
     }
 
+    pub fn split_right_at(&mut self, mid: usize) {
+        self.tree.split_right_at(mid);
+    }
+
     pub fn append(&mut self, that: &mut PVec<T>) {
         if self.is_empty() {
             self.tail = mem::replace(&mut that.tail, new_branch!());

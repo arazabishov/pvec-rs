@@ -189,6 +189,42 @@ impl<T: Clone + Debug> Leaf<T> {
         }
     }
 
+    // ToDo: explore a way to avoid re-allocating left tree
+    // ToDo: this would probably require taking owned type in
+    // #[inline(always)]
+    // fn split_at(&mut self, index: Index) -> (Node<T>, Node<T>) {
+    //     let mut leaf_left = Leaf::new();
+    //     let mut leaf_right = Leaf::new();
+
+    //     let self_len = self.len;
+
+    //     for i in 0..index.0 {
+    //         leaf_left.add(self.take(i));
+    //     }
+
+    //     for i in index.0..self_len {
+    //         leaf_right.add(self.take(i));
+    //     }
+
+    //     (
+    //         Node::Leaf(SharedPtr::new(leaf_left)),
+    //         Node::Leaf(SharedPtr::new(leaf_right)),
+    //     )
+    // }
+
+    // ToDo: explore a way to avoid re-allocating left tree
+    // ToDo: this would probably require taking owned type in
+    #[inline(always)]
+    fn split_right_at(&mut self, index: Index) -> Node<T> {
+        let mut leaf_left = Leaf::new();
+
+        for i in 0..index.0 {
+            leaf_left.add(self.take(i));
+        }
+
+        Node::Leaf(SharedPtr::new(leaf_left))
+    }
+
     #[inline(always)]
     fn rebalance(merged: Vec<Node<T>>, shift: Shift) -> Node<T> {
         #[inline(always)]
@@ -384,6 +420,26 @@ impl<T: Clone + Debug> BranchBuilder<T> {
 
 impl<T: Clone + Debug> Branch<T> {
     #[inline(always)]
+    fn new() -> Self {
+        Branch {
+            children: new_branch!(),
+            len: 0,
+        }
+    }
+
+    #[inline(always)]
+    fn add(&mut self, child: Option<Node<T>>) {
+        self.children[self.len] = child;
+        self.len += 1;
+    }
+
+    #[inline(always)]
+    fn take(&mut self, i: usize) -> Option<Node<T>> {
+        self.len -= 1;
+        self.children[i].take()
+    }
+
+    #[inline(always)]
     fn push_leaf(&mut self, index: Index, shift: Shift, leaf: Leaf<T>) {
         debug_assert!(shift.0 >= BITS_PER_LEVEL);
 
@@ -441,6 +497,17 @@ impl<T: Clone + Debug> Branch<T> {
 
             (leaf, self.len)
         }
+    }
+
+    #[inline(always)]
+    fn split_right_at(&mut self, index: Index) -> Branch<T> {
+        let mut branch_left = Branch::new();
+
+        for i in 0..index.0 {
+            branch_left.add(self.take(i));
+        }
+
+        branch_left
     }
 }
 
@@ -908,6 +975,37 @@ impl<T: Clone + Debug> Node<T> {
     }
 }
 
+impl<T: Clone + Debug> Node<T> {
+    // ToDo: add has_left param as an optimisation
+    fn split_right_at(&mut self, shift: Shift, index: Index) -> (Self, Index, Shift) {
+        return if shift.is_leaf_level() {
+            let left = SharedPtr::make_mut(self.as_mut_leaf()).split_right_at(index);
+            let left_len = Index(left.len());
+
+            (left, left_len, shift)
+        } else {
+            let subshift = shift.dec();
+            let subidx = index.child(shift);
+
+            let branch = SharedPtr::make_mut(self.as_mut_branch());
+            let child = branch.children[subidx].as_mut().unwrap();
+
+            let (left, left_len, _) = child.split_right_at(subshift, index);
+
+            if subidx == 0 {
+                unreachable!()
+            } else {
+                let mut root = branch.split_right_at(Index(subidx));
+                root.children[subidx] = Some(left);
+
+                // ToDo: check that the left_len or len return value matches expectations
+                let left = Node::Branch(SharedPtr::new(root));
+                (left, left_len, shift)
+            }
+        };
+    }
+}
+
 #[derive(Clone, Debug, Ord, PartialOrd, Eq, PartialEq)]
 pub struct RrbTree<T> {
     root: Option<Node<T>>,
@@ -1063,7 +1161,56 @@ impl<T: Clone + Debug> RrbTree<T> {
             unreachable!();
         }
     }
+
+    pub fn split_right_at(&mut self, mid: usize) -> Self {
+        return if let Some(root) = self.root.as_mut() {
+            let (left_root, left_len, left_shift) = root.split_right_at(self.shift, Index(mid));
+
+            let left = RrbTree {
+                root: Some(left_root),
+                root_len: left_len,
+                shift: left_shift,
+            };
+
+            left
+        } else {
+            panic!()
+        };
+    }
 }
 
 pub mod iter;
 mod serializer;
+
+#[cfg(test)]
+#[macro_use]
+mod test {
+    use super::RrbTree;
+    use super::BRANCH_FACTOR;
+
+    #[test]
+    #[should_panic]
+    fn split_right_empty_tree() {
+        let mut tree: RrbTree<usize> = RrbTree::new();
+        tree.split_right_at(0);
+    }
+
+    #[test]
+    fn split_right_when_root_is_leaf() {
+        let mut elements = new_branch!();
+
+        for i in 0..BRANCH_FACTOR {
+            elements[i] = Some(i);
+        }
+
+        let mut tree = RrbTree::new();
+        tree.push(elements, BRANCH_FACTOR);
+
+        let left = tree.split_right_at(BRANCH_FACTOR / 2);
+        assert_eq!(left.len(), BRANCH_FACTOR / 2);
+
+        for index in 0..BRANCH_FACTOR / 2 {
+            assert_eq!(index, left.get(index).cloned().unwrap());
+        }
+    }
+}
