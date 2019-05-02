@@ -191,34 +191,17 @@ impl<T: Clone + Debug> Leaf<T> {
 
     // ToDo: explore a way to avoid re-allocating left tree
     // ToDo: this would probably require taking owned type in
-    // #[inline(always)]
-    // fn split_at(&mut self, index: Index) -> (Node<T>, Node<T>) {
-    //     let mut leaf_left = Leaf::new();
-    //     let mut leaf_right = Leaf::new();
-
-    //     let self_len = self.len;
-
-    //     for i in 0..index.0 {
-    //         leaf_left.add(self.take(i));
-    //     }
-
-    //     for i in index.0..self_len {
-    //         leaf_right.add(self.take(i));
-    //     }
-
-    //     (
-    //         Node::Leaf(SharedPtr::new(leaf_left)),
-    //         Node::Leaf(SharedPtr::new(leaf_right)),
-    //     )
-    // }
-
-    // ToDo: explore a way to avoid re-allocating left tree
-    // ToDo: this would probably require taking owned type in
     #[inline(always)]
-    fn split_right_at(&mut self, index: Index) -> Node<T> {
+    fn split_right_at(&mut self, index: Index, shift: Shift) -> Node<T> {
         let mut leaf_left = Leaf::new();
 
-        for i in 0..index.0 {
+        // println!("index = {}", index.child(shift));
+
+        for i in 0..index.child(shift) {
+            // println!(
+            //     "leaf_iter = {}, leaf_left_len = {}, leaf_len = {}",
+            //     i, leaf_left.len, self.len
+            // );
             leaf_left.add(self.take(i));
         }
 
@@ -624,6 +607,40 @@ impl<T: Clone + Debug> RelaxedBranch<T> {
             (leaf, self.len)
         }
     }
+
+    #[inline(always)]
+    fn new() -> Self {
+        RelaxedBranch {
+            children: new_branch!(),
+            sizes: new_branch!(),
+            len: 0,
+        }
+    }
+
+    #[inline(always)]
+    fn add(&mut self, child: Option<Node<T>>, size: Option<usize>) {
+        self.children[self.len] = child;
+        self.sizes[self.len] = size;
+        self.len += 1;
+    }
+
+    #[inline(always)]
+    fn take(&mut self, i: usize) -> (Option<Node<T>>, Option<usize>) {
+        self.len -= 1;
+        (self.children[i].take(), self.sizes[i].take())
+    }
+
+    #[inline(always)]
+    fn split_right_at(&mut self, index: Index) -> RelaxedBranch<T> {
+        let mut branch_left = RelaxedBranch::new();
+
+        for i in 0..index.0 {
+            let (node, size) = self.take(i);
+            branch_left.add(node, size);
+        }
+
+        branch_left
+    }
 }
 
 impl<T: Clone + Debug> Node<T> {
@@ -977,30 +994,88 @@ impl<T: Clone + Debug> Node<T> {
 
 impl<T: Clone + Debug> Node<T> {
     // ToDo: add has_left param as an optimisation
-    fn split_right_at(&mut self, shift: Shift, index: Index) -> (Self, Index, Shift) {
-        return if shift.is_leaf_level() {
-            let left = SharedPtr::make_mut(self.as_mut_leaf()).split_right_at(index);
-            let left_len = Index(left.len());
+    fn split_right_at(
+        &mut self,
+        shift: Shift,
+        index: Index,
+        has_left: bool,
+    ) -> (Self, usize, Shift) {
+        #[inline(always)]
+        fn get_branch_index(sizes: &mut [Option<usize>], index: Index) -> usize {
+            let mut candidate = 0;
 
-            (left, left_len, shift)
-        } else {
-            let subshift = shift.dec();
-            let subidx = index.child(shift);
+            while candidate < BRANCH_FACTOR - 1 && sizes[candidate].unwrap() <= index.0 {
+                candidate += 1;
+            }
 
-            let branch = SharedPtr::make_mut(self.as_mut_branch());
-            let child = branch.children[subidx].as_mut().unwrap();
+            candidate
+        }
 
-            let (left, left_len, _) = child.split_right_at(subshift, index);
+        return match self {
+            Node::Leaf(leaf_arc) => {
+                let left = SharedPtr::make_mut(leaf_arc).split_right_at(index, shift);
+                let left_len = left.len();
 
-            if subidx == 0 {
-                unreachable!()
-            } else {
-                let mut root = branch.split_right_at(Index(subidx));
-                root.children[subidx] = Some(left);
-
-                // ToDo: check that the left_len or len return value matches expectations
-                let left = Node::Branch(SharedPtr::new(root));
                 (left, left_len, shift)
+            }
+            Node::Branch(branch_arc) => {
+                let subshift = shift.dec();
+                let subidx = index.child(shift);
+
+                let branch = SharedPtr::make_mut(branch_arc);
+                let child = branch.children[subidx].as_mut().unwrap();
+
+                let (left, left_len, total_shift) =
+                    child.split_right_at(subshift, index, (subidx != 0) || has_left);
+
+                if subidx == 0 {
+                    // here we're supposed to cut the tree height,
+                    // as it might have redundant root nodes
+                    if has_left {
+                        let mut branch = Branch::new();
+                        branch.add(Some(left));
+
+                        let node = Node::Branch(SharedPtr::new(branch));
+                        let node_len = node.len();
+
+                        (node, node_len, shift)
+                    } else {
+                        (left, left_len, total_shift)
+                    }
+                } else {
+                    let mut root = branch.split_right_at(Index(subidx));
+                    root.children[subidx] = Some(left);
+
+                    // ToDo: check that the left_len or len return value matches expectations
+                    let left = Node::Branch(SharedPtr::new(root));
+                    (left, left_len, shift)
+                }
+            }
+            Node::RelaxedBranch(branch_arc) => {
+                let branch = SharedPtr::make_mut(branch_arc);
+                let mut subidx = index;
+
+                let sizes = &mut branch.sizes;
+                let branch_index = get_branch_index(sizes, subidx);
+
+                if branch_index != 0 {
+                    subidx = Index(subidx.0 - sizes[branch_index - 1].unwrap());
+                }
+
+                let child = branch.children[subidx.0].as_mut().unwrap();
+                let (left, left_len, _) =
+                    child.split_right_at(shift.dec(), subidx, (subidx.0 != 0) || has_left);
+
+                if subidx.0 == 0 {
+                    unreachable!()
+                } else {
+                    let mut root = branch.split_right_at(subidx);
+                    root.children[subidx.0] = Some(left);
+                    root.sizes[subidx.0] = Some(index.0 + 1); // ToDo: interesting, why subidx + 1 works in this case
+
+                    let left = Node::RelaxedBranch(SharedPtr::new(root));
+                    (left, left_len, shift) // ToDo: left_len returned here doesn't match to length of root node
+                }
             }
         };
     }
@@ -1164,11 +1239,12 @@ impl<T: Clone + Debug> RrbTree<T> {
 
     pub fn split_right_at(&mut self, mid: usize) -> Self {
         return if let Some(root) = self.root.as_mut() {
-            let (left_root, left_len, left_shift) = root.split_right_at(self.shift, Index(mid));
+            let (left_root, left_len, left_shift) =
+                root.split_right_at(self.shift, Index(mid), false);
 
             let left = RrbTree {
                 root: Some(left_root),
-                root_len: left_len,
+                root_len: Index(left_len),
                 shift: left_shift,
             };
 
@@ -1185,8 +1261,7 @@ mod serializer;
 #[cfg(test)]
 #[macro_use]
 mod test {
-    use super::RrbTree;
-    use super::BRANCH_FACTOR;
+    use super::{Index, Leaf, Node, RrbTree, SharedPtr, Shift, BRANCH_FACTOR};
 
     #[test]
     #[should_panic]
@@ -1212,5 +1287,34 @@ mod test {
         for index in 0..BRANCH_FACTOR / 2 {
             assert_eq!(index, left.get(index).cloned().unwrap());
         }
+    }
+
+    #[test]
+    fn split_off_by_one() {
+        let mut tree = RrbTree::new();
+        let mut value = 0;
+
+        for _ in 0..BRANCH_FACTOR {
+            let mut elements = new_branch!();
+
+            for i in 0..BRANCH_FACTOR {
+                elements[i] = Some(value);
+                value += 1;
+            }
+
+            tree.push(elements, BRANCH_FACTOR);
+        }
+
+        for i in (0..tree.len()).rev() {
+            tree = tree.split_right_at(i);
+
+            for j in 0..i {
+                assert_eq!(tree.get(j).cloned().unwrap(), j);
+            }
+        }
+
+        assert_eq!(tree.root, Some(Node::Leaf(SharedPtr::new(Leaf::new())))); // ToDo: remove root when tree is empty?
+        assert_eq!(tree.root_len, Index(0));
+        assert_eq!(tree.shift, Shift(0));
     }
 }
