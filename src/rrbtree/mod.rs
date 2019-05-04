@@ -33,6 +33,17 @@ macro_rules! new_branch {
     };
 }
 
+#[inline(always)]
+fn get_branch_index(sizes: &[Option<usize>], index: Index) -> usize {
+    let mut candidate = 0;
+
+    while candidate < BRANCH_FACTOR - 1 && sizes[candidate].unwrap() <= index.0 {
+        candidate += 1;
+    }
+
+    candidate
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 struct Shift(usize);
 
@@ -195,17 +206,22 @@ impl<T: Clone + Debug> Leaf<T> {
     fn split_right_at(&mut self, index: Index, shift: Shift) -> Node<T> {
         let mut leaf_left = Leaf::new();
 
-        // println!("index = {}", index.child(shift));
-
         for i in 0..index.child(shift) {
-            // println!(
-            //     "leaf_iter = {}, leaf_left_len = {}, leaf_len = {}",
-            //     i, leaf_left.len, self.len
-            // );
             leaf_left.add(self.take(i));
         }
 
         Node::Leaf(SharedPtr::new(leaf_left))
+    }
+
+    #[inline(always)]
+    fn split_left_at(&mut self, index: Index, shift: Shift) -> Node<T> {
+        let mut leaf_right = Leaf::new();
+
+        for i in index.child(shift)..self.len {
+            leaf_right.add(self.take(i));
+        }
+
+        Node::Leaf(SharedPtr::new(leaf_right))
     }
 
     #[inline(always)]
@@ -895,17 +911,6 @@ impl<T: Clone + Debug> Node<T> {
     }
 
     fn get(&self, index: Index, shift: Shift) -> Option<&T> {
-        #[inline(always)]
-        fn get_branch_index(sizes: &[Option<usize>], index: Index) -> usize {
-            let mut candidate = 0;
-
-            while candidate < BRANCH_FACTOR - 1 && sizes[candidate].unwrap() <= index.0 {
-                candidate += 1;
-            }
-
-            candidate
-        }
-
         let mut node = self;
         let mut shift = shift;
         let mut idx = index;
@@ -941,17 +946,6 @@ impl<T: Clone + Debug> Node<T> {
     }
 
     fn get_mut(&mut self, index: Index, shift: Shift) -> Option<&mut T> {
-        #[inline(always)]
-        fn get_branch_index(sizes: &mut [Option<usize>], index: Index) -> usize {
-            let mut candidate = 0;
-
-            while sizes[candidate].unwrap() <= index.0 {
-                candidate += 1
-            }
-
-            candidate
-        }
-
         let mut node = self;
         let mut shift = shift;
         let mut idx = index;
@@ -993,19 +987,10 @@ impl<T: Clone + Debug> Node<T> {
 }
 
 impl<T: Clone + Debug> Node<T> {
+
+    // ToDo: figure out if you need to adjust index param as you do in the split_left_at
     fn split_right_at(&mut self, shift: Shift, index: Index, has_left: bool) -> (Self, Shift) {
-        #[inline(always)]
-        fn get_branch_index(sizes: &mut [Option<usize>], index: Index) -> usize {
-            let mut candidate = 0;
-
-            while candidate < BRANCH_FACTOR - 1 && sizes[candidate].unwrap() <= index.0 {
-                candidate += 1;
-            }
-
-            candidate
-        }
-
-        return match self {
+        match self {
             Node::Leaf(leaf_arc) => (
                 SharedPtr::make_mut(leaf_arc).split_right_at(index, shift),
                 shift,
@@ -1071,7 +1056,55 @@ impl<T: Clone + Debug> Node<T> {
                     (left, shift)
                 }
             }
-        };
+        }
+    }
+
+    fn split_left_at(&mut self, shift: Shift, index: Index, has_right: bool) -> (Self, Shift) {
+        match self {
+            Node::Leaf(leaf_arc) => (
+                SharedPtr::make_mut(leaf_arc).split_left_at(index, shift),
+                shift,
+            ),
+            Node::Branch(branch_arc) => {
+                let subshift = shift.dec();
+                let subidx = index.child(shift);
+                let idx = index.0 - (subidx << shift.0);
+
+                let branch = SharedPtr::make_mut(branch_arc);
+                let child = branch.children[subidx].as_mut().unwrap();
+                let is_last = subidx == branch.len - 1;
+
+                let (right, total_shift) =
+                    child.split_left_at(subshift, Index(idx), !is_last || has_right);
+
+                // let idx = Index(index.0 - subidx << shift.0); // ???
+                if is_last {
+                    unreachable!()
+                } else {
+                    let mut root = RelaxedBranch::new();
+                    let sliced_len = branch.len - subidx;
+
+                    for i in 0..sliced_len {
+                        // ToDo: this is wrong, as index.0 is the
+                        // ToDo: absolute index, not adjusted one
+
+                        let size = ((subidx + i + 1) << shift.0) - index.0;
+                        root.sizes[i] = Some(size);
+                    }
+
+                    root.children[0] = Some(right);
+                    root.len = 1;
+
+                    for i in 1..sliced_len {
+                        root.children[i] = branch.children[i].take();
+                        root.len += 1;
+                    }
+
+                    (Node::RelaxedBranch(SharedPtr::new(root)), shift)
+                }
+            }
+            Node::RelaxedBranch(..) => unreachable!(),
+        }
     }
 }
 
@@ -1242,15 +1275,31 @@ impl<T: Clone + Debug> RrbTree<T> {
         return if let Some(root) = self.root.as_mut() {
             let (left_root, left_shift) = root.split_right_at(self.shift, Index(mid), false);
 
-            let left = RrbTree {
+            RrbTree {
                 root: Some(left_root),
                 root_len: Index(mid),
                 shift: left_shift,
-            };
-
-            left
+            }
         } else {
             panic!()
+        };
+    }
+
+    pub fn split_left_at(&mut self, mid: usize) -> Self {
+        return if let Some(root) = self.root.as_mut() {
+            let (right_root, right_shift) = root.split_left_at(self.shift, Index(mid), false);
+            let remaining = self.root_len.0 - mid;
+
+            // ToDo: see other adjustments which are made
+            // ToDo: in c-rrb after root is split
+
+            RrbTree {
+                root: Some(right_root),
+                root_len: Index(remaining),
+                shift: right_shift,
+            }
+        } else {
+            panic!();
         };
     }
 }
@@ -1271,21 +1320,33 @@ mod test {
     }
 
     #[test]
+    #[should_panic]
+    fn split_left_empty_tree() {
+        let mut tree: RrbTree<usize> = RrbTree::new();
+        tree.split_left_at(0);
+    }
+
+    #[test]
     fn split_right_when_root_is_leaf() {
-        let mut elements = new_branch!();
-
-        for i in 0..BRANCH_FACTOR {
-            elements[i] = Some(i);
-        }
-
-        let mut tree = RrbTree::new();
-        tree.push(elements, BRANCH_FACTOR);
+        let mut tree = create_tree_of_size(BRANCH_FACTOR, 0);
 
         let left = tree.split_right_at(BRANCH_FACTOR / 2);
         assert_eq!(left.len(), BRANCH_FACTOR / 2);
 
         for index in 0..BRANCH_FACTOR / 2 {
-            assert_eq!(index, left.get(index).cloned().unwrap());
+            assert_eq!(left.get(index).cloned(), Some(index));
+        }
+    }
+
+    #[test]
+    fn split_left_when_root_is_leaf() {
+        let mut tree = create_tree_of_size(BRANCH_FACTOR, 0);
+        let right = tree.split_left_at(BRANCH_FACTOR / 2);
+
+        let mut value = BRANCH_FACTOR / 2;
+        for index in 0..BRANCH_FACTOR / 2 {
+            assert_eq!(right.get(index).cloned(), Some(value));
+            value += 1;
         }
     }
 
