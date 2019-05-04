@@ -993,13 +993,7 @@ impl<T: Clone + Debug> Node<T> {
 }
 
 impl<T: Clone + Debug> Node<T> {
-    // ToDo: add has_left param as an optimisation
-    fn split_right_at(
-        &mut self,
-        shift: Shift,
-        index: Index,
-        has_left: bool,
-    ) -> (Self, usize, Shift) {
+    fn split_right_at(&mut self, shift: Shift, index: Index, has_left: bool) -> (Self, Shift) {
         #[inline(always)]
         fn get_branch_index(sizes: &mut [Option<usize>], index: Index) -> usize {
             let mut candidate = 0;
@@ -1012,12 +1006,10 @@ impl<T: Clone + Debug> Node<T> {
         }
 
         return match self {
-            Node::Leaf(leaf_arc) => {
-                let left = SharedPtr::make_mut(leaf_arc).split_right_at(index, shift);
-                let left_len = left.len();
-
-                (left, left_len, shift)
-            }
+            Node::Leaf(leaf_arc) => (
+                SharedPtr::make_mut(leaf_arc).split_right_at(index, shift),
+                shift,
+            ),
             Node::Branch(branch_arc) => {
                 let subshift = shift.dec();
                 let subidx = index.child(shift);
@@ -1025,56 +1017,58 @@ impl<T: Clone + Debug> Node<T> {
                 let branch = SharedPtr::make_mut(branch_arc);
                 let child = branch.children[subidx].as_mut().unwrap();
 
-                let (left, left_len, total_shift) =
+                let (left, total_shift) =
                     child.split_right_at(subshift, index, (subidx != 0) || has_left);
 
                 if subidx == 0 {
-                    // here we're supposed to cut the tree height,
-                    // as it might have redundant root nodes
                     if has_left {
                         let mut branch = Branch::new();
                         branch.add(Some(left));
 
                         let node = Node::Branch(SharedPtr::new(branch));
-                        let node_len = node.len();
-
-                        (node, node_len, shift)
+                        (node, shift)
                     } else {
-                        (left, left_len, total_shift)
+                        (left, total_shift)
                     }
                 } else {
                     let mut root = branch.split_right_at(Index(subidx));
-                    root.children[subidx] = Some(left);
+                    root.add(Some(left));
 
-                    // ToDo: check that the left_len or len return value matches expectations
                     let left = Node::Branch(SharedPtr::new(root));
-                    (left, left_len, shift)
+                    (left, shift)
                 }
             }
             Node::RelaxedBranch(branch_arc) => {
                 let branch = SharedPtr::make_mut(branch_arc);
-                let mut subidx = index;
+                let mut idx = index;
 
                 let sizes = &mut branch.sizes;
-                let branch_index = get_branch_index(sizes, subidx);
+                let subidx = get_branch_index(sizes, idx);
 
-                if branch_index != 0 {
-                    subidx = Index(subidx.0 - sizes[branch_index - 1].unwrap());
+                if subidx != 0 {
+                    idx = Index(idx.0 - sizes[subidx - 1].unwrap());
                 }
 
-                let child = branch.children[subidx.0].as_mut().unwrap();
-                let (left, left_len, _) =
-                    child.split_right_at(shift.dec(), subidx, (subidx.0 != 0) || has_left);
+                let child = branch.children[subidx].as_mut().unwrap();
+                let (left, total_shift) =
+                    child.split_right_at(shift.dec(), idx, (subidx != 0) || has_left);
 
-                if subidx.0 == 0 {
-                    unreachable!()
+                if subidx == 0 {
+                    if has_left {
+                        let mut branch = RelaxedBranch::new();
+                        branch.add(Some(left), Some(index.0 + 1));
+
+                        let node = Node::RelaxedBranch(SharedPtr::new(branch));
+                        (node, shift)
+                    } else {
+                        (left, total_shift)
+                    }
                 } else {
-                    let mut root = branch.split_right_at(subidx);
-                    root.children[subidx.0] = Some(left);
-                    root.sizes[subidx.0] = Some(index.0 + 1); // ToDo: interesting, why subidx + 1 works in this case
+                    let mut root = branch.split_right_at(Index(subidx));
+                    root.add(Some(left), Some(index.0 + 1));
 
                     let left = Node::RelaxedBranch(SharedPtr::new(root));
-                    (left, left_len, shift) // ToDo: left_len returned here doesn't match to length of root node
+                    (left, shift)
                 }
             }
         };
@@ -1211,7 +1205,10 @@ impl<T: Clone + Debug> RrbTree<T> {
     }
 
     pub fn append(&mut self, that: &mut RrbTree<T>) {
-        if let (Some(this_root), Some(that_root)) = (self.root.as_mut(), that.root.take()) {
+        if !self.is_empty() && !that.is_empty() {
+            let this_root = self.root.as_mut().unwrap();
+            let that_root = that.root.take().unwrap();
+
             let mut merged_root = this_root.merge(that_root, self.shift, that.shift);
             let merged_shift = Shift(cmp::max(self.shift.0, that.shift.0));
 
@@ -1233,18 +1230,21 @@ impl<T: Clone + Debug> RrbTree<T> {
             self.root_len.0 += that.root_len.0;
             that.root_len.0 = 0;
         } else {
-            unreachable!();
+            if self.is_empty() && !that.is_empty() {
+                self.root = that.root.take();
+                self.root_len = that.root_len;
+                self.shift = that.shift;
+            }
         }
     }
 
     pub fn split_right_at(&mut self, mid: usize) -> Self {
         return if let Some(root) = self.root.as_mut() {
-            let (left_root, left_len, left_shift) =
-                root.split_right_at(self.shift, Index(mid), false);
+            let (left_root, left_shift) = root.split_right_at(self.shift, Index(mid), false);
 
             let left = RrbTree {
                 root: Some(left_root),
-                root_len: Index(left_len),
+                root_len: Index(mid),
                 shift: left_shift,
             };
 
@@ -1305,15 +1305,69 @@ mod test {
             tree.push(elements, BRANCH_FACTOR);
         }
 
+        split_off_one_by_one(tree);
+    }
+
+    #[test]
+    fn interleaving_append_split_operations() {
+        let mut tree = RrbTree::new();
+        let mut value = 0;
+
+        for size in (0..(BRANCH_FACTOR * 8 + BRANCH_FACTOR)).rev() {
+            let mut another_tree = create_tree_of_size(size, value);
+
+            tree.append(&mut another_tree);
+            tree = tree.split_right_at(tree.len() - 1);
+
+            value = tree.len();
+        }
+
+        for i in (0..value).rev() {
+            assert_eq!(tree.get(i).cloned(), Some(i));
+        }
+
+        split_off_one_by_one(tree);
+    }
+
+    fn create_tree_of_size(n: usize, val: usize) -> RrbTree<usize> {
+        fn push_elements(tree: &mut RrbTree<usize>, count: usize, mut value: usize) {
+            if count != 0 {
+                let mut elements = new_branch!();
+
+                for i in 0..count {
+                    elements[i] = Some(value);
+                    value += 1;
+                }
+
+                tree.push(elements, count);
+            }
+        }
+
+        let mut tree = RrbTree::new();
+        let mut value = val;
+
+        for _ in 0..(n / BRANCH_FACTOR) {
+            push_elements(&mut tree, BRANCH_FACTOR, value);
+            value += BRANCH_FACTOR;
+        }
+
+        push_elements(&mut tree, n % BRANCH_FACTOR, value);
+
+        tree
+    }
+
+    fn split_off_one_by_one(mut tree: RrbTree<usize>) {
         for i in (0..tree.len()).rev() {
             tree = tree.split_right_at(i);
 
             for j in 0..i {
-                assert_eq!(tree.get(j).cloned().unwrap(), j);
+                assert_eq!(tree.get(j).cloned(), Some(j));
             }
         }
 
-        assert_eq!(tree.root, Some(Node::Leaf(SharedPtr::new(Leaf::new())))); // ToDo: remove root when tree is empty?
+        // ToDo: remove root when tree is empty?
+        assert_eq!(tree.root, Some(Node::Leaf(SharedPtr::new(Leaf::new()))));
+
         assert_eq!(tree.root_len, Index(0));
         assert_eq!(tree.shift, Shift(0));
     }
