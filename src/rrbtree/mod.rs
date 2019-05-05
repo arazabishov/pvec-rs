@@ -987,7 +987,6 @@ impl<T: Clone + Debug> Node<T> {
 }
 
 impl<T: Clone + Debug> Node<T> {
-
     // ToDo: figure out if you need to adjust index param as you do in the split_left_at
     fn split_right_at(&mut self, shift: Shift, index: Index, has_left: bool) -> (Self, Shift) {
         match self {
@@ -1301,6 +1300,11 @@ impl<T: Clone + Debug> RrbTree<T> {
         } else {
             panic!();
         };
+    }
+
+    pub fn split(&mut self, mid: usize) -> (Self, Self) {
+        let mut right = self.clone();
+        (self.split_right_at(mid), right.split_left_at(mid))
     }
 }
 
