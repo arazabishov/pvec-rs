@@ -19,7 +19,7 @@ impl<T: Clone + Debug> Iterator for PVecIter<T> {
     type Item = T;
 
     fn next(&mut self) -> Option<Self::Item> {
-        return if self.index < self.tree_len {
+        if self.index < self.tree_len {
             if self.chunk.is_none() {
                 self.chunk = self.tree_iter.next();
             }
@@ -44,7 +44,7 @@ impl<T: Clone + Debug> Iterator for PVecIter<T> {
             self.tail[index].take()
         } else {
             None
-        };
+        }
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {

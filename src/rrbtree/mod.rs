@@ -294,7 +294,7 @@ impl<T: Clone + Debug> BranchBuilder<T> {
         let len = mem::replace(&mut self.len, 0);
 
         if is_relaxed {
-            let sizes = BranchBuilder::compute_sizes(&children, &self.shift, &len);
+            let sizes = BranchBuilder::compute_sizes(&children, self.shift, len);
             Node::RelaxedBranch(SharedPtr::new(RelaxedBranch {
                 children,
                 sizes,
@@ -334,13 +334,13 @@ impl<T: Clone + Debug> BranchBuilder<T> {
     #[inline(always)]
     fn compute_sizes(
         children: &[Option<Node<T>>; BRANCH_FACTOR],
-        shift: &Shift,
-        len: &usize,
+        shift: Shift,
+        len: usize,
     ) -> [Option<usize>; BRANCH_FACTOR] {
         let mut size_sum = 0;
         let mut size_table = new_branch!();
 
-        for i in 0..*len {
+        for i in 0..len {
             size_sum += BranchBuilder::size_sub_trie(children[i].as_ref().unwrap(), shift);
             size_table[i] = Some(size_sum);
         }
@@ -348,12 +348,12 @@ impl<T: Clone + Debug> BranchBuilder<T> {
         size_table
     }
 
-    fn size_sub_trie(node: &Node<T>, shift: &Shift) -> usize {
+    fn size_sub_trie(node: &Node<T>, shift: Shift) -> usize {
         match node {
             Node::Branch(ref branch) => {
                 let last_size = BranchBuilder::size_sub_trie(
                     branch.children[branch.len - 1].as_ref().unwrap(),
-                    &shift.dec(),
+                    shift.dec(),
                 );
 
                 ((branch.len - 1) << shift.0) + last_size
@@ -543,13 +543,11 @@ impl<T: Clone + Debug> RelaxedBranch<T> {
 
             if let Some(ref size) = child_node_size {
                 branch.sizes[branch_index] = Some(size + leaf.len);
+            } else if branch_index == 0 {
+                branch.sizes[branch_index] = Some(leaf.len);
             } else {
-                if branch_index == 0 {
-                    branch.sizes[branch_index] = Some(leaf.len);
-                } else {
-                    branch.sizes[branch_index] =
-                        Some(branch.sizes[branch_index - 1].unwrap() + leaf.len);
-                }
+                branch.sizes[branch_index] =
+                    Some(branch.sizes[branch_index - 1].unwrap() + leaf.len);
             }
 
             let node = child_node.get_or_insert_with(|| {
@@ -705,7 +703,7 @@ impl<T: Clone + Debug> Node<T> {
         let mut idx = index;
 
         let mut shift_has_enough_capacity = false;
-        let mut shift_new_branch = shift.clone();
+        let mut shift_new_branch = shift;
 
         while shift.0 > BITS_PER_LEVEL {
             match *node {
@@ -723,14 +721,14 @@ impl<T: Clone + Debug> Node<T> {
 
                     if child_index < BRANCH_FACTOR - 1 {
                         shift_has_enough_capacity = true;
-                        shift_new_branch = shift.clone();
+                        shift_new_branch = shift;
                     }
 
                     shift = shift.dec();
                 }
                 Node::Branch(..) => {
                     debug_assert!(shift.0 > 0);
-                    let branch_has_enough_capacity = !(idx.0 >> shift.inc().0 > 0);
+                    let branch_has_enough_capacity = idx.0 >> shift.inc().0 == 0;
 
                     if !branch_has_enough_capacity && shift_has_enough_capacity {
                         return (shift_has_enough_capacity, Some(shift_new_branch));
@@ -747,7 +745,7 @@ impl<T: Clone + Debug> Node<T> {
             shift_new_branch = shift;
         }
 
-        return (shift_has_enough_capacity, Some(shift_new_branch));
+        (shift_has_enough_capacity, Some(shift_new_branch))
     }
 
     fn merge(&mut self, mut that: Node<T>, self_shift: Shift, that_shift: Shift) -> Node<T> {
@@ -777,33 +775,31 @@ impl<T: Clone + Debug> Node<T> {
                 Some(tail),
                 that_shift,
             )
+        } else if self_shift.0 == 0 {
+            SharedPtr::make_mut(self.as_mut_leaf()).merge(that.into_leaf().take())
         } else {
-            if self_shift.0 == 0 {
-                SharedPtr::make_mut(self.as_mut_leaf()).merge(that.into_leaf().take())
+            let branch_l = self.as_mut_children();
+            let branch_r = that.as_mut_children();
+
+            let (child_l, init) = branch_l.split_last_mut().unwrap();
+            let (child_r, tail) = branch_r.split_first_mut().unwrap();
+
+            let child_node_l = child_l.as_mut().unwrap();
+            let child_node_r = child_r.take().unwrap();
+
+            let mut branch_c = if self_shift.is_level_with_leaves() {
+                SharedPtr::make_mut(child_node_l.as_mut_leaf())
+                    .merge(child_node_r.into_leaf().take())
             } else {
-                let branch_l = self.as_mut_children();
-                let branch_r = that.as_mut_children();
+                child_node_l.merge(child_node_r, self_shift.dec(), that_shift.dec())
+            };
 
-                let (child_l, init) = branch_l.split_last_mut().unwrap();
-                let (child_r, tail) = branch_r.split_first_mut().unwrap();
-
-                let child_node_l = child_l.as_mut().unwrap();
-                let child_node_r = child_r.take().unwrap();
-
-                let mut branch_c = if self_shift.is_level_with_leaves() {
-                    SharedPtr::make_mut(child_node_l.as_mut_leaf())
-                        .merge(child_node_r.into_leaf().take())
-                } else {
-                    child_node_l.merge(child_node_r, self_shift.dec(), that_shift.dec())
-                };
-
-                Node::rebalance(
-                    Some(init),
-                    Some(branch_c.as_mut_children()),
-                    Some(tail),
-                    self_shift,
-                )
-            }
+            Node::rebalance(
+                Some(init),
+                Some(branch_c.as_mut_children()),
+                Some(tail),
+                self_shift,
+            )
         }
     }
 
@@ -1345,17 +1341,15 @@ impl<T: Clone + Debug> RrbTree<T> {
 
             self.root_len.0 += that.root_len.0;
             that.root_len.0 = 0;
-        } else {
-            if self.is_empty() && !that.is_empty() {
-                self.root = that.root.take();
-                self.root_len = that.root_len;
-                self.shift = that.shift;
-            }
+        } else if self.is_empty() && !that.is_empty() {
+            self.root = that.root.take();
+            self.root_len = that.root_len;
+            self.shift = that.shift;
         }
     }
 
     fn split_right_at(&mut self, mid: usize) -> Self {
-        return if let Some(root) = self.root.as_mut() {
+        if let Some(root) = self.root.as_mut() {
             let (left_root, left_shift) = root.split_right_at(self.shift, Index(mid), false);
 
             if mid == 0 && left_shift.0 == 0 {
@@ -1369,11 +1363,11 @@ impl<T: Clone + Debug> RrbTree<T> {
             }
         } else {
             panic!()
-        };
+        }
     }
 
     fn split_left_at(&mut self, mid: usize) -> Self {
-        return if let Some(root) = self.root.as_mut() {
+        if let Some(root) = self.root.as_mut() {
             let (mut right_root, right_shift) = root.split_left_at(self.shift, Index(mid), false);
             let remaining = self.root_len.0 - mid;
 
@@ -1393,7 +1387,7 @@ impl<T: Clone + Debug> RrbTree<T> {
             }
         } else {
             panic!();
-        };
+        }
     }
 
     pub fn split_at(&mut self, mid: usize) -> (Self, Self) {
@@ -1416,7 +1410,7 @@ mod serializer;
 #[cfg(test)]
 #[macro_use]
 mod test {
-    use super::{Index, Leaf, Node, RrbTree, SharedPtr, Shift, BRANCH_FACTOR};
+    use super::{Index, RrbTree, Shift, BRANCH_FACTOR};
 
     #[test]
     #[should_panic]
