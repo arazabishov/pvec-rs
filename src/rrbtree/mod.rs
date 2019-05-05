@@ -1390,15 +1390,11 @@ impl<T: Clone + Debug> RrbTree<T> {
         }
     }
 
-    pub fn split_at(&mut self, mid: usize) -> (Self, Self) {
+    pub fn split_at(mut self, mid: usize) -> (Self, Self) {
         let mut right = self.clone();
 
         let left = self.split_right_at(mid);
         let right = right.split_left_at(mid);
-
-        self.root = None;
-        self.root_len = Index(0);
-        self.shift = Shift(0);
 
         (left, right)
     }
@@ -1515,7 +1511,9 @@ mod test {
             let mut another_tree = create_tree_of_size(size, value);
             tree.append(&mut another_tree);
 
-            let (mut left, mut right) = tree.split_at(tree.len() / 2);
+            let mid = tree.len() / 2;
+            let (mut left, mut right) = tree.split_at(mid);
+
             left.append(&mut right);
             tree = left;
 
