@@ -306,16 +306,20 @@ impl<T: Clone + Debug> BranchBuilder<T> {
     }
 
     #[inline(always)]
-    fn push(&mut self, child: Node<T>) {
-        self.is_relaxed = self.is_relaxed || child.is_relaxed_node();
-        self.children[self.len] = Some(child);
+    fn push(&mut self, node: Node<T>) {
+        let node_is_not_fully_dense = node.is_relaxed_branch() || !node.is_full();
+
+        self.is_relaxed = self.is_relaxed || node_is_not_fully_dense;
+        self.children[self.len] = Some(node);
         self.len += 1;
     }
 
     #[inline(always)]
     fn give(&mut self, child: Option<Node<T>>) {
         if let Some(ref node) = child.as_ref() {
-            self.is_relaxed = self.is_relaxed || node.is_relaxed_node();
+            let node_is_not_fully_dense = node.is_relaxed_branch() || !node.is_full();
+
+            self.is_relaxed = self.is_relaxed || node_is_not_fully_dense;
             self.children[self.len] = child;
             self.len += 1;
         }
@@ -673,11 +677,11 @@ impl<T: Clone + Debug> Node<T> {
     }
 
     #[inline(always)]
-    fn is_relaxed_node(&self) -> bool {
+    fn is_relaxed_branch(&self) -> bool {
         match self {
             Node::RelaxedBranch(..) => true,
-            Node::Branch(ref branch) => branch.len != BRANCH_FACTOR,
-            Node::Leaf(ref leaf) => leaf.len != BRANCH_FACTOR,
+            Node::Branch(..) => false,
+            Node::Leaf(..) => false,
         }
     }
 
@@ -1082,7 +1086,7 @@ impl<T: Clone + Debug> Node<T> {
 
                 if is_last {
                     if has_right {
-                        let is_child_relaxed = right.is_relaxed_node();
+                        let is_child_relaxed = right.is_relaxed_branch();
                         let is_child_leaf = subshift.is_leaf_level();
 
                         if !is_child_leaf && is_child_relaxed {
@@ -1142,7 +1146,7 @@ impl<T: Clone + Debug> Node<T> {
 
                 if is_last {
                     if has_right {
-                        let is_child_relaxed = right.is_relaxed_node();
+                        let is_child_relaxed = right.is_relaxed_branch();
                         let is_child_leaf = subshift.is_leaf_level();
 
                         if !is_child_leaf && is_child_relaxed {
@@ -1371,7 +1375,7 @@ impl<T: Clone + Debug> RrbTree<T> {
             let (mut right_root, right_shift) = root.split_left_at(self.shift, Index(mid), false);
             let remaining = self.root_len.0 - mid;
 
-            if !right_shift.is_leaf_level() && right_root.is_relaxed_node() {
+            if !right_shift.is_leaf_level() && right_root.is_relaxed_branch() {
                 let mut branch = SharedPtr::make_mut(right_root.as_mut_relaxed_branch());
                 branch.sizes[branch.len - 1] = Some(remaining);
             }
