@@ -92,15 +92,10 @@ impl<T: Clone + Debug> PVec<T> {
         self.len() == 0
     }
 
-    pub fn split_right_at(&mut self, mid: usize) {
-        self.tree.split_right_at(mid);
-    }
-
-    pub fn split_left_at(&mut self, mid: usize) {
-        self.tree.split_left_at(mid);
-    }
-
     pub fn split_at(&mut self, mid: usize) {
+        // ToDo: see other adjustments which are
+        // ToDo: made to tail after tree is split
+
         self.tree.split_at(mid);
     }
 
