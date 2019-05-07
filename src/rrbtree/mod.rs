@@ -677,6 +677,15 @@ impl<T: Clone + Debug> Node<T> {
     }
 
     #[inline(always)]
+    fn is_leaf(&self) -> bool {
+        match self {
+            Node::Leaf(..) => true,
+            Node::Branch(..) => false,
+            Node::RelaxedBranch(..) => false,
+        }
+    }
+
+    #[inline(always)]
     fn is_relaxed_branch(&self) -> bool {
         match self {
             Node::RelaxedBranch(..) => true,
@@ -1320,6 +1329,11 @@ impl<T: Clone + Debug> RrbTree<T> {
         self.len() == 0
     }
 
+    #[inline(always)]
+    pub fn is_root_leaf(&self) -> bool {
+        self.root.as_ref().map_or(false, |node| node.is_leaf())
+    }
+
     pub fn append(&mut self, that: &mut RrbTree<T>) {
         if !self.is_empty() && !that.is_empty() {
             let this_root = self.root.as_mut().unwrap();
@@ -1352,7 +1366,7 @@ impl<T: Clone + Debug> RrbTree<T> {
         }
     }
 
-    fn split_right_at(&mut self, mid: usize) -> Self {
+    pub fn split_right_at(&mut self, mid: usize) -> Self {
         if let Some(root) = self.root.as_mut() {
             let (left_root, left_shift) = root.split_right_at(self.shift, Index(mid), false);
 
@@ -1370,7 +1384,7 @@ impl<T: Clone + Debug> RrbTree<T> {
         }
     }
 
-    fn split_left_at(&mut self, mid: usize) -> Self {
+    pub fn split_left_at(&mut self, mid: usize) -> Self {
         if let Some(root) = self.root.as_mut() {
             let (mut right_root, right_shift) = root.split_left_at(self.shift, Index(mid), false);
             let remaining = self.root_len.0 - mid;
@@ -1394,7 +1408,7 @@ impl<T: Clone + Debug> RrbTree<T> {
         }
     }
 
-    pub fn split_at(mut self, mid: usize) -> (Self, Self) {
+    fn split_at(mut self, mid: usize) -> (Self, Self) {
         let mut right = self.clone();
 
         let left = self.split_right_at(mid);

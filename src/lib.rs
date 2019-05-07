@@ -92,11 +92,123 @@ impl<T: Clone + Debug> PVec<T> {
         self.len() == 0
     }
 
-    pub fn split_at(self, mid: usize) {
+    pub fn split_at(self, mid: usize) -> (Self, Self) {
+        let right = self.clone();
+        (self.split_right_at(mid), right.split_left_at(mid))
+    }
+
+    // ToDo: reconsider implementation of tree.split_at_* to
+    // ToDo: avoid additional cloning, copying, etc
+    fn split_right_at(mut self, mid: usize) -> Self {
         // ToDo: see other adjustments which are
         // ToDo: made to tail after tree is split
 
-        self.tree.split_at(mid);
+        if mid == 0 {
+            PVec::new()
+        } else if mid < self.len() {
+            // only need to cut the tail off
+            if self.tree.len() <= mid {
+                let new_tail_len = mid - self.tree.len();
+
+                for i in new_tail_len..self.tail_len {
+                    self.tail[i] = None;
+                }
+
+                PVec {
+                    tree: self.tree,
+                    tail: self.tail,
+                    tail_len: new_tail_len,
+                }
+            } else {
+                let mut new_tree = self.tree.split_right_at(mid);
+                let (new_tail, new_tail_len) = new_tree.pop();
+
+                PVec {
+                    tree: new_tree,
+                    tail: new_tail,
+                    tail_len: new_tail_len,
+                }
+            }
+        } else {
+            panic!()
+        }
+    }
+
+    // ToDo: see other adjustments which are
+    // ToDo: made to tail after tree is split
+    fn split_left_at(mut self, mid: usize) -> Self {
+        if mid == 0 {
+            self
+        } else if mid < self.len() {
+            let remaining = self.len() - mid;
+
+            if remaining <= self.tail_len {
+                let mut tail = new_branch!();
+                let mut tail_len = 0;
+
+                for i in (self.tail_len - remaining)..self.tail_len {
+                    tail[tail_len] = self.tail[i].take();
+                    tail_len += 1;
+                }
+
+                return PVec {
+                    tree: self.tree,
+                    tail: tail,
+                    tail_len: tail_len,
+                };
+            }
+
+            let mut pvec = PVec {
+                tree: self.tree.split_left_at(mid),
+                tail: self.tail,
+                tail_len: self.tail_len,
+            };
+
+            if pvec.tree.is_root_leaf() {
+                if pvec.len() <= BRANCH_FACTOR {
+                    // all values can fit into a single tail
+                    let (mut new_tail, mut new_tail_len) = pvec.tree.pop();
+
+                    for i in 0..pvec.tail_len {
+                        new_tail[new_tail_len] = pvec.tail[i].take();
+                        new_tail_len += 1;
+                    }
+
+                    pvec.tail = new_tail;
+                    pvec.tail_len = new_tail_len;
+                } else if pvec.tree.len() < BRANCH_FACTOR {
+                    // root is leaf, but it is not fully dense
+                    // hence, some of the values should be redistributed to the actual leaf
+
+                    let (mut root, mut root_len) = pvec.tree.pop();
+                    let mut index = 0;
+
+                    while root_len < BRANCH_FACTOR && index < pvec.tail_len {
+                        root[root_len] = pvec.tail[index].take();
+
+                        root_len += 1;
+                        index += 1;
+                    }
+
+                    pvec.tree.push(root, root_len);
+
+                    let (mut new_tail, mut new_tail_len) = (new_branch!(), 0);
+                    while index < pvec.tail_len {
+                        new_tail[new_tail_len] = pvec.tail[index].take();
+
+                        new_tail_len += 1;
+                        index += 1;
+                    }
+
+                    pvec.tail = new_tail;
+                    pvec.tail_len = new_tail_len;
+                }
+            }
+
+            pvec
+        } else {
+            panic!()
+        }
     }
 
     pub fn append(&mut self, that: &mut PVec<T>) {
@@ -195,5 +307,57 @@ impl<T: Clone + Debug> ops::IndexMut<usize> for PVec<T> {
                 index, len
             )
         })
+    }
+}
+
+#[cfg(test)]
+#[macro_use]
+mod test {
+    use super::{PVec, BRANCH_FACTOR};
+
+    #[test]
+    fn split_right_at() {
+        let mut pvec = PVec::new();
+
+        for i in 0..(BRANCH_FACTOR * BRANCH_FACTOR) {
+            pvec.push(i);
+        }
+
+        for i in (0..BRANCH_FACTOR * BRANCH_FACTOR).rev() {
+            pvec = pvec.split_right_at(i);
+            assert_eq!(pvec.len(), i);
+
+            for j in 0..i {
+                assert_eq!(pvec.get(j).cloned(), Some(j));
+            }
+        }
+
+        assert_eq!(pvec.tree.len(), 0);
+        assert_eq!(pvec.tail_len, 0);
+    }
+
+    #[test]
+    fn split_left_at() {
+        let mut pvec = PVec::new();
+
+        for i in 0..(BRANCH_FACTOR * BRANCH_FACTOR) {
+            pvec.push(i);
+        }
+
+        let pvec_len = pvec.len();
+        for i in 1..pvec_len {
+            pvec = pvec.split_left_at(1);
+            assert_eq!(pvec.len(), pvec_len - i);
+
+            for j in 0..(pvec_len - i) {
+                assert_eq!(pvec.get(j).cloned(), Some(i + j));
+            }
+        }
+
+        assert_eq!(pvec.tree.len(), 0);
+
+        // ToDo: what is the expected behavior here? 0 or 1
+        // ToDo: figure out what to do with indices
+        assert_eq!(pvec.tail_len, 1);
     }
 }
