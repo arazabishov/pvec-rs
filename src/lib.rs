@@ -92,19 +92,21 @@ impl<T: Clone + Debug> PVec<T> {
         self.len() == 0
     }
 
-    pub fn split_at(self, mid: usize) -> (Self, Self) {
-        let right = self.clone();
-        (self.split_right_at(mid), right.split_left_at(mid))
+    pub fn split_off(&mut self, mid: usize) -> Self {
+        let cloned = self.clone();
+        self.split_right_at(mid);
+
+        cloned.split_left_at(mid)
     }
 
     // ToDo: reconsider implementation of tree.split_at_* to
     // ToDo: avoid additional cloning, copying, etc
-    fn split_right_at(mut self, mid: usize) -> Self {
+    fn split_right_at(&mut self, mid: usize) {
         // ToDo: see other adjustments which are
         // ToDo: made to tail after tree is split
 
         if mid == 0 {
-            PVec::new()
+            mem::replace(self, PVec::new());
         } else if mid < self.len() {
             // only need to cut the tail off
             if self.tree.len() <= mid {
@@ -114,22 +116,16 @@ impl<T: Clone + Debug> PVec<T> {
                     self.tail[i] = None;
                 }
 
-                PVec {
-                    tree: self.tree,
-                    tail: self.tail,
-                    tail_len: new_tail_len,
-                }
+                self.tail_len = new_tail_len
             } else {
                 let mut new_tree = self.tree.split_right_at(mid);
                 let (new_tail, new_tail_len) = new_tree.pop();
 
-                PVec {
-                    tree: new_tree,
-                    tail: new_tail,
-                    tail_len: new_tail_len,
-                }
+                self.tree = new_tree;
+                self.tail = new_tail;
+                self.tail_len = new_tail_len;
             }
-        } else {
+        } else if mid > self.len() {
             panic!()
         }
     }
@@ -206,6 +202,8 @@ impl<T: Clone + Debug> PVec<T> {
             }
 
             pvec
+        } else if mid == self.len() {
+            PVec::new()
         } else {
             panic!()
         }
@@ -324,7 +322,7 @@ mod test {
         }
 
         for i in (0..BRANCH_FACTOR * BRANCH_FACTOR).rev() {
-            pvec = pvec.split_right_at(i);
+            pvec.split_right_at(i);
             assert_eq!(pvec.len(), i);
 
             for j in 0..i {
@@ -345,7 +343,7 @@ mod test {
         }
 
         let pvec_len = pvec.len();
-        for i in 1..pvec_len {
+        for i in 1..pvec_len + 1 {
             pvec = pvec.split_left_at(1);
             assert_eq!(pvec.len(), pvec_len - i);
 
@@ -355,9 +353,32 @@ mod test {
         }
 
         assert_eq!(pvec.tree.len(), 0);
+        assert_eq!(pvec.tail_len, 0);
+    }
 
-        // ToDo: what is the expected behavior here? 0 or 1
-        // ToDo: figure out what to do with indices
-        assert_eq!(pvec.tail_len, 1);
+    #[test]
+    fn interleaving_append_split_at_operations() {
+        let mut pvec = PVec::new();
+        let mut value = 0;
+
+        for size in 1..(BRANCH_FACTOR * 8 + BRANCH_FACTOR) {
+            let mut another_pvec = PVec::new();
+            for _ in 0..size {
+                another_pvec.push(value);
+                value += 1;
+            }
+
+            pvec.append(&mut another_pvec);
+
+            let mid = pvec.len() / 2;
+            let mut right = pvec.split_off(mid);
+
+            pvec.append(&mut right);
+            value = pvec.len();
+        }
+
+        for i in 0..value {
+            assert_eq!(pvec.get(i).cloned(), Some(i));
+        }
     }
 }
