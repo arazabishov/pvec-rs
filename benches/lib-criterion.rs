@@ -634,16 +634,92 @@ fn iterator(criterion: &mut Criterion) {
     );
 }
 
+fn split_off(criterion: &mut Criterion) {
+    criterion.bench(
+        "split_off",
+        ParameterizedBenchmark::new(
+            "std",
+            |bencher, n| {
+                bencher.iter_batched(
+                    || {
+                        let mut vec = Vec::new();
+
+                        for i in 0..*n {
+                            vec.push(i * 2);
+                        }
+
+                        vec
+                    },
+                    |mut data| {
+                        for i in (0..data.len()).rev() {
+                            data.split_off(i);
+                        }
+
+                        data
+                    },
+                    BatchSize::SmallInput,
+                )
+            },
+            vec![
+                32, 64, 128, 512, 768, 1024, 2048, 4096, 10000, 20000, 40000, 80000, 120000, 500000,
+            ],
+        )
+        .with_function("im-rs", |bencher, n| {
+            bencher.iter_batched(
+                || {
+                    let mut vec = IVec::new();
+
+                    for i in 0..*n {
+                        vec.push_back(i * 2);
+                    }
+
+                    vec
+                },
+                |mut data| {
+                    for i in (0..data.len()).rev() {
+                        data.split_off(i);
+                    }
+
+                    data
+                },
+                BatchSize::SmallInput,
+            )
+        })
+        .with_function("pvec", |bencher, n| {
+            bencher.iter_batched(
+                || {
+                    let mut vec = PVec::new();
+
+                    for i in 0..*n {
+                        vec.push(i * 2);
+                    }
+
+                    vec
+                },
+                |mut data| {
+                    for i in (0..data.len()).rev() {
+                        data.split_off(i);
+                    }
+
+                    data
+                },
+                BatchSize::SmallInput,
+            )
+        }),
+    );
+}
+
 criterion_group!(
     benches,
-    // push,
-    // push_clone,
-    // pop_clone,
-    // index_sequentially,
-    // iterator,
-    // index_randomly,
-    append,
-    // append_clone,
-    // append_push
+    push,
+    push_clone,
+    pop_clone,
+    index_sequentially,
+    iterator,
+    index_randomly,
+    split_off,
+    append_clone,
+    append_push,
+    append
 );
 criterion_main!(benches);

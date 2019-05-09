@@ -165,4 +165,197 @@ impl<T: Clone + Debug> RrbVec<T> {
 
         self.push_tail();
     }
+
+    #[inline(always)]
+    pub fn split_off(&mut self, mid: usize) -> Self {
+        let cloned = self.clone();
+        self.split_right_at(mid);
+
+        cloned.split_left_at(mid)
+    }
+
+    // ToDo: reconsider implementation of tree.split_at_* to
+    // ToDo: avoid additional cloning, copying, etc
+    fn split_right_at(&mut self, mid: usize) {
+        // ToDo: see other adjustments which are
+        // ToDo: made to tail after tree is split
+
+        if mid == 0 {
+            mem::replace(self, RrbVec::new());
+        } else if mid < self.len() {
+            // only need to cut the tail off
+            if self.tree.len() <= mid {
+                let new_tail_len = mid - self.tree.len();
+
+                for i in new_tail_len..self.tail_len {
+                    self.tail[i] = None;
+                }
+
+                self.tail_len = new_tail_len
+            } else {
+                let mut new_tree = self.tree.split_right_at(mid);
+                let (new_tail, new_tail_len) = new_tree.pop();
+
+                self.tree = new_tree;
+                self.tail = new_tail;
+                self.tail_len = new_tail_len;
+            }
+        } else if mid > self.len() {
+            panic!()
+        }
+    }
+
+    // ToDo: see other adjustments which are
+    // ToDo: made to tail after tree is split
+    fn split_left_at(mut self, mid: usize) -> Self {
+        if mid == 0 {
+            self
+        } else if mid < self.len() {
+            let remaining = self.len() - mid;
+
+            if remaining <= self.tail_len {
+                let mut tail = new_branch!();
+                let mut tail_len = 0;
+
+                for i in (self.tail_len - remaining)..self.tail_len {
+                    tail[tail_len] = self.tail[i].take();
+                    tail_len += 1;
+                }
+
+                return RrbVec {
+                    tree: self.tree,
+                    tail: tail,
+                    tail_len: tail_len,
+                };
+            }
+
+            let mut rrbvec = RrbVec {
+                tree: self.tree.split_left_at(mid),
+                tail: self.tail,
+                tail_len: self.tail_len,
+            };
+
+            if rrbvec.tree.is_root_leaf() {
+                if rrbvec.len() <= BRANCH_FACTOR {
+                    // all values can fit into a single tail
+                    let (mut new_tail, mut new_tail_len) = rrbvec.tree.pop();
+
+                    for i in 0..rrbvec.tail_len {
+                        new_tail[new_tail_len] = rrbvec.tail[i].take();
+                        new_tail_len += 1;
+                    }
+
+                    rrbvec.tail = new_tail;
+                    rrbvec.tail_len = new_tail_len;
+                } else if rrbvec.tree.len() < BRANCH_FACTOR {
+                    // root is leaf, but it is not fully dense
+                    // hence, some of the values should be redistributed to the actual leaf
+
+                    let (mut root, mut root_len) = rrbvec.tree.pop();
+                    let mut index = 0;
+
+                    while root_len < BRANCH_FACTOR && index < rrbvec.tail_len {
+                        root[root_len] = rrbvec.tail[index].take();
+
+                        root_len += 1;
+                        index += 1;
+                    }
+
+                    rrbvec.tree.push(root, root_len);
+
+                    let (mut new_tail, mut new_tail_len) = (new_branch!(), 0);
+                    while index < rrbvec.tail_len {
+                        new_tail[new_tail_len] = rrbvec.tail[index].take();
+
+                        new_tail_len += 1;
+                        index += 1;
+                    }
+
+                    rrbvec.tail = new_tail;
+                    rrbvec.tail_len = new_tail_len;
+                }
+            }
+
+            rrbvec
+        } else if mid == self.len() {
+            RrbVec::new()
+        } else {
+            panic!()
+        }
+    }
+}
+
+#[cfg(test)]
+#[macro_use]
+mod test {
+    use super::{RrbVec, BRANCH_FACTOR};
+
+    #[test]
+    fn split_right_at() {
+        let mut rrbvec = RrbVec::new();
+
+        for i in 0..(BRANCH_FACTOR * BRANCH_FACTOR) {
+            rrbvec.push(i);
+        }
+
+        for i in (0..BRANCH_FACTOR * BRANCH_FACTOR).rev() {
+            rrbvec.split_right_at(i);
+            assert_eq!(rrbvec.len(), i);
+
+            for j in 0..i {
+                assert_eq!(rrbvec.get(j).cloned(), Some(j));
+            }
+        }
+
+        assert_eq!(rrbvec.tree.len(), 0);
+        assert_eq!(rrbvec.tail_len, 0);
+    }
+
+    #[test]
+    fn split_left_at() {
+        let mut rrbvec = RrbVec::new();
+
+        for i in 0..(BRANCH_FACTOR * BRANCH_FACTOR) {
+            rrbvec.push(i);
+        }
+
+        let rrbvec_len = rrbvec.len();
+        for i in 1..rrbvec_len + 1 {
+            rrbvec = rrbvec.split_left_at(1);
+            assert_eq!(rrbvec.len(), rrbvec_len - i);
+
+            for j in 0..(rrbvec_len - i) {
+                assert_eq!(rrbvec.get(j).cloned(), Some(i + j));
+            }
+        }
+
+        assert_eq!(rrbvec.tree.len(), 0);
+        assert_eq!(rrbvec.tail_len, 0);
+    }
+
+    #[test]
+    fn interleaving_append_split_at_operations() {
+        let mut rrbvec = RrbVec::new();
+        let mut value = 0;
+
+        for size in 1..(BRANCH_FACTOR * 8 + BRANCH_FACTOR) {
+            let mut another_rrbvec = RrbVec::new();
+            for _ in 0..size {
+                another_rrbvec.push(value);
+                value += 1;
+            }
+
+            rrbvec.append(&mut another_rrbvec);
+
+            let mid = rrbvec.len() / 2;
+            let mut right = rrbvec.split_off(mid);
+
+            rrbvec.append(&mut right);
+            value = rrbvec.len();
+        }
+
+        for i in 0..value {
+            assert_eq!(rrbvec.get(i).cloned(), Some(i));
+        }
+    }
 }

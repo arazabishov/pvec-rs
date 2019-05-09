@@ -50,7 +50,7 @@ where
             serde_state.serialize_element(&child)?;
         }
 
-        return serde_state.end();
+        serde_state.end()
     }
 }
 
@@ -97,7 +97,7 @@ where
             serde_state.serialize_element(&child)?;
         }
 
-        return serde_state.end();
+        serde_state.end()
     }
 }
 
@@ -115,7 +115,7 @@ where
             serde_state.serialize_element(&element)?;
         }
 
-        return serde_state.end();
+        serde_state.end()
     }
 }
 
@@ -143,7 +143,7 @@ where
     where
         S: Serializer,
     {
-        let root_json_value = self.root.as_ref().map_or(None, |root| {
+        let root_json_value = self.root.as_ref().and_then(|root| {
             let json = match root {
                 Node::RelaxedBranch(ref relaxed_branch) => json!({
                     "relaxedBranch": root,

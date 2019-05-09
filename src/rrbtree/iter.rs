@@ -63,7 +63,7 @@ impl<T: Clone + Debug> Iterator for RrbTreeIter<T> {
             }
         }
 
-        return self.elements.take();
+        self.elements.take()
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {

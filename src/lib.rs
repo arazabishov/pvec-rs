@@ -142,6 +142,18 @@ impl<T: Clone + Debug> PVec<T> {
 
         self.0 = Flavor::Persistent(pvec);
     }
+
+    pub fn split_off(&mut self, mid: usize) -> Self {
+        let flavor = match self.0 {
+            Flavor::Standard(ref mut vec) => {
+                let right = SharedPtr::make_mut(vec).split_off(mid);
+                Flavor::Standard(SharedPtr::new(right))
+            }
+            Flavor::Persistent(ref mut pvec) => Flavor::Persistent(pvec.split_off(mid)),
+        };
+
+        PVec(flavor)
+    }
 }
 
 impl<T: Clone + Debug> Default for PVec<T> {
@@ -173,5 +185,37 @@ impl<T: Clone + Debug> ops::IndexMut<usize> for PVec<T> {
                 index, len
             )
         })
+    }
+}
+
+#[cfg(test)]
+#[macro_use]
+mod test {
+    use super::PVec;
+
+    #[test]
+    fn interleaving_append_split_off_operations() {
+        let mut pvec = PVec::new();
+        let mut value = 0;
+
+        for size in 1..(32 * 8 + 32) {
+            let mut another_pvec = PVec::new();
+            for _ in 0..size {
+                another_pvec.push(value);
+                value += 1;
+            }
+
+            pvec.append(&mut another_pvec);
+
+            let mid = pvec.len() / 2;
+            let mut right = pvec.split_off(mid);
+
+            pvec.append(&mut right);
+            value = pvec.len();
+        }
+
+        for i in 0..value {
+            assert_eq!(pvec.get(i).cloned(), Some(i));
+        }
     }
 }
