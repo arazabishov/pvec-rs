@@ -10,8 +10,9 @@ use std::fmt::Debug;
 use std::mem;
 use std::ops;
 
-#[macro_use]
 pub mod iter;
+
+#[macro_use]
 mod rrbtree;
 mod serializer;
 mod sharedptr;
