@@ -11,8 +11,8 @@ use std::mem;
 use std::ops;
 
 #[macro_use]
+pub mod iter;
 mod rrbtree;
-mod iter;
 mod serializer;
 mod sharedptr;
 
