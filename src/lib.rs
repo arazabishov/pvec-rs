@@ -94,10 +94,17 @@ impl<T: Clone + Debug> PVec<T> {
     }
 
     pub fn split_off(&mut self, mid: usize) -> Self {
+        let len = self.len();
+
         let cloned = self.clone();
         self.split_right_at(mid);
 
         cloned.split_left_at(mid)
+    }
+
+    pub fn split_off_2(&mut self, mid: usize) -> Self {
+        self.tree.split_off(mid);
+        unimplemented!()
     }
 
     // ToDo: reconsider implementation of tree.split_at_* to
@@ -119,10 +126,9 @@ impl<T: Clone + Debug> PVec<T> {
 
                 self.tail_len = new_tail_len
             } else {
-                let mut new_tree = self.tree.split_right_at(mid);
-                let (new_tail, new_tail_len) = new_tree.pop();
+                self.tree.split_right_at(mid);
+                let (new_tail, new_tail_len) = self.tree.pop();
 
-                self.tree = new_tree;
                 self.tail = new_tail;
                 self.tail_len = new_tail_len;
             }
@@ -139,7 +145,8 @@ impl<T: Clone + Debug> PVec<T> {
         } else if mid < self.len() {
             let remaining = self.len() - mid;
 
-            if remaining <= self.tail_len {
+            if remaining < self.tail_len {
+                println!("lefty: self.tail_len={}", self.tail_len);
                 let mut tail = new_branch!();
                 let mut tail_len = 0;
 
@@ -152,6 +159,12 @@ impl<T: Clone + Debug> PVec<T> {
                     tree: self.tree,
                     tail: tail,
                     tail_len: tail_len,
+                };
+            } else if remaining == self.tail_len {
+                return PVec {
+                    tree: RrbTree::new(),
+                    tail: self.tail,
+                    tail_len: self.tail_len,
                 };
             }
 
@@ -380,6 +393,20 @@ mod test {
 
         for i in 0..value {
             assert_eq!(pvec.get(i).cloned(), Some(i));
+        }
+    }
+
+    #[test]
+    fn some() {
+        let mut vec = PVec::new();
+
+        for i in 0..10000 {
+            vec.push(i * 2);
+        }
+
+        while vec.len() > 64 {
+            vec = vec.split_off(64);
+            // println!("len={}", vec.len());
         }
     }
 }
