@@ -70,6 +70,12 @@ impl<T: Clone + Debug> IntoIterator for PVec<T> {
     }
 }
 
+impl<T: Clone + Debug> ExactSizeIterator for PVecIter<T> {
+    fn len(&self) -> usize {
+        self.tree_len + self.tail_len
+    }
+}
+
 #[cfg(test)]
 #[macro_use]
 mod test {
