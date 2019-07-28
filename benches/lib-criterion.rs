@@ -651,8 +651,8 @@ fn split_off(criterion: &mut Criterion) {
                         vec
                     },
                     |mut data| {
-                        for i in (0..data.len()).rev() {
-                            data.split_off(i);
+                        while data.len() > 64 {
+                            data = data.split_off(64)
                         }
 
                         data
@@ -661,7 +661,8 @@ fn split_off(criterion: &mut Criterion) {
                 )
             },
             vec![
-                32, 64, 128, 512, 768, 1024, 2048, 4096, 10000, 20000, 40000, 80000, 120000, 500000,
+                32, 64, 128, 512, 768, 1024, 2048, 4096, 10000, 15000, 20000, 30000, 40000,
+                50000, // 40000, 80000, 120000, 500000,
             ],
         )
         .with_function("im-rs", |bencher, n| {
@@ -676,8 +677,8 @@ fn split_off(criterion: &mut Criterion) {
                     vec
                 },
                 |mut data| {
-                    for i in (0..data.len()).rev() {
-                        data.split_off(i);
+                    while data.len() > 64 {
+                        data = data.split_off(64)
                     }
 
                     data
@@ -697,8 +698,8 @@ fn split_off(criterion: &mut Criterion) {
                     vec
                 },
                 |mut data| {
-                    for i in (0..data.len()).rev() {
-                        data.split_off(i);
+                    while data.len() > 64 {
+                        data = data.split_off(64)
                     }
 
                     data

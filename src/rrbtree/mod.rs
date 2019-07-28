@@ -200,17 +200,11 @@ impl<T: Clone + Debug> Leaf<T> {
         }
     }
 
-    // ToDo: explore a way to avoid re-allocating left tree
-    // ToDo: this would probably require taking owned type in
     #[inline(always)]
-    fn split_right_at(&mut self, index: Index, shift: Shift) -> Node<T> {
-        let mut leaf_left = Leaf::new();
-
-        for i in 0..index.child(shift) {
-            leaf_left.add(self.take(i));
+    fn split_right_at(&mut self, index: Index, shift: Shift) {
+        for i in index.child(shift)..self.len {
+            self.take(i);
         }
-
-        Node::Leaf(SharedPtr::new(leaf_left))
     }
 
     #[inline(always)]
@@ -222,6 +216,17 @@ impl<T: Clone + Debug> Leaf<T> {
         }
 
         Node::Leaf(SharedPtr::new(leaf_right))
+    }
+
+    #[inline(always)]
+    fn split_off(&mut self, index: Index, shift: Shift) -> Node<T> {
+        let mut leaf = Leaf::new();
+
+        for i in index.child(shift)..self.len {
+            leaf.add(self.take(i));
+        }
+
+        Node::Leaf(SharedPtr::new(leaf))
     }
 
     #[inline(always)]
@@ -503,14 +508,10 @@ impl<T: Clone + Debug> Branch<T> {
     }
 
     #[inline(always)]
-    fn split_right_at(&mut self, index: Index) -> Branch<T> {
-        let mut branch_left = Branch::new();
-
-        for i in 0..index.0 {
-            branch_left.add(self.take(i));
+    fn split_right_at(&mut self, index: usize) {
+        for i in index..self.len {
+            self.take(i);
         }
-
-        branch_left
     }
 }
 
@@ -649,15 +650,10 @@ impl<T: Clone + Debug> RelaxedBranch<T> {
     }
 
     #[inline(always)]
-    fn split_right_at(&mut self, index: Index) -> RelaxedBranch<T> {
-        let mut branch_left = RelaxedBranch::new();
-
-        for i in 0..index.0 {
-            let (node, size) = self.take(i);
-            branch_left.add(node, size);
+    fn split_right_at(&mut self, index: usize) {
+        for i in index..self.len {
+            self.take(i);
         }
-
-        branch_left
     }
 }
 
@@ -1004,19 +1000,21 @@ impl<T: Clone + Debug> Node<T> {
     }
 }
 
+type SubTree<T: Clone + Debug> = (Node<T>, Shift);
+
 impl<T: Clone + Debug> Node<T> {
-    fn split_right_at(&mut self, shift: Shift, index: Index, has_left: bool) -> (Self, Shift) {
-        match self {
-            Node::Leaf(leaf_arc) => (
-                SharedPtr::make_mut(leaf_arc).split_right_at(index, shift),
-                shift,
-            ),
-            Node::Branch(branch_arc) => {
+    fn split_right_at(mut self, shift: Shift, index: Index, has_left: bool) -> (Self, Shift) {
+        match &mut self {
+            Node::Leaf(ptr) => {
+                SharedPtr::make_mut(ptr).split_right_at(index, shift);
+                (self, shift)
+            }
+            Node::Branch(ptr) => {
                 let subshift = shift.dec();
                 let subidx = index.child(shift);
 
-                let branch = SharedPtr::make_mut(branch_arc);
-                let child = branch.children[subidx].as_mut().unwrap();
+                let branch = SharedPtr::make_mut(ptr);
+                let child = branch.children[subidx].take().unwrap();
 
                 let (left, total_shift) =
                     child.split_right_at(subshift, index, (subidx != 0) || has_left);
@@ -1032,15 +1030,14 @@ impl<T: Clone + Debug> Node<T> {
                         (left, total_shift)
                     }
                 } else {
-                    let mut root = branch.split_right_at(Index(subidx));
-                    root.add(Some(left));
+                    branch.split_right_at(subidx);
+                    branch.add(Some(left));
 
-                    let left = Node::Branch(SharedPtr::new(root));
-                    (left, shift)
+                    (self, shift)
                 }
             }
-            Node::RelaxedBranch(branch_arc) => {
-                let branch = SharedPtr::make_mut(branch_arc);
+            Node::RelaxedBranch(ptr) => {
+                let branch = SharedPtr::make_mut(ptr);
                 let mut idx = index;
 
                 let sizes = &mut branch.sizes;
@@ -1050,7 +1047,7 @@ impl<T: Clone + Debug> Node<T> {
                     idx = Index(idx.0 - sizes[subidx - 1].unwrap());
                 }
 
-                let child = branch.children[subidx].as_mut().unwrap();
+                let child = branch.children[subidx].take().unwrap();
                 let (left, total_shift) =
                     child.split_right_at(shift.dec(), idx, (subidx != 0) || has_left);
 
@@ -1065,11 +1062,10 @@ impl<T: Clone + Debug> Node<T> {
                         (left, total_shift)
                     }
                 } else {
-                    let mut root = branch.split_right_at(Index(subidx));
-                    root.add(Some(left), Some(index.0 + 1));
+                    branch.split_right_at(subidx);
+                    branch.add(Some(left), Some(index.0 + 1));
 
-                    let left = Node::RelaxedBranch(SharedPtr::new(root));
-                    (left, shift)
+                    (self, shift)
                 }
             }
         }
@@ -1195,6 +1191,187 @@ impl<T: Clone + Debug> Node<T> {
 
                     (Node::RelaxedBranch(SharedPtr::new(root)), shift)
                 }
+            }
+        }
+    }
+
+    fn split_off(
+        mut self,
+        shift: Shift,
+        index: Index,
+        has_left: bool,
+        has_right: bool,
+    ) -> (SubTree<T>, SubTree<T>) {
+        match &mut self {
+            Node::Leaf(ptr) => {
+                let right = (SharedPtr::make_mut(ptr).split_off(index, shift), shift);
+                let left = (self, shift);
+
+                (left, right)
+            }
+            Node::Branch(ptr) => {
+                let subshift = shift.dec();
+                let subidx = index.child(shift);
+
+                let branch = SharedPtr::make_mut(ptr);
+                let child = branch.children[subidx].take().unwrap();
+
+                let is_first = subidx == 0;
+                let is_last = subidx == branch.len - 1;
+
+                let child_has_left = !is_first || has_left;
+                let child_has_right = !is_last || has_right;
+
+                let idx = index.0 - (subidx << shift.0);
+
+                let ((left_node, left_shift), (mut right_node, right_shift)) =
+                    child.split_off(subshift, Index(idx), child_has_left, child_has_right);
+
+                let right = if is_last {
+                    if has_right {
+                        let is_child_relaxed = right_node.is_relaxed_branch();
+                        let is_child_leaf = subshift.is_leaf_level();
+
+                        if !is_child_leaf && is_child_relaxed {
+                            let right_branch = right_node.as_mut_relaxed_branch();
+                            let right_branch_size = right_branch.sizes[right_branch.len - 1];
+
+                            let mut root = RelaxedBranch::new();
+                            root.add(Some(right_node), right_branch_size);
+
+                            (Node::RelaxedBranch(SharedPtr::new(root)), shift)
+                        } else {
+                            let mut root = Branch::new();
+                            root.add(Some(right_node));
+
+                            (Node::Branch(SharedPtr::new(root)), shift)
+                        }
+                    } else {
+                        (right_node, right_shift)
+                    }
+                } else {
+                    let mut root = RelaxedBranch::new();
+                    let sliced_len = branch.len - subidx;
+
+                    for i in 0..sliced_len {
+                        let size = ((subidx + i + 1) << shift.0) - index.0;
+                        root.sizes[i] = Some(size);
+                    }
+
+                    root.children[0] = Some(right_node);
+                    root.len = 1;
+
+                    for i in 1..sliced_len {
+                        root.children[i] = branch.children[subidx + i].take();
+                        root.len += 1;
+                    }
+
+                    (Node::RelaxedBranch(SharedPtr::new(root)), shift)
+                };
+
+                let left = if subidx == 0 {
+                    if has_left {
+                        let mut branch = Branch::new();
+                        branch.add(Some(left_node));
+
+                        let node = Node::Branch(SharedPtr::new(branch));
+                        (node, shift)
+                    } else {
+                        (left_node, left_shift)
+                    }
+                } else {
+                    branch.split_right_at(subidx);
+                    branch.add(Some(left_node));
+
+                    (self, shift)
+                };
+
+                (left, right)
+            }
+            Node::RelaxedBranch(ptr) => {
+                let branch = SharedPtr::make_mut(ptr);
+                let mut idx = index;
+
+                let sizes = &mut branch.sizes;
+                let subidx = get_branch_index(sizes, idx);
+                let subshift = shift.dec();
+
+                if subidx != 0 {
+                    idx = Index(idx.0 - sizes[subidx - 1].unwrap());
+                }
+
+                let child = branch.children[subidx].take().unwrap();
+
+                let is_first = subidx == 0;
+                let is_last = subidx == branch.len - 1;
+
+                let child_has_left = !is_first || has_left;
+                let child_has_right = !is_last || has_right;
+
+                let ((left_node, left_shift), (mut right_node, right_shift)) =
+                    child.split_off(subshift, idx, child_has_left, child_has_right);
+
+                let right = if is_last {
+                    if has_right {
+                        let is_child_relaxed = right_node.is_relaxed_branch();
+                        let is_child_leaf = subshift.is_leaf_level();
+
+                        if !is_child_leaf && is_child_relaxed {
+                            let right_branch = right_node.as_mut_relaxed_branch();
+                            let right_branch_size = right_branch.sizes[right_branch.len - 1];
+
+                            let mut root = RelaxedBranch::new();
+                            root.add(Some(right_node), right_branch_size);
+
+                            (Node::RelaxedBranch(SharedPtr::new(root)), shift)
+                        } else {
+                            let mut root = Branch::new();
+                            root.add(Some(right_node));
+
+                            (Node::Branch(SharedPtr::new(root)), shift)
+                        }
+                    } else {
+                        (right_node, right_shift)
+                    }
+                } else {
+                    let mut root = RelaxedBranch::new();
+
+                    let mut size_i = 0;
+                    for i in subidx..branch.len {
+                        root.sizes[size_i] = branch.sizes[i].map(|size| size - index.0);
+                        size_i += 1;
+                    }
+
+                    root.children[0] = Some(right_node);
+                    root.len = 1;
+
+                    let sliced_len = branch.len - subidx;
+                    for i in 1..sliced_len {
+                        root.children[i] = branch.children[subidx + i].take();
+                        root.len += 1;
+                    }
+
+                    (Node::RelaxedBranch(SharedPtr::new(root)), shift)
+                };
+
+                let left = if subidx == 0 {
+                    if has_left {
+                        let mut branch = RelaxedBranch::new();
+                        branch.add(Some(left_node), Some(index.0 + 1));
+
+                        let node = Node::RelaxedBranch(SharedPtr::new(branch));
+                        (node, shift)
+                    } else {
+                        (left_node, left_shift)
+                    }
+                } else {
+                    branch.split_right_at(subidx);
+                    branch.add(Some(left_node), Some(index.0 + 1));
+
+                    (self, shift)
+                };
+
+                (left, right)
             }
         }
     }
@@ -1366,18 +1543,18 @@ impl<T: Clone + Debug> RrbTree<T> {
         }
     }
 
-    pub fn split_right_at(&mut self, mid: usize) -> Self {
-        if let Some(root) = self.root.as_mut() {
+    pub fn split_right_at(&mut self, mid: usize) {
+        if let Some(root) = self.root.take() {
             let (left_root, left_shift) = root.split_right_at(self.shift, Index(mid), false);
 
             if mid == 0 && left_shift.0 == 0 {
-                RrbTree::new()
+                self.root = None;
+                self.root_len = Index(0);
+                self.shift = Shift(0);
             } else {
-                RrbTree {
-                    root: Some(left_root),
-                    root_len: Index(mid),
-                    shift: left_shift,
-                }
+                self.root = Some(left_root);
+                self.root_len = Index(mid);
+                self.shift = left_shift;
             }
         } else {
             panic!()
@@ -1411,10 +1588,48 @@ impl<T: Clone + Debug> RrbTree<T> {
     fn split_at(mut self, mid: usize) -> (Self, Self) {
         let mut right = self.clone();
 
-        let left = self.split_right_at(mid);
+        self.split_right_at(mid);
         let right = right.split_left_at(mid);
 
-        (left, right)
+        (self, right)
+    }
+
+    pub fn split_off(&mut self, mid: usize) -> Self {
+        if let Some(root) = self.root.take() {
+            let ((left_root, left_shift), (mut right_root, right_shift)) =
+                root.split_off(self.shift, Index(mid), false, false);
+
+            let remaining = self.root_len.0 - mid;
+
+            if !right_shift.is_leaf_level() && right_root.is_relaxed_branch() {
+                let mut branch = SharedPtr::make_mut(right_root.as_mut_relaxed_branch());
+                branch.sizes[branch.len - 1] = Some(remaining);
+            }
+
+            let right = if remaining == 0 && right_shift.0 == 0 {
+                RrbTree::new()
+            } else {
+                RrbTree {
+                    root: Some(right_root),
+                    root_len: Index(remaining),
+                    shift: right_shift,
+                }
+            };
+
+            if mid == 0 && left_shift.0 == 0 {
+                self.root = None;
+                self.root_len = Index(0);
+                self.shift = Shift(0);
+            } else {
+                self.root = Some(left_root);
+                self.root_len = Index(mid);
+                self.shift = left_shift;
+            }
+
+            right
+        } else {
+            panic!();
+        }
     }
 }
 
@@ -1444,11 +1659,11 @@ mod test {
     fn split_right_when_root_is_leaf() {
         let mut tree = create_tree_of_size(BRANCH_FACTOR, 0);
 
-        let left = tree.split_right_at(BRANCH_FACTOR / 2);
-        assert_eq!(left.len(), BRANCH_FACTOR / 2);
+        tree.split_right_at(BRANCH_FACTOR / 2);
+        assert_eq!(tree.len(), BRANCH_FACTOR / 2);
 
         for index in 0..BRANCH_FACTOR / 2 {
-            assert_eq!(left.get(index).cloned(), Some(index));
+            assert_eq!(tree.get(index).cloned(), Some(index));
         }
     }
 
@@ -1465,11 +1680,50 @@ mod test {
     }
 
     #[test]
+    fn split_off_when_root_is_leaf() {
+        let mut tree = create_tree_of_size(BRANCH_FACTOR, 0);
+
+        let right = tree.split_off(BRANCH_FACTOR / 2);
+        let left = tree;
+
+        assert_eq!(right.len(), BRANCH_FACTOR / 2);
+        assert_eq!(left.len(), BRANCH_FACTOR / 2);
+
+        for index in 0..BRANCH_FACTOR / 2 {
+            assert_eq!(left.get(index).cloned(), Some(index));
+        }
+
+        let mut value = BRANCH_FACTOR / 2;
+        for index in 0..BRANCH_FACTOR / 2 {
+            assert_eq!(right.get(index).cloned(), Some(value));
+            value += 1;
+        }
+    }
+
+    #[test]
     fn split_at_right_by_one() {
         let mut tree = create_tree_of_size(BRANCH_FACTOR * BRANCH_FACTOR, 0);
 
         for i in (0..tree.len()).rev() {
-            tree = tree.split_right_at(i);
+            tree.split_right_at(i);
+            assert_eq!(tree.len(), i);
+
+            for j in 0..i {
+                assert_eq!(tree.get(j).cloned(), Some(j));
+            }
+        }
+
+        assert_eq!(tree.root, None);
+        assert_eq!(tree.root_len, Index(0));
+        assert_eq!(tree.shift, Shift(0));
+    }
+
+    #[test]
+    fn split_off_right_by_one() {
+        let mut tree = create_tree_of_size(BRANCH_FACTOR * BRANCH_FACTOR, 0);
+
+        for i in (0..tree.len()).rev() {
+            tree.split_off(i);
             assert_eq!(tree.len(), i);
 
             for j in 0..i {
@@ -1502,6 +1756,25 @@ mod test {
     }
 
     #[test]
+    fn split_off_left_by_one() {
+        let mut tree = create_tree_of_size(BRANCH_FACTOR * BRANCH_FACTOR, 0);
+        let tree_len = tree.len();
+
+        for i in 1..tree_len + 1 {
+            tree = tree.split_off(1);
+            assert_eq!(tree.len(), tree_len - i);
+
+            for j in 0..(tree_len - i) {
+                assert_eq!(tree.get(j).cloned(), Some(i + j));
+            }
+        }
+
+        assert_eq!(tree.root, None);
+        assert_eq!(tree.root_len, Index(0));
+        assert_eq!(tree.shift, Shift(0));
+    }
+
+    #[test]
     fn interleaving_append_split_at_right_operations() {
         let mut tree = RrbTree::new();
         let mut value = 0;
@@ -1510,7 +1783,7 @@ mod test {
             let mut another_tree = create_tree_of_size(size, value);
 
             tree.append(&mut another_tree);
-            tree = tree.split_right_at(tree.len() - 1);
+            tree.split_right_at(tree.len() - 1);
 
             value = tree.len();
         }

@@ -93,11 +93,97 @@ impl<T: Clone + Debug> PVec<T> {
         self.len() == 0
     }
 
-    pub fn split_off(&mut self, mid: usize) -> Self {
-        let cloned = self.clone();
-        self.split_right_at(mid);
+    // pub fn split_off(&mut self, mid: usize) -> Self {
+    //     let cloned = self.clone();
+    //     self.split_right_at(mid);
 
-        cloned.split_left_at(mid)
+    //     cloned.split_left_at(mid)
+    // }
+
+    pub fn split_off(&mut self, mid: usize) -> Self {
+        if mid == 0 {
+            mem::replace(self, PVec::new())
+        } else if mid < self.len() {
+            if self.tree.len() > mid {
+                let right_tree = self.tree.split_off(mid);
+
+                let (left_tail, left_tail_len) = self.tree.pop();
+
+                let right_tail = mem::replace(&mut self.tail, left_tail);
+                let right_tail_len = mem::replace(&mut self.tail_len, left_tail_len);
+
+                let mut right = PVec {
+                    tree: right_tree,
+                    tail: right_tail,
+                    tail_len: right_tail_len,
+                };
+
+                if right.tree.is_root_leaf() {
+                    if right.len() <= BRANCH_FACTOR {
+                        // all values can fit into a single tail
+                        let (mut new_tail, mut new_tail_len) = right.tree.pop();
+
+                        for i in 0..right.tail_len {
+                            new_tail[new_tail_len] = right.tail[i].take();
+                            new_tail_len += 1;
+                        }
+
+                        right.tail = new_tail;
+                        right.tail_len = new_tail_len;
+                    } else if right.tree.len() < BRANCH_FACTOR {
+                        // root is leaf, but it is not fully dense
+                        // hence, some of the values should be redistributed to the actual leaf
+
+                        let (mut root, mut root_len) = right.tree.pop();
+                        let mut index = 0;
+
+                        while root_len < BRANCH_FACTOR && index < right.tail_len {
+                            root[root_len] = right.tail[index].take();
+
+                            root_len += 1;
+                            index += 1;
+                        }
+
+                        right.tree.push(root, root_len);
+
+                        let (mut new_tail, mut new_tail_len) = (new_branch!(), 0);
+                        while index < right.tail_len {
+                            new_tail[new_tail_len] = right.tail[index].take();
+
+                            new_tail_len += 1;
+                            index += 1;
+                        }
+
+                        right.tail = new_tail;
+                        right.tail_len = new_tail_len;
+                    }
+                }
+
+                right
+            } else {
+                let left_tail_len = mid - self.tree.len();
+
+                let mut right_tail = new_branch!();
+                let mut right_tail_len = 0;
+
+                for i in left_tail_len..self.tail_len {
+                    right_tail[right_tail_len] = self.tail[i].take();
+                    right_tail_len += 1;
+                }
+
+                self.tail_len = left_tail_len;
+
+                PVec {
+                    tree: RrbTree::new(),
+                    tail: right_tail,
+                    tail_len: right_tail_len,
+                }
+            }
+        } else if mid == self.len() {
+            PVec::new()
+        } else {
+            panic!()
+        }
     }
 
     // ToDo: reconsider implementation of tree.split_at_* to
@@ -119,10 +205,9 @@ impl<T: Clone + Debug> PVec<T> {
 
                 self.tail_len = new_tail_len
             } else {
-                let mut new_tree = self.tree.split_right_at(mid);
-                let (new_tail, new_tail_len) = new_tree.pop();
+                self.tree.split_right_at(mid);
+                let (new_tail, new_tail_len) = self.tree.pop();
 
-                self.tree = new_tree;
                 self.tail = new_tail;
                 self.tail_len = new_tail_len;
             }
@@ -139,7 +224,8 @@ impl<T: Clone + Debug> PVec<T> {
         } else if mid < self.len() {
             let remaining = self.len() - mid;
 
-            if remaining <= self.tail_len {
+            if remaining < self.tail_len {
+                println!("lefty: self.tail_len={}", self.tail_len);
                 let mut tail = new_branch!();
                 let mut tail_len = 0;
 
@@ -153,56 +239,62 @@ impl<T: Clone + Debug> PVec<T> {
                     tail: tail,
                     tail_len: tail_len,
                 };
-            }
+            } else if remaining == self.tail_len {
+                return PVec {
+                    tree: RrbTree::new(),
+                    tail: self.tail,
+                    tail_len: self.tail_len,
+                };
+            } else {
+                let mut pvec = PVec {
+                    tree: self.tree.split_left_at(mid),
+                    tail: self.tail,
+                    tail_len: self.tail_len,
+                };
 
-            let mut pvec = PVec {
-                tree: self.tree.split_left_at(mid),
-                tail: self.tail,
-                tail_len: self.tail_len,
-            };
+                if pvec.tree.is_root_leaf() {
+                    if pvec.len() <= BRANCH_FACTOR {
+                        // all values can fit into a single tail
+                        let (mut new_tail, mut new_tail_len) = pvec.tree.pop();
 
-            if pvec.tree.is_root_leaf() {
-                if pvec.len() <= BRANCH_FACTOR {
-                    // all values can fit into a single tail
-                    let (mut new_tail, mut new_tail_len) = pvec.tree.pop();
+                        for i in 0..pvec.tail_len {
+                            new_tail[new_tail_len] = pvec.tail[i].take();
+                            new_tail_len += 1;
+                        }
 
-                    for i in 0..pvec.tail_len {
-                        new_tail[new_tail_len] = pvec.tail[i].take();
-                        new_tail_len += 1;
+                        pvec.tail = new_tail;
+                        pvec.tail_len = new_tail_len;
+                    } else if pvec.tree.len() < BRANCH_FACTOR {
+                        // root is leaf, but it is not fully dense
+                        // hence, some of the values should be redistributed to the actual leaf
+
+                        let (mut root, mut root_len) = pvec.tree.pop();
+                        let mut index = 0;
+
+                        while root_len < BRANCH_FACTOR && index < pvec.tail_len {
+                            root[root_len] = pvec.tail[index].take();
+
+                            root_len += 1;
+                            index += 1;
+                        }
+
+                        pvec.tree.push(root, root_len);
+
+                        let (mut new_tail, mut new_tail_len) = (new_branch!(), 0);
+                        while index < pvec.tail_len {
+                            new_tail[new_tail_len] = pvec.tail[index].take();
+
+                            new_tail_len += 1;
+                            index += 1;
+                        }
+
+                        pvec.tail = new_tail;
+                        pvec.tail_len = new_tail_len;
                     }
-
-                    pvec.tail = new_tail;
-                    pvec.tail_len = new_tail_len;
-                } else if pvec.tree.len() < BRANCH_FACTOR {
-                    // root is leaf, but it is not fully dense
-                    // hence, some of the values should be redistributed to the actual leaf
-
-                    let (mut root, mut root_len) = pvec.tree.pop();
-                    let mut index = 0;
-
-                    while root_len < BRANCH_FACTOR && index < pvec.tail_len {
-                        root[root_len] = pvec.tail[index].take();
-
-                        root_len += 1;
-                        index += 1;
-                    }
-
-                    pvec.tree.push(root, root_len);
-
-                    let (mut new_tail, mut new_tail_len) = (new_branch!(), 0);
-                    while index < pvec.tail_len {
-                        new_tail[new_tail_len] = pvec.tail[index].take();
-
-                        new_tail_len += 1;
-                        index += 1;
-                    }
-
-                    pvec.tail = new_tail;
-                    pvec.tail_len = new_tail_len;
                 }
-            }
 
-            pvec
+                return pvec;
+            }
         } else if mid == self.len() {
             PVec::new()
         } else {
@@ -358,7 +450,7 @@ mod test {
     }
 
     #[test]
-    fn interleaving_append_split_at_operations() {
+    fn interleaving_append_split_off_operations() {
         let mut pvec = PVec::new();
         let mut value = 0;
 
@@ -380,6 +472,20 @@ mod test {
 
         for i in 0..value {
             assert_eq!(pvec.get(i).cloned(), Some(i));
+        }
+    }
+
+    #[test]
+    fn some() {
+        let mut vec = PVec::new();
+
+        for i in 0..10000 {
+            vec.push(i * 2);
+        }
+
+        while vec.len() > 64 {
+            vec = vec.split_off(64);
+            // println!("len={}", vec.len());
         }
     }
 }
