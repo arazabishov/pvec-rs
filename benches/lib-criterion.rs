@@ -567,7 +567,7 @@ fn append_push(criterion: &mut Criterion) {
     );
 }
 
-fn iterator(criterion: &mut Criterion) {
+fn iterator_next(criterion: &mut Criterion) {
     criterion.bench(
         "iterator",
         ParameterizedBenchmark::new(
@@ -625,6 +625,73 @@ fn iterator(criterion: &mut Criterion) {
                 },
                 |data| {
                     for i in data.into_iter() {
+                        black_box(i);
+                    }
+                },
+                BatchSize::SmallInput,
+            )
+        }),
+    );
+}
+
+fn iterator_next_back(criterion: &mut Criterion) {
+    criterion.bench(
+        "iterator-next-back",
+        ParameterizedBenchmark::new(
+            "std",
+            |bencher, n| {
+                bencher.iter_batched(
+                    || {
+                        let mut vec = Vec::new();
+
+                        for i in 0..*n {
+                            vec.push(i * 2);
+                        }
+
+                        vec
+                    },
+                    |data| {
+                        for i in data.into_iter().rev() {
+                            black_box(i);
+                        }
+                    },
+                    BatchSize::SmallInput,
+                )
+            },
+            vec![100, 500, 1000, 5000, 10000, 50000, 100000, 200000, 500000],
+        )
+        .with_function("im-rs", |bencher, n| {
+            bencher.iter_batched(
+                || {
+                    let mut vec = IVec::new();
+
+                    for i in 0..*n {
+                        vec.push_back(i * 2);
+                    }
+
+                    vec
+                },
+                |data| {
+                    for i in data.into_iter().rev() {
+                        black_box(i);
+                    }
+                },
+                BatchSize::SmallInput,
+            )
+        })
+        .with_function("pvec", |bencher, n| {
+            bencher.iter_batched(
+                || {
+                    let mut vec = PVec::new();
+
+                    for i in 0..*n {
+                        vec.push(i * 2);
+                    }
+
+                    vec
+                },
+                |data| {
+                    for i in data.into_iter().rev() {
                         black_box(i);
                     }
                 },
@@ -716,7 +783,8 @@ criterion_group!(
     push_clone,
     pop_clone,
     index_sequentially,
-    iterator,
+    iterator_next,
+    iterator_next_back,
     index_randomly,
     append,
     append_clone,

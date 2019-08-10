@@ -5,51 +5,98 @@ use std::fmt::Debug;
 
 #[derive(Debug, Clone)]
 pub struct PVecIter<T> {
-    // - you should avoid heap allocation in iterators
     tree_iter: RrbTreeIter<T>,
-    tree_len: usize,
-    tail: [Option<T>; BRANCH_FACTOR],
-    tail_len: usize,
-    index: usize,
-    chunk: Option<([Option<T>; BRANCH_FACTOR], usize)>,
-    chunk_index: usize,
+    head_chunk: Option<([Option<T>; BRANCH_FACTOR], usize)>,
+    head_chunk_idx: usize,
+    head_idx: usize,
+    tail_chunk: Option<([Option<T>; BRANCH_FACTOR], usize)>,
+    tail_chunk_idx: usize,
+    tail_idx: usize,
+    len: usize,
 }
 
 impl<T: Clone + Debug> Iterator for PVecIter<T> {
     type Item = T;
 
     fn next(&mut self) -> Option<Self::Item> {
-        if self.index < self.tree_len {
-            if self.chunk.is_none() {
-                self.chunk = self.tree_iter.next();
+        if self.head_idx <= self.tail_idx {
+            if self.head_chunk.is_none() {
+                self.head_chunk = self.tree_iter.next();
             }
 
-            let chunk = self.chunk.as_mut().unwrap();
-            if self.chunk_index >= chunk.1 {
-                self.chunk_index = 0;
-                self.chunk = self.tree_iter.next();
+            let mut chunk = if self.head_chunk.is_some() {
+                self.head_chunk.as_mut()
+            } else {
+                self.tail_chunk.as_mut()
+            };
+
+            let head_chunk_idx = self.head_chunk_idx;
+            let item = chunk.as_mut().and_then(|it| it.0[head_chunk_idx].take());
+
+            self.head_idx += 1;
+            self.head_chunk_idx += 1;
+
+            if let Some(it) = chunk.as_ref() {
+                if self.head_chunk_idx == it.1 {
+                    self.head_chunk = self.tree_iter.next();
+                    self.head_chunk_idx = 0;
+                }
             }
 
-            let chunk = self.chunk.as_mut().unwrap();
-            let value = chunk.0[self.chunk_index].take();
-
-            self.chunk_index += 1;
-            self.index += 1;
-
-            value
-        } else if self.index < self.tree_len + self.tail_len {
-            let index = self.index - self.tree_len;
-
-            self.index += 1;
-            self.tail[index].take()
+            item
         } else {
             None
         }
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
-        let len = self.tree_len + self.tail_len;
-        (len, Some(len))
+        (self.len, Some(self.len))
+    }
+}
+
+impl<T: Clone + Debug> DoubleEndedIterator for PVecIter<T> {
+    fn next_back(&mut self) -> Option<Self::Item> {
+        if self.head_idx <= self.tail_idx {
+            if self.tail_chunk.is_none() {
+                self.tail_chunk = self.tree_iter.next_back();
+                self.tail_chunk_idx = self
+                    .tail_chunk
+                    .as_ref()
+                    .map(|chunk| chunk.1 - 1)
+                    .unwrap_or(0);
+            }
+
+            let chunk = if self.tail_chunk.is_some() {
+                self.tail_chunk.as_mut()
+            } else {
+                self.head_chunk.as_mut()
+            };
+
+            let tail_chunk_idx = self.tail_chunk_idx;
+            let item = chunk.and_then(|it| it.0[tail_chunk_idx].take());
+
+            if self.tail_chunk_idx == 0 {
+                self.tail_chunk = self.tree_iter.next_back();
+                self.tail_chunk_idx = self
+                    .tail_chunk
+                    .as_ref()
+                    .map(|chunk| chunk.1 - 1)
+                    .unwrap_or(0);
+            } else {
+                self.tail_idx -= 1;
+                self.tail_chunk_idx -= 1;
+            }
+
+            item
+        } else {
+            None
+        }
+    }
+}
+
+impl<T: Clone + Debug> ExactSizeIterator for PVecIter<T> {
+    fn len(&self) -> usize {
+        self.len
     }
 }
 
@@ -58,14 +105,34 @@ impl<T: Clone + Debug> IntoIterator for PVec<T> {
     type IntoIter = PVecIter<T>;
 
     fn into_iter(self) -> Self::IntoIter {
+        let len = self.len();
+
+        let mut tail_chunk_idx = self.tail_len;
+        let mut tail_idx = len;
+
+        let tail_chunk = if self.tail_len > 0 {
+            Some((self.tail, self.tail_len))
+        } else {
+            None
+        };
+
+        if tail_chunk_idx > 0 {
+            tail_chunk_idx -= 1;
+        }
+
+        if tail_idx > 0 {
+            tail_idx -= 1;
+        }
+
         PVecIter {
-            tree_len: self.tree.len(),
             tree_iter: self.tree.into_iter(),
-            tail_len: self.tail_len,
-            tail: self.tail,
-            index: 0,
-            chunk: None,
-            chunk_index: 0,
+            head_chunk: None,
+            head_chunk_idx: 0,
+            head_idx: 0,
+            tail_chunk,
+            tail_chunk_idx,
+            tail_idx,
+            len,
         }
     }
 }
@@ -78,46 +145,70 @@ mod test {
 
     #[test]
     fn empty_pvec() {
-        let pvec: PVec<usize> = PVec::new();
-        let mut iter = pvec.into_iter();
+        let pvec_one: PVec<usize> = PVec::new();
+        let pvec_two: PVec<usize> = PVec::new();
 
-        let size = iter.size_hint();
-        let next = iter.next();
+        let mut iter_one = pvec_one.into_iter();
+        let mut iter_two = pvec_two.into_iter();
 
-        assert_eq!(next, None);
-        assert_eq!(size, (0, Some(0)));
+        assert_eq!(iter_one.size_hint(), (0, Some(0)));
+        assert_eq!(iter_one.next(), None);
+
+        assert_eq!(iter_two.size_hint(), (0, Some(0)));
+        assert_eq!(iter_two.next_back(), None);
     }
 
     #[test]
     fn pvec_has_tail_only() {
-        let mut pvec = PVec::new();
+        let mut pvec_one = PVec::new();
+        let mut pvec_two = PVec::new();
 
         for i in 0..BRANCH_FACTOR {
-            pvec.push(i);
+            pvec_one.push(i);
+            pvec_two.push(i);
         }
 
-        for (i, val) in pvec.into_iter().enumerate() {
-            assert_eq!(i, val);
+        let mut iter_one = pvec_one.into_iter();
+        for i in 0..BRANCH_FACTOR {
+            assert_eq!(iter_one.next(), Some(i));
+        }
+
+        let mut iter_two = pvec_two.into_iter();
+        for i in (0..BRANCH_FACTOR).rev() {
+            assert_eq!(iter_two.next_back(), Some(i));
         }
     }
 
     #[test]
     fn underlying_tree_has_multiple_levels() {
-        let mut pvec = PVec::new();
+        let mut pvec_one = PVec::new();
+        let mut pvec_two = PVec::new();
 
         let mut val = 0;
         for _ in 0..(BRANCH_FACTOR * BRANCH_FACTOR * BRANCH_FACTOR) {
-            pvec.push(val);
+            pvec_one.push(val);
+            pvec_two.push(val);
             val += 1;
         }
 
         for _ in 0..(BRANCH_FACTOR / 2) {
-            pvec.push(val);
+            pvec_one.push(val);
+            pvec_two.push(val);
             val += 1;
         }
 
-        for (i, val) in pvec.into_iter().enumerate() {
-            assert_eq!(i, val);
+        let len_one = pvec_one.len();
+        let mut iter_one = pvec_one.into_iter();
+
+        for i in 0..len_one {
+            assert_eq!(iter_one.next(), Some(i));
+        }
+
+        let len_two = pvec_two.len();
+        let mut iter_two = pvec_two.into_iter();
+
+        for i in 0..len_two {
+            assert_eq!(iter_two.next(), Some(i));
         }
     }
 
@@ -164,10 +255,52 @@ mod test {
             assert_eq!(vec_one_clone.len(), 0);
             assert_eq!(vec.len(), vec_item);
 
-            let vec_clone = vec.clone();
-            for (i, val) in vec_clone.into_iter().enumerate() {
-                assert_eq!(i, val);
+            let len = vec.len();
+
+            let mut iter_one = vec.clone().into_iter();
+            let mut iter_two = vec.clone().into_iter();
+
+            for i in 0..len {
+                assert_eq!(iter_one.next(), Some(i));
+            }
+
+            for i in (0..len).rev() {
+                assert_eq!(iter_two.next_back(), Some(i));
             }
         }
+    }
+
+    #[test]
+    fn sequential_calls_to_next_and_next_back() {
+        let mut pvec = PVec::new();
+
+        let mut val = 0;
+        for _ in 0..(BRANCH_FACTOR * BRANCH_FACTOR * BRANCH_FACTOR) {
+            pvec.push(val);
+            val += 1;
+        }
+
+        for _ in 0..(BRANCH_FACTOR / 2) {
+            pvec.push(val);
+            val += 1;
+        }
+
+        let len = pvec.len();
+        let mut iter = pvec.into_iter();
+
+        let mut next_i = 0;
+        let mut next_back_i = len - 1;
+
+        while next_i <= next_back_i {
+            assert_eq!(Some(next_i), iter.next());
+            assert_eq!(Some(next_back_i), iter.next_back());
+
+            next_i += 1;
+            next_back_i -= 1;
+        }
+
+        assert_eq!(iter.size_hint(), (len, Some(len)));
+        assert_eq!(iter.next(), None);
+        assert_eq!(iter.next_back(), None);
     }
 }
