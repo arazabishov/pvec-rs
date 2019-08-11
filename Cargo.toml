@@ -1,20 +1,19 @@
+[workspace]
+members = ["pvec-core"]
+
 [package]
 name = "pvec"
 version = "0.1.0"
 authors = ["Araz Abishov <araz@abishov.com>"]
 
 [dependencies]
-serde = { version = "1.0.73", features = ["rc"] }
-serde_json = "1.0.26"
-serde_derive = "1.0.73"
-rayon = { version = "1.1.0", optional = true }
+pvec-core = { version = "0.1.0", path = "pvec-core" }
 
 [dev-dependencies]
 criterion = "0.2.10"
 rand = "0.3.14"
 dogged = "0.2.0"
 im = { git = "https://github.com/bodil/im-rs" }
-rayon = { version = "1.1.0" }
 
 [features]
 default = []
