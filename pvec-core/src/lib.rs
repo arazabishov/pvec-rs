@@ -1,11 +1,14 @@
 #![feature(nll)]
 
 #[macro_use]
+#[cfg(feature = "serde-serializer")]
 extern crate serde_json;
 
 extern crate pvec_utils;
 #[cfg(all(feature = "arc", feature = "rayon-iter"))]
 extern crate rayon;
+
+#[cfg(feature = "serde-serializer")]
 extern crate serde;
 
 use rrbtree::RrbTree;
@@ -18,6 +21,8 @@ pub mod iter;
 
 #[macro_use]
 mod rrbtree;
+
+#[cfg(feature = "serde-serializer")]
 mod serializer;
 
 #[derive(Clone, Debug, Ord, PartialOrd, Eq, PartialEq)]

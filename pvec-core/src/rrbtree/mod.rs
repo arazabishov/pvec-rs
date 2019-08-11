@@ -1373,6 +1373,8 @@ impl<T: Clone + Debug> RrbTree<T> {
 }
 
 pub mod iter;
+
+#[cfg(feature = "serde-serializer")]
 mod serializer;
 
 #[cfg(test)]

@@ -21,6 +21,7 @@ default = []
 small_branch = []
 arc = []
 rayon-iter = []
+serde-serializer = []
 
 [[bench]]
 name = "lib"

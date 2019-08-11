@@ -9,7 +9,7 @@ authors = ["Araz Abishov <araz@abishov.com>"]
 
 [dependencies]
 pvec-utils = { version = "0.1.0", path = "../pvec-utils" }
-serde = { version = "1.0.73", features = ["rc"] }
-serde_json = "1.0.26"
-serde_derive = "1.0.73"
+serde = { version = "1.0.73", features = ["rc"], optional = true}
+serde_json = { version = "1.0.26", optional = true }
+serde_derive = { version = "1.0.73", optional = true }
 rayon = { version = "1.1.0", optional = true }
