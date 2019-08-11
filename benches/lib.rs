@@ -394,7 +394,7 @@ fn append(criterion: &mut Criterion) {
                 |data| {
                     let mut vec_two = IVec::new();
 
-                    for mut input in data.into_iter() {
+                    for input in data.into_iter() {
                         vec_two.append(input);
                     }
 
