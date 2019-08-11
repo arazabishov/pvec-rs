@@ -351,11 +351,37 @@ fn zero_sized_values() {
     assert_eq!(v.len(), 4);
 }
 
-//
-//#[test]
-//fn test_split_off() {
-//    let mut vec = vec![1, 2, 3, 4, 5, 6];
-//    let vec2 = vec.split_off(4);
-//    assert_eq!(vec, [1, 2, 3, 4]);
-//    assert_eq!(vec2, [5, 6]);
-//}
+#[test]
+fn split_off() {
+    let mut vec_one = vec![1, 2, 3, 4, 5, 6];
+    let vec_two = vec_one.split_off(4);
+
+    assert_eq!(vec_one, [1, 2, 3, 4]);
+    assert_eq!(vec_two, [5, 6]);
+}
+
+#[test]
+fn interleaving_append_split_off_operations() {
+    let mut pvec = PVec::new();
+    let mut value = 0;
+
+    for size in 1..(BRANCH_FACTOR * 8 + BRANCH_FACTOR) {
+        let mut another_pvec = PVec::new();
+        for _ in 0..size {
+            another_pvec.push(value);
+            value += 1;
+        }
+
+        pvec.append(&mut another_pvec);
+
+        let mid = pvec.len() / 2;
+        let mut right = pvec.split_off(mid);
+
+        pvec.append(&mut right);
+        value = pvec.len();
+    }
+
+    for i in 0..value {
+        assert_eq!(pvec.get(i).cloned(), Some(i));
+    }
+}

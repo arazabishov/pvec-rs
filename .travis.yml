@@ -4,9 +4,9 @@ rust:
   - nightly
 
 before_script:
-  - rustup toolchain install nightly-2019-07-25
-  - rustup component add --toolchain nightly-2019-07-25 rustfmt-preview
-  - rustup default nightly-2019-07-25
+  - rustup toolchain install nightly-2019-08-09
+  - rustup component add --toolchain nightly-2019-08-09 rustfmt-preview
+  - rustup default nightly-2019-08-09
 
 script:
   - cargo fmt --all -- --check

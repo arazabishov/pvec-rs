@@ -7,17 +7,20 @@ authors = ["Araz Abishov <araz@abishov.com>"]
 serde = { version = "1.0.73", features = ["rc"] }
 serde_json = "1.0.26"
 serde_derive = "1.0.73"
+rayon = { version = "1.1.0", optional = true }
 
 [dev-dependencies]
 criterion = "0.2.10"
 rand = "0.3.14"
 dogged = "0.2.0"
 im = { git = "https://github.com/bodil/im-rs" }
+rayon = { version = "1.1.0" }
 
 [features]
 default = []
-arc = []
 small_branch = []
+arc = []
+rayon-iter = []
 
 [[bench]]
 name = "lib-criterion"
