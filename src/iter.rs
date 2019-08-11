@@ -3,6 +3,12 @@ use rrbtree::iter::RrbTreeIter;
 use rrbtree::BRANCH_FACTOR;
 use std::fmt::Debug;
 
+#[cfg(all(feature = "arc", feature = "rayon-iter"))]
+use rayon::iter::plumbing::{bridge, Consumer, Producer, ProducerCallback, UnindexedConsumer};
+
+#[cfg(all(feature = "arc", feature = "rayon-iter"))]
+use rayon::prelude::{IndexedParallelIterator, IntoParallelIterator, ParallelIterator};
+
 #[derive(Debug, Clone)]
 pub struct PVecIter<T> {
     tree_iter: RrbTreeIter<T>,
@@ -13,6 +19,11 @@ pub struct PVecIter<T> {
     tail_chunk_idx: usize,
     tail_idx: usize,
     len: usize,
+}
+
+#[derive(Debug, Clone)]
+pub struct PVecParIter<T: Send + Sync + Debug + Clone> {
+    vec: PVec<T>,
 }
 
 impl<T: Clone + Debug> Iterator for PVecIter<T> {
@@ -134,6 +145,77 @@ impl<T: Clone + Debug> IntoIterator for PVec<T> {
             tail_idx,
             len,
         }
+    }
+}
+
+#[cfg(all(feature = "arc", feature = "rayon-iter"))]
+impl<T: Send + Sync + Debug + Clone> IntoParallelIterator for PVec<T> {
+    type Item = T;
+    type Iter = PVecParIter<T>;
+
+    fn into_par_iter(self) -> Self::Iter {
+        PVecParIter { vec: self }
+    }
+}
+
+#[cfg(all(feature = "arc", feature = "rayon-iter"))]
+impl<T: Send + Sync + Debug + Clone> ParallelIterator for PVecParIter<T> {
+    type Item = T;
+
+    fn drive_unindexed<C>(self, consumer: C) -> C::Result
+    where
+        C: UnindexedConsumer<Self::Item>,
+    {
+        bridge(self, consumer)
+    }
+
+    fn opt_len(&self) -> Option<usize> {
+        Some(self.vec.len())
+    }
+}
+
+#[cfg(all(feature = "arc", feature = "rayon-iter"))]
+impl<T: Send + Sync + Debug + Clone> IndexedParallelIterator for PVecParIter<T> {
+    fn drive<C>(self, consumer: C) -> C::Result
+    where
+        C: Consumer<Self::Item>,
+    {
+        bridge(self, consumer)
+    }
+
+    fn len(&self) -> usize {
+        self.vec.len()
+    }
+
+    fn with_producer<CB>(self, callback: CB) -> CB::Output
+    where
+        CB: ProducerCallback<Self::Item>,
+    {
+        callback.callback(VecProducer { vec: self.vec })
+    }
+}
+
+#[cfg(all(feature = "arc", feature = "rayon-iter"))]
+struct VecProducer<T: Send + Sync + Debug + Clone> {
+    vec: PVec<T>,
+}
+
+#[cfg(all(feature = "arc", feature = "rayon-iter"))]
+impl<T: Send + Sync + Debug + Clone> Producer for VecProducer<T> {
+    type Item = T;
+    type IntoIter = PVecIter<T>;
+
+    fn into_iter(mut self) -> Self::IntoIter {
+        std::mem::replace(&mut self.vec, PVec::new()).into_iter()
+    }
+
+    fn split_at(mut self, index: usize) -> (Self, Self) {
+        let mut pvec = std::mem::replace(&mut self.vec, PVec::new());
+
+        let right = pvec.split_off(index);
+        let left = pvec;
+
+        (VecProducer { vec: left }, VecProducer { vec: right })
     }
 }
 
