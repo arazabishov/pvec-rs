@@ -13,6 +13,7 @@ use dogged::DVec;
 use im::Vector as IVec;
 use rand::{Rng, SeedableRng, XorShiftRng};
 
+use pvec::PVec;
 use pvec::RrbVec;
 
 fn push(criterion: &mut Criterion) {
@@ -52,6 +53,15 @@ fn push(criterion: &mut Criterion) {
         .with_function("rrbvec", |bencher, n| {
             bencher.iter(|| {
                 let mut vec = RrbVec::new();
+
+                for i in 0..*n {
+                    vec.push(i);
+                }
+            })
+        })
+        .with_function("pvec", |bencher, n| {
+            bencher.iter(|| {
+                let mut vec = PVec::new();
 
                 for i in 0..*n {
                     vec.push(i);
@@ -119,6 +129,19 @@ fn push_clone(criterion: &mut Criterion) {
 
                 drop(vec_one);
             })
+        })
+        .with_function("rrbvec", |bencher, n| {
+            bencher.iter(|| {
+                let mut vec = PVec::new();
+                let mut vec_one = vec.clone();
+
+                for i in 0..*n {
+                    vec.push(i);
+                    vec_one = vec.clone();
+                }
+
+                drop(vec_one);
+            })
         }),
     );
 }
@@ -170,6 +193,25 @@ fn pop_clone(criterion: &mut Criterion) {
         })
         .with_function("rrbvec", |bencher, n| {
             let mut vec = RrbVec::new();
+
+            for i in 0..*n {
+                vec.push(i * 2);
+            }
+
+            bencher.iter(|| {
+                let mut vec_one = vec.clone();
+                let mut vec_two = vec_one.clone();
+
+                for _ in 0..*n {
+                    let _ = vec_one.pop();
+                    vec_two = vec_one.clone();
+                }
+
+                drop(vec_two);
+            })
+        })
+        .with_function("pvec", |bencher, n| {
+            let mut vec = PVec::new();
 
             for i in 0..*n {
                 vec.push(i * 2);
@@ -272,6 +314,25 @@ fn index_sequentially(criterion: &mut Criterion) {
                 },
                 BatchSize::SmallInput,
             )
+        })
+        .with_function("pvec", |bencher, n| {
+            bencher.iter_batched(
+                || {
+                    let mut vec = PVec::new();
+
+                    for i in 0..*n {
+                        vec.push(i * 2);
+                    }
+
+                    vec
+                },
+                |data| {
+                    for i in 0..*n {
+                        black_box(data[i]);
+                    }
+                },
+                BatchSize::SmallInput,
+            )
         }),
     );
 }
@@ -327,6 +388,20 @@ fn index_randomly(criterion: &mut Criterion) {
         })
         .with_function("rrbvec", |bencher, n| {
             let mut vec = RrbVec::new();
+            for i in 0..*n {
+                vec.push(i * 2);
+            }
+
+            let mut rng = XorShiftRng::from_seed([0, 1, 2, 3]);
+            bencher.iter(|| {
+                for _ in 0..*n {
+                    let j = (rng.next_u32() as usize) % *n;
+                    let _ = vec.get(j);
+                }
+            });
+        })
+        .with_function("pvec", |bencher, n| {
+            let mut vec = PVec::new();
             for i in 0..*n {
                 vec.push(i * 2);
             }
@@ -429,6 +504,33 @@ fn append(criterion: &mut Criterion) {
                 },
                 BatchSize::SmallInput,
             );
+        })
+        .with_function("pvec", |bencher, n| {
+            bencher.iter_batched(
+                || {
+                    let mut input = Vec::new();
+                    for _ in 0..16 {
+                        let mut vec = PVec::new();
+
+                        for i in 0..*n {
+                            vec.push(i);
+                        }
+
+                        input.push(vec)
+                    }
+                    input
+                },
+                |data| {
+                    let mut vec_two = PVec::new();
+
+                    for mut input in data.into_iter() {
+                        vec_two.append(&mut input);
+                    }
+
+                    vec_two
+                },
+                BatchSize::SmallInput,
+            );
         }),
     );
 }
@@ -483,6 +585,23 @@ fn append_clone(criterion: &mut Criterion) {
 
             bencher.iter(|| {
                 let mut vec_two = RrbVec::new();
+
+                for _ in 0..16 {
+                    vec_two.append(&mut vec_one.clone());
+                }
+
+                drop(vec_two)
+            });
+        })
+        .with_function("pvec", |bencher, n| {
+            let mut vec_one = PVec::new();
+
+            for i in 0..*n {
+                vec_one.push(i);
+            }
+
+            bencher.iter(|| {
+                let mut vec_two = PVec::new();
 
                 for _ in 0..16 {
                     vec_two.append(&mut vec_one.clone());
@@ -563,6 +682,27 @@ fn append_push(criterion: &mut Criterion) {
 
                 drop(vec_two)
             });
+        })
+        .with_function("pvec", |bencher, n| {
+            let mut vec_one = PVec::new();
+
+            for i in 0..*n {
+                vec_one.push(i);
+            }
+
+            bencher.iter(|| {
+                let mut vec_two = PVec::new();
+
+                for i in 0..1024 {
+                    if i % 2 == 0 {
+                        vec_two.push(i);
+                    } else {
+                        vec_two.append(&mut vec_one.clone());
+                    }
+                }
+
+                drop(vec_two)
+            });
         }),
     );
 }
@@ -616,6 +756,25 @@ fn iterator_next(criterion: &mut Criterion) {
             bencher.iter_batched(
                 || {
                     let mut vec = RrbVec::new();
+
+                    for i in 0..*n {
+                        vec.push(i * 2);
+                    }
+
+                    vec
+                },
+                |data| {
+                    for i in data.into_iter() {
+                        black_box(i);
+                    }
+                },
+                BatchSize::SmallInput,
+            )
+        })
+        .with_function("pvec", |bencher, n| {
+            bencher.iter_batched(
+                || {
+                    let mut vec = PVec::new();
 
                     for i in 0..*n {
                         vec.push(i * 2);
@@ -697,6 +856,25 @@ fn iterator_next_back(criterion: &mut Criterion) {
                 },
                 BatchSize::SmallInput,
             )
+        })
+        .with_function("pvec", |bencher, n| {
+            bencher.iter_batched(
+                || {
+                    let mut vec = PVec::new();
+
+                    for i in 0..*n {
+                        vec.push(i * 2);
+                    }
+
+                    vec
+                },
+                |data| {
+                    for i in data.into_iter().rev() {
+                        black_box(i);
+                    }
+                },
+                BatchSize::SmallInput,
+            )
         }),
     );
 }
@@ -757,6 +935,27 @@ fn split_off(criterion: &mut Criterion) {
             bencher.iter_batched(
                 || {
                     let mut vec = RrbVec::new();
+
+                    for i in 0..*n {
+                        vec.push(i * 2);
+                    }
+
+                    vec
+                },
+                |mut data| {
+                    while data.len() > 64 {
+                        data = data.split_off(64)
+                    }
+
+                    data
+                },
+                BatchSize::SmallInput,
+            )
+        })
+        .with_function("pvec", |bencher, n| {
+            bencher.iter_batched(
+                || {
+                    let mut vec = PVec::new();
 
                     for i in 0..*n {
                         vec.push(i * 2);

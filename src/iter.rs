@@ -60,6 +60,18 @@ impl<T: Clone + Debug> Iterator for PVecIter<T> {
     }
 }
 
+impl<T: Clone + Debug> DoubleEndedIterator for PVecIter<T> {
+    fn next_back(&mut self) -> Option<Self::Item> {
+        if let Some(iter_vec) = self.iter_vec.as_mut() {
+            iter_vec.next_back()
+        } else if let Some(iter_rrbvec) = self.iter_rrbvec.as_mut() {
+            iter_rrbvec.next_back()
+        } else {
+            None
+        }
+    }
+}
+
 impl<T: Clone + Debug> IntoIterator for PVec<T> {
     type Item = T;
     type IntoIter = PVecIter<T>;
