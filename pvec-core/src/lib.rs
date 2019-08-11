@@ -3,6 +3,7 @@
 #[macro_use]
 extern crate serde_json;
 
+extern crate pvec_utils;
 #[cfg(all(feature = "arc", feature = "rayon-iter"))]
 extern crate rayon;
 extern crate serde;
@@ -18,7 +19,6 @@ pub mod iter;
 #[macro_use]
 mod rrbtree;
 mod serializer;
-mod sharedptr;
 
 #[derive(Clone, Debug, Ord, PartialOrd, Eq, PartialEq)]
 pub struct RrbVec<T> {
@@ -34,6 +34,19 @@ impl<T: Clone + Debug> RrbVec<T> {
             tail: new_branch!(),
             tail_len: 0,
         }
+    }
+
+    pub fn from(vec: &[T]) -> Self {
+        // ToDo: do something smart to pre-allocate space for all new items?
+
+        let vec = vec.to_owned();
+        let mut rrbvec = RrbVec::new();
+
+        for item in vec.into_iter() {
+            rrbvec.push(item)
+        }
+
+        rrbvec
     }
 
     #[cold]

@@ -1,4 +1,4 @@
-use sharedptr::{SharedPtr, Take};
+use pvec_utils::sharedptr::{SharedPtr, Take};
 use std::cmp;
 use std::fmt::Debug;
 use std::mem;

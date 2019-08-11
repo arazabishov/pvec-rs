@@ -1,5 +1,5 @@
 [workspace]
-members = ["pvec-core"]
+members = ["pvec-core", "pvec-utils"]
 
 [package]
 name = "pvec"
@@ -8,6 +8,7 @@ authors = ["Araz Abishov <araz@abishov.com>"]
 
 [dependencies]
 pvec-core = { version = "0.1.0", path = "pvec-core" }
+pvec-utils = { version = "0.1.0", path = "pvec-utils" }
 
 [dev-dependencies]
 criterion = "0.2.10"

@@ -8,6 +8,7 @@ version = "0.1.0"
 authors = ["Araz Abishov <araz@abishov.com>"]
 
 [dependencies]
+pvec-utils = { version = "0.1.0", path = "../pvec-utils" }
 serde = { version = "1.0.73", features = ["rc"] }
 serde_json = "1.0.26"
 serde_derive = "1.0.73"
