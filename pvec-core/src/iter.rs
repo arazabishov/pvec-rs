@@ -1,4 +1,4 @@
-use super::PVec;
+use super::RrbVec;
 use rrbtree::iter::RrbTreeIter;
 use rrbtree::BRANCH_FACTOR;
 use std::fmt::Debug;
@@ -10,7 +10,7 @@ use rayon::iter::plumbing::{bridge, Consumer, Producer, ProducerCallback, Uninde
 use rayon::prelude::{IndexedParallelIterator, IntoParallelIterator, ParallelIterator};
 
 #[derive(Debug, Clone)]
-pub struct PVecIter<T> {
+pub struct RrbVecIter<T> {
     tree_iter: RrbTreeIter<T>,
     head_chunk: Option<([Option<T>; BRANCH_FACTOR], usize)>,
     head_chunk_idx: usize,
@@ -22,11 +22,11 @@ pub struct PVecIter<T> {
 }
 
 #[derive(Debug, Clone)]
-pub struct PVecParIter<T: Send + Sync + Debug + Clone> {
-    vec: PVec<T>,
+pub struct RrbVecParIter<T: Send + Sync + Debug + Clone> {
+    vec: RrbVec<T>,
 }
 
-impl<T: Clone + Debug> Iterator for PVecIter<T> {
+impl<T: Clone + Debug> Iterator for RrbVecIter<T> {
     type Item = T;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -65,7 +65,7 @@ impl<T: Clone + Debug> Iterator for PVecIter<T> {
     }
 }
 
-impl<T: Clone + Debug> DoubleEndedIterator for PVecIter<T> {
+impl<T: Clone + Debug> DoubleEndedIterator for RrbVecIter<T> {
     fn next_back(&mut self) -> Option<Self::Item> {
         if self.head_idx <= self.tail_idx {
             if self.tail_chunk.is_none() {
@@ -105,15 +105,15 @@ impl<T: Clone + Debug> DoubleEndedIterator for PVecIter<T> {
     }
 }
 
-impl<T: Clone + Debug> ExactSizeIterator for PVecIter<T> {
+impl<T: Clone + Debug> ExactSizeIterator for RrbVecIter<T> {
     fn len(&self) -> usize {
         self.len
     }
 }
 
-impl<T: Clone + Debug> IntoIterator for PVec<T> {
+impl<T: Clone + Debug> IntoIterator for RrbVec<T> {
     type Item = T;
-    type IntoIter = PVecIter<T>;
+    type IntoIter = RrbVecIter<T>;
 
     fn into_iter(self) -> Self::IntoIter {
         let len = self.len();
@@ -135,7 +135,7 @@ impl<T: Clone + Debug> IntoIterator for PVec<T> {
             tail_idx -= 1;
         }
 
-        PVecIter {
+        RrbVecIter {
             tree_iter: self.tree.into_iter(),
             head_chunk: None,
             head_chunk_idx: 0,
@@ -149,17 +149,17 @@ impl<T: Clone + Debug> IntoIterator for PVec<T> {
 }
 
 #[cfg(all(feature = "arc", feature = "rayon-iter"))]
-impl<T: Send + Sync + Debug + Clone> IntoParallelIterator for PVec<T> {
+impl<T: Send + Sync + Debug + Clone> IntoParallelIterator for RrbVec<T> {
     type Item = T;
-    type Iter = PVecParIter<T>;
+    type Iter = RrbVecParIter<T>;
 
     fn into_par_iter(self) -> Self::Iter {
-        PVecParIter { vec: self }
+        RrbVecParIter { vec: self }
     }
 }
 
 #[cfg(all(feature = "arc", feature = "rayon-iter"))]
-impl<T: Send + Sync + Debug + Clone> ParallelIterator for PVecParIter<T> {
+impl<T: Send + Sync + Debug + Clone> ParallelIterator for RrbVecParIter<T> {
     type Item = T;
 
     fn drive_unindexed<C>(self, consumer: C) -> C::Result
@@ -175,7 +175,7 @@ impl<T: Send + Sync + Debug + Clone> ParallelIterator for PVecParIter<T> {
 }
 
 #[cfg(all(feature = "arc", feature = "rayon-iter"))]
-impl<T: Send + Sync + Debug + Clone> IndexedParallelIterator for PVecParIter<T> {
+impl<T: Send + Sync + Debug + Clone> IndexedParallelIterator for RrbVecParIter<T> {
     fn drive<C>(self, consumer: C) -> C::Result
     where
         C: Consumer<Self::Item>,
@@ -197,23 +197,23 @@ impl<T: Send + Sync + Debug + Clone> IndexedParallelIterator for PVecParIter<T> 
 
 #[cfg(all(feature = "arc", feature = "rayon-iter"))]
 struct VecProducer<T: Send + Sync + Debug + Clone> {
-    vec: PVec<T>,
+    vec: RrbVec<T>,
 }
 
 #[cfg(all(feature = "arc", feature = "rayon-iter"))]
 impl<T: Send + Sync + Debug + Clone> Producer for VecProducer<T> {
     type Item = T;
-    type IntoIter = PVecIter<T>;
+    type IntoIter = RrbVecIter<T>;
 
     fn into_iter(mut self) -> Self::IntoIter {
-        std::mem::replace(&mut self.vec, PVec::new()).into_iter()
+        std::mem::replace(&mut self.vec, RrbVec::new()).into_iter()
     }
 
     fn split_at(mut self, index: usize) -> (Self, Self) {
-        let mut pvec = std::mem::replace(&mut self.vec, PVec::new());
+        let mut vec = std::mem::replace(&mut self.vec, RrbVec::new());
 
-        let right = pvec.split_off(index);
-        let left = pvec;
+        let right = vec.split_off(index);
+        let left = vec;
 
         (VecProducer { vec: left }, VecProducer { vec: right })
     }
@@ -222,16 +222,16 @@ impl<T: Send + Sync + Debug + Clone> Producer for VecProducer<T> {
 #[cfg(test)]
 #[macro_use]
 mod test {
-    use super::PVec;
+    use super::RrbVec;
     use super::BRANCH_FACTOR;
 
     #[test]
-    fn empty_pvec() {
-        let pvec_one: PVec<usize> = PVec::new();
-        let pvec_two: PVec<usize> = PVec::new();
+    fn empty_rrbvec() {
+        let vec_one: RrbVec<usize> = RrbVec::new();
+        let vec_two: RrbVec<usize> = RrbVec::new();
 
-        let mut iter_one = pvec_one.into_iter();
-        let mut iter_two = pvec_two.into_iter();
+        let mut iter_one = vec_one.into_iter();
+        let mut iter_two = vec_two.into_iter();
 
         assert_eq!(iter_one.size_hint(), (0, Some(0)));
         assert_eq!(iter_one.next(), None);
@@ -241,21 +241,21 @@ mod test {
     }
 
     #[test]
-    fn pvec_has_tail_only() {
-        let mut pvec_one = PVec::new();
-        let mut pvec_two = PVec::new();
+    fn rrbvec_has_tail_only() {
+        let mut vec_one = RrbVec::new();
+        let mut vec_two = RrbVec::new();
 
         for i in 0..BRANCH_FACTOR {
-            pvec_one.push(i);
-            pvec_two.push(i);
+            vec_one.push(i);
+            vec_two.push(i);
         }
 
-        let mut iter_one = pvec_one.into_iter();
+        let mut iter_one = vec_one.into_iter();
         for i in 0..BRANCH_FACTOR {
             assert_eq!(iter_one.next(), Some(i));
         }
 
-        let mut iter_two = pvec_two.into_iter();
+        let mut iter_two = vec_two.into_iter();
         for i in (0..BRANCH_FACTOR).rev() {
             assert_eq!(iter_two.next_back(), Some(i));
         }
@@ -263,31 +263,31 @@ mod test {
 
     #[test]
     fn underlying_tree_has_multiple_levels() {
-        let mut pvec_one = PVec::new();
-        let mut pvec_two = PVec::new();
+        let mut vec_one = RrbVec::new();
+        let mut vec_two = RrbVec::new();
 
         let mut val = 0;
         for _ in 0..(BRANCH_FACTOR * BRANCH_FACTOR * BRANCH_FACTOR) {
-            pvec_one.push(val);
-            pvec_two.push(val);
+            vec_one.push(val);
+            vec_two.push(val);
             val += 1;
         }
 
         for _ in 0..(BRANCH_FACTOR / 2) {
-            pvec_one.push(val);
-            pvec_two.push(val);
+            vec_one.push(val);
+            vec_two.push(val);
             val += 1;
         }
 
-        let len_one = pvec_one.len();
-        let mut iter_one = pvec_one.into_iter();
+        let len_one = vec_one.len();
+        let mut iter_one = vec_one.into_iter();
 
         for i in 0..len_one {
             assert_eq!(iter_one.next(), Some(i));
         }
 
-        let len_two = pvec_two.len();
-        let mut iter_two = pvec_two.into_iter();
+        let len_two = vec_two.len();
+        let mut iter_two = vec_two.into_iter();
 
         for i in 0..len_two {
             assert_eq!(iter_two.next(), Some(i));
@@ -298,12 +298,12 @@ mod test {
     fn underlying_tree_is_relaxed() {
         let vec_size = 33;
 
-        let mut vec = PVec::new();
+        let mut vec = RrbVec::new();
         let mut vec_item = 0;
 
         for i in 0..128 {
             if i % 2 == 0 {
-                let mut vec_temp = PVec::new();
+                let mut vec_temp = RrbVec::new();
 
                 for _ in 0..vec_size {
                     vec_temp.push(vec_item);
@@ -354,21 +354,21 @@ mod test {
 
     #[test]
     fn sequential_calls_to_next_and_next_back() {
-        let mut pvec = PVec::new();
+        let mut vec = RrbVec::new();
 
         let mut val = 0;
         for _ in 0..(BRANCH_FACTOR * BRANCH_FACTOR * BRANCH_FACTOR) {
-            pvec.push(val);
+            vec.push(val);
             val += 1;
         }
 
         for _ in 0..(BRANCH_FACTOR / 2) {
-            pvec.push(val);
+            vec.push(val);
             val += 1;
         }
 
-        let len = pvec.len();
-        let mut iter = pvec.into_iter();
+        let len = vec.len();
+        let mut iter = vec.into_iter();
 
         let mut next_i = 0;
         let mut next_back_i = len - 1;

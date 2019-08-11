@@ -21,15 +21,15 @@ mod serializer;
 mod sharedptr;
 
 #[derive(Clone, Debug, Ord, PartialOrd, Eq, PartialEq)]
-pub struct PVec<T> {
+pub struct RrbVec<T> {
     tree: RrbTree<T>,
     tail: [Option<T>; BRANCH_FACTOR],
     tail_len: usize,
 }
 
-impl<T: Clone + Debug> PVec<T> {
+impl<T: Clone + Debug> RrbVec<T> {
     pub fn new() -> Self {
-        PVec {
+        RrbVec {
             tree: RrbTree::new(),
             tail: new_branch!(),
             tail_len: 0,
@@ -98,7 +98,7 @@ impl<T: Clone + Debug> PVec<T> {
 
     pub fn split_off(&mut self, mid: usize) -> Self {
         if mid == 0 {
-            mem::replace(self, PVec::new())
+            mem::replace(self, RrbVec::new())
         } else if mid < self.len() {
             if self.tree.len() > mid {
                 let right_tree = self.tree.split_off(mid);
@@ -108,7 +108,7 @@ impl<T: Clone + Debug> PVec<T> {
                 let right_tail = mem::replace(&mut self.tail, left_tail);
                 let right_tail_len = mem::replace(&mut self.tail_len, left_tail_len);
 
-                let mut right = PVec {
+                let mut right = RrbVec {
                     tree: right_tree,
                     tail: right_tail,
                     tail_len: right_tail_len,
@@ -169,20 +169,20 @@ impl<T: Clone + Debug> PVec<T> {
 
                 self.tail_len = left_tail_len;
 
-                PVec {
+                RrbVec {
                     tree: RrbTree::new(),
                     tail: right_tail,
                     tail_len: right_tail_len,
                 }
             }
         } else if mid == self.len() {
-            PVec::new()
+            RrbVec::new()
         } else {
             panic!()
         }
     }
 
-    pub fn append(&mut self, that: &mut PVec<T>) {
+    pub fn append(&mut self, that: &mut RrbVec<T>) {
         if self.is_empty() {
             self.tail = mem::replace(&mut that.tail, new_branch!());
             self.tree = mem::replace(&mut that.tree, RrbTree::new());
@@ -249,19 +249,19 @@ impl<T: Clone + Debug> PVec<T> {
     }
 }
 
-impl<T: Clone + Debug> Default for PVec<T> {
+impl<T: Clone + Debug> Default for RrbVec<T> {
     fn default() -> Self {
-        PVec::new()
+        RrbVec::new()
     }
 }
 
-impl<T: Clone + Debug> ops::Index<usize> for PVec<T> {
+impl<T: Clone + Debug> ops::Index<usize> for RrbVec<T> {
     type Output = T;
 
     fn index(&self, index: usize) -> &T {
         self.get(index).unwrap_or_else(|| {
             panic!(
-                "index `{}` out of bounds in PVec of length `{}`",
+                "index `{}` out of bounds in RrbVec of length `{}`",
                 index,
                 self.len()
             )
@@ -269,12 +269,12 @@ impl<T: Clone + Debug> ops::Index<usize> for PVec<T> {
     }
 }
 
-impl<T: Clone + Debug> ops::IndexMut<usize> for PVec<T> {
+impl<T: Clone + Debug> ops::IndexMut<usize> for RrbVec<T> {
     fn index_mut(&mut self, index: usize) -> &mut T {
         let len = self.len();
         self.get_mut(index).unwrap_or_else(|| {
             panic!(
-                "index `{}` out of bounds in PVec of length `{}`",
+                "index `{}` out of bounds in RrbVec of length `{}`",
                 index, len
             )
         })

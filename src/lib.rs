@@ -1,3 +1,3 @@
 extern crate pvec_core;
 
-pub use pvec_core::PVec;
+pub use pvec_core::RrbVec;
