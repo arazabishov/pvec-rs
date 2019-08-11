@@ -1,113 +1,74 @@
+use super::Flavor;
 use super::PVec;
-use rrbtree::iter::RrbTreeIter;
-use rrbtree::BRANCH_FACTOR;
+
 use std::fmt::Debug;
 
-#[cfg(all(feature = "arc", feature = "rayon-iter"))]
-use rayon::iter::plumbing::{bridge, Consumer, Producer, ProducerCallback, UnindexedConsumer};
+#[cfg(all(test, not(feature = "small_branch")))]
+pub const BRANCH_FACTOR: usize = 32;
 
-#[cfg(all(feature = "arc", feature = "rayon-iter"))]
-use rayon::prelude::{IndexedParallelIterator, IntoParallelIterator, ParallelIterator};
+#[cfg(all(test, feature = "small_branch"))]
+pub const BRANCH_FACTOR: usize = 4;
+
+use pvec_core::iter::RrbVecIter;
+use pvec_core::RrbVec;
+use pvec_utils::sharedptr::Take;
+use std::vec::IntoIter as VecIter;
 
 #[derive(Debug, Clone)]
 pub struct PVecIter<T> {
-    tree_iter: RrbTreeIter<T>,
-    head_chunk: Option<([Option<T>; BRANCH_FACTOR], usize)>,
-    head_chunk_idx: usize,
-    head_idx: usize,
-    tail_chunk: Option<([Option<T>; BRANCH_FACTOR], usize)>,
-    tail_chunk_idx: usize,
-    tail_idx: usize,
-    len: usize,
+    iter_vec: Option<VecIter<T>>,
+    iter_rrbvec: Option<RrbVecIter<T>>,
 }
 
-#[derive(Debug, Clone)]
-pub struct PVecParIter<T: Send + Sync + Debug + Clone> {
-    vec: PVec<T>,
+impl<T: Clone + Debug> PVecIter<T> {
+    fn from_vec(vec: Vec<T>) -> Self {
+        PVecIter {
+            iter_vec: Some(vec.into_iter()),
+            iter_rrbvec: None,
+        }
+    }
+
+    fn from_rrbvec(rrbvec: RrbVec<T>) -> Self {
+        PVecIter {
+            iter_vec: None,
+            iter_rrbvec: Some(rrbvec.into_iter()),
+        }
+    }
 }
 
 impl<T: Clone + Debug> Iterator for PVecIter<T> {
     type Item = T;
 
     fn next(&mut self) -> Option<Self::Item> {
-        if self.head_idx <= self.tail_idx {
-            if self.head_chunk.is_none() {
-                self.head_chunk = self.tree_iter.next();
-            }
-
-            let mut chunk = if self.head_chunk.is_some() {
-                self.head_chunk.as_mut()
-            } else {
-                self.tail_chunk.as_mut()
-            };
-
-            let head_chunk_idx = self.head_chunk_idx;
-            let item = chunk.as_mut().and_then(|it| it.0[head_chunk_idx].take());
-
-            self.head_idx += 1;
-            self.head_chunk_idx += 1;
-
-            if let Some(it) = chunk.as_ref() {
-                if self.head_chunk_idx == it.1 {
-                    self.head_chunk = self.tree_iter.next();
-                    self.head_chunk_idx = 0;
-                }
-            }
-
-            item
+        if let Some(iter_vec) = self.iter_vec.as_mut() {
+            iter_vec.next()
+        } else if let Some(iter_rrbvec) = self.iter_rrbvec.as_mut() {
+            iter_rrbvec.next()
         } else {
             None
         }
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
-        (self.len, Some(self.len))
+        if let Some(iter_vec) = self.iter_vec.as_ref() {
+            iter_vec.size_hint()
+        } else if let Some(iter_rrbvec) = self.iter_rrbvec.as_ref() {
+            iter_rrbvec.size_hint()
+        } else {
+            (0, None)
+        }
     }
 }
 
 impl<T: Clone + Debug> DoubleEndedIterator for PVecIter<T> {
     fn next_back(&mut self) -> Option<Self::Item> {
-        if self.head_idx <= self.tail_idx {
-            if self.tail_chunk.is_none() {
-                self.tail_chunk = self.tree_iter.next_back();
-                self.tail_chunk_idx = self
-                    .tail_chunk
-                    .as_ref()
-                    .map(|chunk| chunk.1 - 1)
-                    .unwrap_or(0);
-            }
-
-            let chunk = if self.tail_chunk.is_some() {
-                self.tail_chunk.as_mut()
-            } else {
-                self.head_chunk.as_mut()
-            };
-
-            let tail_chunk_idx = self.tail_chunk_idx;
-            let item = chunk.and_then(|it| it.0[tail_chunk_idx].take());
-
-            if self.tail_chunk_idx == 0 {
-                self.tail_chunk = self.tree_iter.next_back();
-                self.tail_chunk_idx = self
-                    .tail_chunk
-                    .as_ref()
-                    .map(|chunk| chunk.1 - 1)
-                    .unwrap_or(0);
-            } else {
-                self.tail_idx -= 1;
-                self.tail_chunk_idx -= 1;
-            }
-
-            item
+        if let Some(iter_vec) = self.iter_vec.as_mut() {
+            iter_vec.next_back()
+        } else if let Some(iter_rrbvec) = self.iter_rrbvec.as_mut() {
+            iter_rrbvec.next_back()
         } else {
             None
         }
-    }
-}
-
-impl<T: Clone + Debug> ExactSizeIterator for PVecIter<T> {
-    fn len(&self) -> usize {
-        self.len
     }
 }
 
@@ -116,106 +77,10 @@ impl<T: Clone + Debug> IntoIterator for PVec<T> {
     type IntoIter = PVecIter<T>;
 
     fn into_iter(self) -> Self::IntoIter {
-        let len = self.len();
-
-        let mut tail_chunk_idx = self.tail_len;
-        let mut tail_idx = len;
-
-        let tail_chunk = if self.tail_len > 0 {
-            Some((self.tail, self.tail_len))
-        } else {
-            None
-        };
-
-        if tail_chunk_idx > 0 {
-            tail_chunk_idx -= 1;
+        match self.0 {
+            Flavor::Standard(vec_arc) => PVecIter::from_vec(vec_arc.take()),
+            Flavor::Persistent(pvec) => PVecIter::from_rrbvec(pvec),
         }
-
-        if tail_idx > 0 {
-            tail_idx -= 1;
-        }
-
-        PVecIter {
-            tree_iter: self.tree.into_iter(),
-            head_chunk: None,
-            head_chunk_idx: 0,
-            head_idx: 0,
-            tail_chunk,
-            tail_chunk_idx,
-            tail_idx,
-            len,
-        }
-    }
-}
-
-#[cfg(all(feature = "arc", feature = "rayon-iter"))]
-impl<T: Send + Sync + Debug + Clone> IntoParallelIterator for PVec<T> {
-    type Item = T;
-    type Iter = PVecParIter<T>;
-
-    fn into_par_iter(self) -> Self::Iter {
-        PVecParIter { vec: self }
-    }
-}
-
-#[cfg(all(feature = "arc", feature = "rayon-iter"))]
-impl<T: Send + Sync + Debug + Clone> ParallelIterator for PVecParIter<T> {
-    type Item = T;
-
-    fn drive_unindexed<C>(self, consumer: C) -> C::Result
-    where
-        C: UnindexedConsumer<Self::Item>,
-    {
-        bridge(self, consumer)
-    }
-
-    fn opt_len(&self) -> Option<usize> {
-        Some(self.vec.len())
-    }
-}
-
-#[cfg(all(feature = "arc", feature = "rayon-iter"))]
-impl<T: Send + Sync + Debug + Clone> IndexedParallelIterator for PVecParIter<T> {
-    fn drive<C>(self, consumer: C) -> C::Result
-    where
-        C: Consumer<Self::Item>,
-    {
-        bridge(self, consumer)
-    }
-
-    fn len(&self) -> usize {
-        self.vec.len()
-    }
-
-    fn with_producer<CB>(self, callback: CB) -> CB::Output
-    where
-        CB: ProducerCallback<Self::Item>,
-    {
-        callback.callback(VecProducer { vec: self.vec })
-    }
-}
-
-#[cfg(all(feature = "arc", feature = "rayon-iter"))]
-struct VecProducer<T: Send + Sync + Debug + Clone> {
-    vec: PVec<T>,
-}
-
-#[cfg(all(feature = "arc", feature = "rayon-iter"))]
-impl<T: Send + Sync + Debug + Clone> Producer for VecProducer<T> {
-    type Item = T;
-    type IntoIter = PVecIter<T>;
-
-    fn into_iter(mut self) -> Self::IntoIter {
-        std::mem::replace(&mut self.vec, PVec::new()).into_iter()
-    }
-
-    fn split_at(mut self, index: usize) -> (Self, Self) {
-        let mut pvec = std::mem::replace(&mut self.vec, PVec::new());
-
-        let right = pvec.split_off(index);
-        let left = pvec;
-
-        (VecProducer { vec: left }, VecProducer { vec: right })
     }
 }
 
@@ -227,70 +92,46 @@ mod test {
 
     #[test]
     fn empty_pvec() {
-        let pvec_one: PVec<usize> = PVec::new();
-        let pvec_two: PVec<usize> = PVec::new();
+        let pvec: PVec<usize> = PVec::new();
+        let mut iter = pvec.into_iter();
 
-        let mut iter_one = pvec_one.into_iter();
-        let mut iter_two = pvec_two.into_iter();
+        let size = iter.size_hint();
+        let next = iter.next();
 
-        assert_eq!(iter_one.size_hint(), (0, Some(0)));
-        assert_eq!(iter_one.next(), None);
-
-        assert_eq!(iter_two.size_hint(), (0, Some(0)));
-        assert_eq!(iter_two.next_back(), None);
+        assert_eq!(next, None);
+        assert_eq!(size, (0, Some(0)));
     }
 
     #[test]
     fn pvec_has_tail_only() {
-        let mut pvec_one = PVec::new();
-        let mut pvec_two = PVec::new();
+        let mut pvec = PVec::new();
 
         for i in 0..BRANCH_FACTOR {
-            pvec_one.push(i);
-            pvec_two.push(i);
+            pvec.push(i);
         }
 
-        let mut iter_one = pvec_one.into_iter();
-        for i in 0..BRANCH_FACTOR {
-            assert_eq!(iter_one.next(), Some(i));
-        }
-
-        let mut iter_two = pvec_two.into_iter();
-        for i in (0..BRANCH_FACTOR).rev() {
-            assert_eq!(iter_two.next_back(), Some(i));
+        for (i, val) in pvec.into_iter().enumerate() {
+            assert_eq!(i, val);
         }
     }
 
     #[test]
     fn underlying_tree_has_multiple_levels() {
-        let mut pvec_one = PVec::new();
-        let mut pvec_two = PVec::new();
+        let mut pvec = PVec::new();
 
         let mut val = 0;
         for _ in 0..(BRANCH_FACTOR * BRANCH_FACTOR * BRANCH_FACTOR) {
-            pvec_one.push(val);
-            pvec_two.push(val);
+            pvec.push(val);
             val += 1;
         }
 
         for _ in 0..(BRANCH_FACTOR / 2) {
-            pvec_one.push(val);
-            pvec_two.push(val);
+            pvec.push(val);
             val += 1;
         }
 
-        let len_one = pvec_one.len();
-        let mut iter_one = pvec_one.into_iter();
-
-        for i in 0..len_one {
-            assert_eq!(iter_one.next(), Some(i));
-        }
-
-        let len_two = pvec_two.len();
-        let mut iter_two = pvec_two.into_iter();
-
-        for i in 0..len_two {
-            assert_eq!(iter_two.next(), Some(i));
+        for (i, val) in pvec.into_iter().enumerate() {
+            assert_eq!(i, val);
         }
     }
 
@@ -337,52 +178,10 @@ mod test {
             assert_eq!(vec_one_clone.len(), 0);
             assert_eq!(vec.len(), vec_item);
 
-            let len = vec.len();
-
-            let mut iter_one = vec.clone().into_iter();
-            let mut iter_two = vec.clone().into_iter();
-
-            for i in 0..len {
-                assert_eq!(iter_one.next(), Some(i));
-            }
-
-            for i in (0..len).rev() {
-                assert_eq!(iter_two.next_back(), Some(i));
+            let vec_clone = vec.clone();
+            for (i, val) in vec_clone.into_iter().enumerate() {
+                assert_eq!(i, val);
             }
         }
-    }
-
-    #[test]
-    fn sequential_calls_to_next_and_next_back() {
-        let mut pvec = PVec::new();
-
-        let mut val = 0;
-        for _ in 0..(BRANCH_FACTOR * BRANCH_FACTOR * BRANCH_FACTOR) {
-            pvec.push(val);
-            val += 1;
-        }
-
-        for _ in 0..(BRANCH_FACTOR / 2) {
-            pvec.push(val);
-            val += 1;
-        }
-
-        let len = pvec.len();
-        let mut iter = pvec.into_iter();
-
-        let mut next_i = 0;
-        let mut next_back_i = len - 1;
-
-        while next_i <= next_back_i {
-            assert_eq!(Some(next_i), iter.next());
-            assert_eq!(Some(next_back_i), iter.next_back());
-
-            next_i += 1;
-            next_back_i -= 1;
-        }
-
-        assert_eq!(iter.size_hint(), (len, Some(len)));
-        assert_eq!(iter.next(), None);
-        assert_eq!(iter.next_back(), None);
     }
 }

@@ -1,5 +1,5 @@
 use super::{get_branch_index, Index, Leaf, Node, RrbTree, Shift, BRANCH_FACTOR};
-use sharedptr::{SharedPtr, Take};
+use pvec_utils::sharedptr::{SharedPtr, Take};
 use std::fmt::Debug;
 
 #[derive(Debug, Clone)]

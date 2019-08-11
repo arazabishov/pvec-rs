@@ -1,4 +1,4 @@
-use sharedptr::{SharedPtr, Take};
+use pvec_utils::sharedptr::{SharedPtr, Take};
 use std::cmp;
 use std::fmt::Debug;
 use std::mem;
@@ -1373,6 +1373,8 @@ impl<T: Clone + Debug> RrbTree<T> {
 }
 
 pub mod iter;
+
+#[cfg(feature = "serde-serializer")]
 mod serializer;
 
 #[cfg(test)]
