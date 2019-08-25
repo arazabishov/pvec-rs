@@ -7,7 +7,9 @@ use std::fmt::Debug;
 use rayon::iter::plumbing::{bridge, Consumer, Producer, ProducerCallback, UnindexedConsumer};
 
 #[cfg(all(feature = "arc", feature = "rayon-iter"))]
-use rayon::prelude::{IndexedParallelIterator, IntoParallelIterator, ParallelIterator};
+use rayon::prelude::{
+    FromParallelIterator, IndexedParallelIterator, IntoParallelIterator, ParallelIterator,
+};
 
 #[derive(Debug, Clone)]
 pub struct RrbVecIter<T> {
@@ -216,6 +218,28 @@ impl<T: Send + Sync + Debug + Clone> Producer for VecProducer<T> {
         let left = vec;
 
         (VecProducer { vec: left }, VecProducer { vec: right })
+    }
+}
+
+#[cfg(all(feature = "arc", feature = "rayon-iter"))]
+impl<T: Clone + Debug + Send + Sync> FromParallelIterator<T> for RrbVec<T>
+where
+    T: Send,
+{
+    fn from_par_iter<I>(par_iter: I) -> Self
+    where
+        I: IntoParallelIterator<Item = T>,
+    {
+        par_iter
+            .into_par_iter()
+            .fold(RrbVec::new, |mut vec, elem| {
+                vec.push(elem);
+                vec
+            })
+            .reduce(RrbVec::new, |mut list1, mut list2| {
+                list1.append(&mut list2);
+                list1
+            })
     }
 }
 
