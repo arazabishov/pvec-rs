@@ -25,10 +25,9 @@ time = "0.1"
 libc = "0.2"
 
 [features]
-default = []
+serde-serializer = ["pvec-core/serde-serializer"]
 rayon-iter = ["pvec-core/rayon-iter", "rayon"]
 arc = ["pvec-core/arc", "pvec-utils/arc",]
-serde-serializer = []
 small_branch = []
 
 [[bench]]

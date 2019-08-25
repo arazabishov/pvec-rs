@@ -15,5 +15,6 @@ pvec-utils = { version = "0.1.0", path = "../pvec-utils" }
 rayon = { version = "1.1.0", optional = true }
 
 [features]
+serde-serializer = ["serde", "serde_json", "serde_derive"]
 rayon-iter = ["rayon"]
 arc = ["pvec-utils/arc"]
