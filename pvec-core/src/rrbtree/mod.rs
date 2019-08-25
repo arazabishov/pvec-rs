@@ -1,7 +1,7 @@
-use pvec_utils::sharedptr::{SharedPtr, Take};
 use std::cmp;
 use std::fmt::Debug;
 use std::mem;
+use utils::sharedptr::{SharedPtr, Take};
 
 #[cfg(not(feature = "small_branch"))]
 pub const BRANCH_FACTOR: usize = 32;
