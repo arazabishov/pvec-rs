@@ -200,7 +200,6 @@ fn index_sequentially(criterion: &mut Criterion) {
     group.finish();
 }
 
-// ToDo: check how seed is selected, and how it impacts a random value generated
 fn index_randomly(criterion: &mut Criterion) {
     macro_rules! make_bench {
         ($group:ident, $p:ident, $vec:ident, $op:ident, $name:literal) => {
