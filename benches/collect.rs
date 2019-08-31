@@ -150,7 +150,9 @@ macro_rules! make_bench {
             let mut group = criterion.benchmark_group("with_collect_".to_owned() + $postfix);
             group.plot_config(PlotConfiguration::default().summary_scale(AxisScale::Logarithmic));
 
-            let params = vec![10, 30, 50, 100, 500, 1000, 10000, 50000, 100000, 500000];
+            let params = vec![
+                8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096, 8192, 16000, 32000, 64000,
+            ];
             for p in params.iter() {
                 group.bench_with_input(BenchmarkId::new("std", p), p, |b, n| {
                     let mut vec = None;
@@ -172,7 +174,9 @@ macro_rules! make_bench {
                 criterion.benchmark_group("with_linked_list_collect_vec_".to_owned() + $postfix);
             group.plot_config(PlotConfiguration::default().summary_scale(AxisScale::Logarithmic));
 
-            let params = vec![10, 30, 50, 100, 500, 1000, 10000, 50000, 100000, 500000];
+            let params = vec![
+                8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096, 8192, 16000, 32000, 64000,
+            ];
             for p in params.iter() {
                 group.bench_with_input(BenchmarkId::new("std", p), p, |b, n| {
                     let mut vec = None;
@@ -197,7 +201,9 @@ macro_rules! make_bench {
             let mut group = criterion.benchmark_group("with_fold_".to_owned() + $postfix);
             group.plot_config(PlotConfiguration::default().summary_scale(AxisScale::Logarithmic));
 
-            let params = vec![10, 30, 50, 100, 500, 1000, 10000, 50000, 100000, 500000];
+            let params = vec![
+                8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096, 8192, 16000, 32000, 64000,
+            ];
             for p in params.iter() {
                 group.bench_with_input(BenchmarkId::new("std", p), p, |b, n| {
                     let mut vec = None;
