@@ -3,7 +3,6 @@ use rand::{thread_rng, Rng};
 use std::iter::repeat;
 use std::num::Wrapping;
 use std::sync::Arc;
-use std::thread;
 
 use rayon::iter::ParallelBridge;
 use rayon::prelude::*;

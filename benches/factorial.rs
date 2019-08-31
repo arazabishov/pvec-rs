@@ -3,10 +3,7 @@ use criterion::*;
 use num::{BigUint, One};
 use pvec::core::RrbVec;
 use rayon::prelude::*;
-use rayon::range::Iter;
 use std::ops::Mul;
-
-const FACTORIAL_N: u32 = 9999;
 
 /// Compute the Factorial using a plain iterator.
 fn factorial(n: u32) -> BigUint {

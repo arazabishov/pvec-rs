@@ -143,8 +143,6 @@ mod rrbvec {
 }
 
 fn euclid_serial(criterion: &mut Criterion) {
-    use pvec::core::iter::RrbVecParIter;
-
     let mut group = criterion.benchmark_group("euclid_serial");
     group.bench_function("std", |b| {
         let count = stdvec::euclid();
