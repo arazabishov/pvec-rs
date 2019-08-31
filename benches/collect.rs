@@ -147,7 +147,7 @@ mod rrbvec {
 macro_rules! make_bench {
     ($generate:ident, $postfix:literal) => {
         pub fn with_collect(criterion: &mut Criterion) {
-            let mut group = criterion.benchmark_group("with_collect".to_owned() + $postfix);
+            let mut group = criterion.benchmark_group("with_collect_".to_owned() + $postfix);
             group.plot_config(PlotConfiguration::default().summary_scale(AxisScale::Logarithmic));
 
             let params = vec![10, 30, 50, 100, 500, 1000, 10000, 50000, 100000, 500000];
@@ -169,7 +169,7 @@ macro_rules! make_bench {
 
         pub fn with_linked_list_collect_vec(criterion: &mut Criterion) {
             let mut group =
-                criterion.benchmark_group("with_linked_list_collect_vec".to_owned() + $postfix);
+                criterion.benchmark_group("with_linked_list_collect_vec_".to_owned() + $postfix);
             group.plot_config(PlotConfiguration::default().summary_scale(AxisScale::Logarithmic));
 
             let params = vec![10, 30, 50, 100, 500, 1000, 10000, 50000, 100000, 500000];
@@ -194,7 +194,7 @@ macro_rules! make_bench {
         }
 
         pub fn with_fold(criterion: &mut Criterion) {
-            let mut group = criterion.benchmark_group("with_fold".to_owned() + $postfix);
+            let mut group = criterion.benchmark_group("with_fold_".to_owned() + $postfix);
             group.plot_config(PlotConfiguration::default().summary_scale(AxisScale::Logarithmic));
 
             let params = vec![10, 30, 50, 100, 500, 1000, 10000, 50000, 100000, 500000];
