@@ -4,14 +4,13 @@ use std::iter::repeat;
 use std::num::Wrapping;
 use std::sync::Arc;
 use std::thread;
-use time;
 
 use rayon::iter::ParallelBridge;
 use rayon::prelude::*;
 
 use criterion::*;
 
-mod board {
+mod stdvec {
     use super::*;
     #[derive(PartialEq, Eq, Clone, Debug)]
     pub struct Board {
@@ -167,7 +166,7 @@ mod board {
     }
 }
 
-mod boardrrbvec {
+mod rrbvec {
     use super::*;
     use pvec::core::RrbVec;
 
@@ -357,64 +356,74 @@ mod boardrrbvec {
 }
 
 fn generations(criterion: &mut Criterion) {
-    criterion.bench(
-        "generations",
-        ParameterizedBenchmark::new(
-            "std",
-            |b, n| {
-                b.iter(|| board::generations(board::Board::new(200, 200).random(), *n));
-            },
-            vec![10, 50, 100],
-        )
-        .with_function("rrbvec", |b, n| {
-            b.iter(|| boardrrbvec::generations(boardrrbvec::Board::new(200, 200).random(), *n));
-        })
-        .plot_config(PlotConfiguration::default().summary_scale(AxisScale::Logarithmic)),
-    );
+    macro_rules! make_bench {
+        ($group:ident, $p:ident, $module:ident, $name:literal) => {
+            $group.bench_with_input(BenchmarkId::new($name, $p), $p, |b, n| {
+                b.iter(|| $module::generations($module::Board::new(200, 200).random(), *n));
+            });
+        };
+    }
+
+    let mut group = criterion.benchmark_group("generations");
+    group.plot_config(PlotConfiguration::default().summary_scale(AxisScale::Logarithmic));
+
+    let params = vec![10, 50, 100];
+    for p in params.iter() {
+        make_bench!(group, p, stdvec, "std");
+        make_bench!(group, p, rrbvec, "rrbvec");
+    }
+
+    group.finish();
 }
 
 fn parallel_generations(criterion: &mut Criterion) {
-    criterion.bench(
-        "parallel_generations",
-        ParameterizedBenchmark::new(
-            "std",
-            |b, n| {
-                b.iter(|| board::parallel_generations(board::Board::new(200, 200).random(), *n));
-            },
-            vec![10, 50, 100],
-        )
-        .with_function("rrbvec", |b, n| {
-            b.iter(|| {
-                boardrrbvec::parallel_generations(boardrrbvec::Board::new(200, 200).random(), *n)
+    macro_rules! make_bench {
+        ($group:ident, $p:ident, $module:ident, $name:literal) => {
+            $group.bench_with_input(BenchmarkId::new($name, $p), $p, |b, n| {
+                b.iter(|| {
+                    $module::parallel_generations($module::Board::new(200, 200).random(), *n)
+                });
             });
-        })
-        .plot_config(PlotConfiguration::default().summary_scale(AxisScale::Logarithmic)),
-    );
+        };
+    }
+
+    let mut group = criterion.benchmark_group("parallel_generations");
+    group.plot_config(PlotConfiguration::default().summary_scale(AxisScale::Logarithmic));
+
+    let params = vec![10, 50, 100];
+    for p in params.iter() {
+        make_bench!(group, p, stdvec, "std");
+        make_bench!(group, p, rrbvec, "rrbvec");
+    }
+
+    group.finish();
 }
 
 fn as_parallel_generations(criterion: &mut Criterion) {
-    criterion.bench(
-        "parallel_generations",
-        ParameterizedBenchmark::new(
-            "std",
-            |bencher, n| {
-                bencher.iter(|| {
-                    board::par_bridge_generations(board::Board::new(200, 200).random(), *n)
+    macro_rules! make_bench {
+        ($group:ident, $p:ident, $module:ident, $name:literal) => {
+            $group.bench_with_input(BenchmarkId::new($name, $p), $p, |b, n| {
+                b.iter(|| {
+                    $module::par_bridge_generations($module::Board::new(200, 200).random(), *n)
                 });
-            },
-            vec![10, 50, 100],
-        )
-        .with_function("rrbvec", |bencher, n| {
-            bencher.iter(|| {
-                boardrrbvec::par_bridge_generations(boardrrbvec::Board::new(200, 200).random(), *n)
             });
-        })
-        .plot_config(PlotConfiguration::default().summary_scale(AxisScale::Logarithmic)),
-    );
+        };
+    }
+
+    let mut group = criterion.benchmark_group("as_parallel_generations");
+    group.plot_config(PlotConfiguration::default().summary_scale(AxisScale::Logarithmic));
+
+    let params = vec![10, 50, 100];
+    for p in params.iter() {
+        make_bench!(group, p, stdvec, "std");
+        make_bench!(group, p, rrbvec, "rrbvec");
+    }
+
+    group.finish();
 }
 
 criterion_group!(
-    life,
+    benches,
     generations,
     parallel_generations,
     as_parallel_generations
