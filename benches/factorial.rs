@@ -2,6 +2,7 @@ use criterion::*;
 
 use num::{BigUint, One};
 use pvec::core::RrbVec;
+use pvec::PVec;
 use rayon::prelude::*;
 use std::ops::Mul;
 
@@ -44,6 +45,22 @@ fn factorial_par_iter(criterion: &mut Criterion) {
             b.iter_batched(
                 || {
                     let mut vec = RrbVec::new();
+
+                    for i in 1..(*n + 1) {
+                        vec.push(i);
+                    }
+
+                    vec
+                },
+                |data| make_bench!(factorial, data),
+                BatchSize::SmallInput,
+            )
+        });
+        group.bench_with_input(BenchmarkId::new("pvec", p), p, |b, n| {
+            let factorial = factorial(*n);
+            b.iter_batched(
+                || {
+                    let mut vec = PVec::new();
 
                     for i in 1..(*n + 1) {
                         vec.push(i);

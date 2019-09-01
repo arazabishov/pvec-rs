@@ -102,6 +102,59 @@ mod util_rrbvec {
     }
 }
 
+mod util_pvec {
+    use pvec::PVec;
+    use rayon::prelude::*;
+    use std::collections::LinkedList;
+    use std::fmt::Debug;
+
+    /// Do whatever `collect` does by default.
+    pub fn collect<T, PI>(pi: PI) -> PVec<T>
+    where
+        T: Send + Sync + Clone + Debug,
+        PI: ParallelIterator<Item = T> + Send,
+    {
+        pi.collect()
+    }
+
+    /// Collect a linked list of vectors intermediary.
+    pub fn linked_list_collect_vec<T, PI>(pi: PI) -> PVec<T>
+    where
+        T: Send + Sync + Clone + Debug,
+        PI: ParallelIterator<Item = T> + Send,
+    {
+        let list: LinkedList<PVec<_>> = pi
+            .fold(
+                || PVec::new(),
+                |mut vec, elem| {
+                    vec.push(elem);
+                    vec
+                },
+            )
+            .collect();
+        list.into_iter().fold(PVec::new(), |mut vec, mut sub| {
+            vec.append(&mut sub);
+            vec
+        })
+    }
+
+    /// Fold into vectors and then reduce them together.
+    pub fn fold<T, PI>(pi: PI) -> PVec<T>
+    where
+        T: Send + Sync + Clone + Debug,
+        PI: ParallelIterator<Item = T> + Send,
+    {
+        pi.fold(PVec::new, |mut vec, x| {
+            vec.push(x);
+            vec
+        })
+        .reduce(PVec::new, |mut vec1, mut vec2| {
+            vec1.append(&mut vec2);
+            vec1
+        })
+    }
+}
+
 mod stdvec {
     use rayon::prelude::*;
     pub fn generate_indexed_iter(n: u32) -> impl IndexedParallelIterator<Item = u32> {
@@ -144,6 +197,33 @@ mod rrbvec {
     }
 }
 
+mod pvec {
+    use pvec::PVec;
+    use rayon::prelude::*;
+
+    pub fn generate_indexed_iter(n: u32) -> impl IndexedParallelIterator<Item = u32> {
+        let mut pvec = PVec::new();
+        for i in 0_u32..n {
+            pvec.push(i);
+        }
+        pvec.into_par_iter()
+    }
+
+    pub fn generate_filter(n: u32) -> impl ParallelIterator<Item = u32> {
+        let mut pvec = PVec::new();
+        for i in 0_u32..n {
+            pvec.push(i);
+        }
+        pvec.into_par_iter().filter(|_| true)
+    }
+
+    pub fn check(v: &PVec<u32>, n: u32) {
+        for i in 0..n {
+            assert_eq!(*v.get(i as usize).unwrap(), i);
+        }
+    }
+}
+
 macro_rules! make_bench {
     ($generate:ident, $postfix:literal) => {
         pub fn with_collect(criterion: &mut Criterion) {
@@ -163,6 +243,11 @@ macro_rules! make_bench {
                     let mut vec = None;
                     b.iter(|| vec = Some(util_rrbvec::collect(rrbvec::$generate(*n))));
                     rrbvec::check(&vec.unwrap(), *n);
+                });
+                group.bench_with_input(BenchmarkId::new("pvec", p), p, |b, n| {
+                    let mut vec = None;
+                    b.iter(|| vec = Some(util_pvec::collect(pvec::$generate(*n))));
+                    pvec::check(&vec.unwrap(), *n);
                 });
             }
 
@@ -192,6 +277,11 @@ macro_rules! make_bench {
                     });
                     rrbvec::check(&vec.unwrap(), *n);
                 });
+                group.bench_with_input(BenchmarkId::new("pvec", p), p, |b, n| {
+                    let mut vec = None;
+                    b.iter(|| vec = Some(util_pvec::linked_list_collect_vec(pvec::$generate(*n))));
+                    pvec::check(&vec.unwrap(), *n);
+                });
             }
 
             group.finish();
@@ -214,6 +304,11 @@ macro_rules! make_bench {
                     let mut vec = None;
                     b.iter(|| vec = Some(util_rrbvec::fold(rrbvec::$generate(*n))));
                     rrbvec::check(&vec.unwrap(), *n);
+                });
+                group.bench_with_input(BenchmarkId::new("pvec", p), p, |b, n| {
+                    let mut vec = None;
+                    b.iter(|| vec = Some(util_pvec::fold(pvec::$generate(*n))));
+                    pvec::check(&vec.unwrap(), *n);
                 });
             }
 
@@ -249,6 +344,7 @@ mod vec_i {
         for p in params.iter() {
             bench!(group, p, stdvec, "std");
             bench!(group, p, rrbvec, "rrbvec");
+            bench!(group, p, pvec, "pvec");
         }
 
         group.finish();
@@ -261,7 +357,6 @@ mod vec_i {
 mod vec_i_filtered {
     use super::*;
 
-    // ToDo: prefix benchmarks to make them unique
     make_bench!(generate_filter, "filtered");
 }
 

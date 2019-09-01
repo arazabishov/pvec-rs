@@ -23,11 +23,6 @@ pub struct RrbVecIter<T> {
     len: usize,
 }
 
-#[derive(Debug, Clone)]
-pub struct RrbVecParIter<T: Send + Sync + Debug + Clone> {
-    vec: RrbVec<T>,
-}
-
 impl<T: Clone + Debug> Iterator for RrbVecIter<T> {
     type Item = T;
 
@@ -148,6 +143,12 @@ impl<T: Clone + Debug> IntoIterator for RrbVec<T> {
             len,
         }
     }
+}
+
+#[derive(Debug, Clone)]
+#[cfg(all(feature = "arc", feature = "rayon-iter"))]
+pub struct RrbVecParIter<T: Send + Sync + Debug + Clone> {
+    vec: RrbVec<T>,
 }
 
 #[cfg(all(feature = "arc", feature = "rayon-iter"))]

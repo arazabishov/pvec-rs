@@ -3,10 +3,13 @@
 pub extern crate pvec_core as core;
 extern crate pvec_utils as utils;
 
+#[cfg(all(feature = "arc", feature = "rayon-iter"))]
+extern crate rayon;
+
 use std::fmt::Debug;
 use std::ops;
 
-mod iter;
+pub mod iter;
 
 use core::RrbVec;
 use utils::sharedptr::SharedPtr;
