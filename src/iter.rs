@@ -14,6 +14,14 @@ use core::RrbVec;
 use std::vec::IntoIter as VecIter;
 use utils::sharedptr::Take;
 
+#[cfg(all(feature = "arc", feature = "rayon-iter"))]
+use rayon::iter::plumbing::{bridge, Consumer, Producer, ProducerCallback, UnindexedConsumer};
+
+#[cfg(all(feature = "arc", feature = "rayon-iter"))]
+use rayon::prelude::{
+    FromParallelIterator, IndexedParallelIterator, IntoParallelIterator, ParallelIterator,
+};
+
 #[derive(Debug, Clone)]
 pub struct PVecIter<T> {
     iter_vec: Option<VecIter<T>>,
@@ -60,6 +68,18 @@ impl<T: Clone + Debug> Iterator for PVecIter<T> {
     }
 }
 
+impl<T: Clone + Debug> ExactSizeIterator for PVecIter<T> {
+    fn len(&self) -> usize {
+        if let Some(iter_vec) = self.iter_vec.as_ref() {
+            iter_vec.len()
+        } else if let Some(iter_rrbvec) = self.iter_rrbvec.as_ref() {
+            iter_rrbvec.len()
+        } else {
+            0
+        }
+    }
+}
+
 impl<T: Clone + Debug> DoubleEndedIterator for PVecIter<T> {
     fn next_back(&mut self) -> Option<Self::Item> {
         if let Some(iter_vec) = self.iter_vec.as_mut() {
@@ -81,6 +101,105 @@ impl<T: Clone + Debug> IntoIterator for PVec<T> {
             Flavor::Standard(vec_arc) => PVecIter::from_vec(vec_arc.take()),
             Flavor::Persistent(pvec) => PVecIter::from_rrbvec(pvec),
         }
+    }
+}
+
+#[derive(Debug, Clone)]
+#[cfg(all(feature = "arc", feature = "rayon-iter"))]
+pub struct PVecParIter<T: Send + Sync + Debug + Clone> {
+    vec: PVec<T>,
+}
+
+#[cfg(all(feature = "arc", feature = "rayon-iter"))]
+impl<T: Send + Sync + Debug + Clone> IntoParallelIterator for PVec<T> {
+    type Item = T;
+    type Iter = PVecParIter<T>;
+
+    fn into_par_iter(self) -> Self::Iter {
+        PVecParIter { vec: self }
+    }
+}
+
+#[cfg(all(feature = "arc", feature = "rayon-iter"))]
+impl<T: Send + Sync + Debug + Clone> ParallelIterator for PVecParIter<T> {
+    type Item = T;
+
+    fn drive_unindexed<C>(self, consumer: C) -> C::Result
+    where
+        C: UnindexedConsumer<Self::Item>,
+    {
+        bridge(self, consumer)
+    }
+
+    fn opt_len(&self) -> Option<usize> {
+        Some(self.vec.len())
+    }
+}
+
+#[cfg(all(feature = "arc", feature = "rayon-iter"))]
+impl<T: Send + Sync + Debug + Clone> IndexedParallelIterator for PVecParIter<T> {
+    fn drive<C>(self, consumer: C) -> C::Result
+    where
+        C: Consumer<Self::Item>,
+    {
+        bridge(self, consumer)
+    }
+
+    fn len(&self) -> usize {
+        self.vec.len()
+    }
+
+    fn with_producer<CB>(self, callback: CB) -> CB::Output
+    where
+        CB: ProducerCallback<Self::Item>,
+    {
+        callback.callback(VecProducer { vec: self.vec })
+    }
+}
+
+#[cfg(all(feature = "arc", feature = "rayon-iter"))]
+struct VecProducer<T: Send + Sync + Debug + Clone> {
+    vec: PVec<T>,
+}
+
+#[cfg(all(feature = "arc", feature = "rayon-iter"))]
+impl<T: Send + Sync + Debug + Clone> Producer for VecProducer<T> {
+    type Item = T;
+    type IntoIter = PVecIter<T>;
+
+    fn into_iter(mut self) -> Self::IntoIter {
+        std::mem::replace(&mut self.vec, PVec::new()).into_iter()
+    }
+
+    fn split_at(mut self, index: usize) -> (Self, Self) {
+        let mut vec = std::mem::replace(&mut self.vec, PVec::new());
+
+        let right = vec.split_off(index);
+        let left = vec;
+
+        (VecProducer { vec: left }, VecProducer { vec: right })
+    }
+}
+
+#[cfg(all(feature = "arc", feature = "rayon-iter"))]
+impl<T: Clone + Debug + Send + Sync> FromParallelIterator<T> for PVec<T>
+where
+    T: Send,
+{
+    fn from_par_iter<I>(par_iter: I) -> Self
+    where
+        I: IntoParallelIterator<Item = T>,
+    {
+        par_iter
+            .into_par_iter()
+            .fold(PVec::new, |mut vec, elem| {
+                vec.push(elem);
+                vec
+            })
+            .reduce(PVec::new, |mut list1, mut list2| {
+                list1.append(&mut list2);
+                list1
+            })
     }
 }
 
