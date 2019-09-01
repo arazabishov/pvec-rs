@@ -62,7 +62,7 @@ fn push_clone(criterion: &mut Criterion) {
     let mut group = criterion.benchmark_group("push_clone");
     group.plot_config(PlotConfiguration::default().summary_scale(AxisScale::Logarithmic));
 
-    let params = vec![100, 500, 1000, 5000, 10000, 20000];
+    let params = vec![10, 20, 50, 100, 500, 1000, 5000, 10000, 20000];
     for p in params.iter() {
         make_bench!(group, p, Vec, push, "std");
         make_bench!(group, p, DVec, push, "dvec");
