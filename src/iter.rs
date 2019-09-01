@@ -9,10 +9,10 @@ pub const BRANCH_FACTOR: usize = 32;
 #[cfg(all(test, feature = "small_branch"))]
 pub const BRANCH_FACTOR: usize = 4;
 
-use pvec_core::iter::RrbVecIter;
-use pvec_core::RrbVec;
-use pvec_utils::sharedptr::Take;
+use core::iter::RrbVecIter;
+use core::RrbVec;
 use std::vec::IntoIter as VecIter;
+use utils::sharedptr::Take;
 
 #[derive(Debug, Clone)]
 pub struct PVecIter<T> {

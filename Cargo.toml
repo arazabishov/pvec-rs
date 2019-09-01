@@ -9,19 +9,21 @@ authors = ["Araz Abishov <araz@abishov.com>"]
 [dependencies]
 pvec-core = { version = "0.1.0", path = "pvec-core" }
 pvec-utils = { version = "0.1.0", path = "pvec-utils" }
+rayon = { version = "1.1.0", optional = true }
 
 [dev-dependencies]
-criterion = "0.2.10"
-rand = "0.3.14"
-dogged = "0.2.0"
 im = { git = "https://github.com/bodil/im-rs" }
+criterion = "0.3"
+dogged = "0.2.0"
+num = "0.2.0"
+rand = "0.6"
+rand_xorshift = "0.1"
 
 [features]
-default = []
+serde-serializer = ["pvec-core/serde-serializer"]
+rayon-iter = ["pvec-core/rayon-iter", "rayon"]
+arc = ["pvec-core/arc", "pvec-utils/arc",]
 small_branch = []
-arc = []
-rayon-iter = []
-serde-serializer = []
 
 [[bench]]
 name = "lib"

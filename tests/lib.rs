@@ -1,6 +1,6 @@
 extern crate pvec;
 
-use pvec::RrbVec;
+use pvec::core::RrbVec;
 
 #[cfg(not(feature = "small_branch"))]
 const BRANCH_FACTOR: usize = 32;

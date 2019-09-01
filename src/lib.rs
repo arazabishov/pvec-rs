@@ -1,15 +1,15 @@
 #![feature(nll)]
 
-extern crate pvec_core;
-extern crate pvec_utils;
+pub extern crate pvec_core as core;
+extern crate pvec_utils as utils;
 
 use std::fmt::Debug;
 use std::ops;
 
 mod iter;
 
-pub use pvec_core::RrbVec;
-use pvec_utils::sharedptr::SharedPtr;
+use core::RrbVec;
+use utils::sharedptr::SharedPtr;
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 enum Flavor<T> {
