@@ -292,22 +292,34 @@ macro_rules! make_bench {
             group.plot_config(PlotConfiguration::default().summary_scale(AxisScale::Logarithmic));
 
             let params = vec![
-                8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096, 8192, 16000, 32000, 64000,
+                8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096, 8192, 16000, 32000,
             ];
             for p in params.iter() {
                 group.bench_with_input(BenchmarkId::new("std", p), p, |b, n| {
                     let mut vec = None;
-                    b.iter(|| vec = Some(util_stdvec::fold(stdvec::$generate(*n))));
+                    b.iter_batched(
+                        || stdvec::generate_indexed_iter(*n).with_min_len(2048),
+                        |data| vec = Some(util_stdvec::fold(data)),
+                        BatchSize::SmallInput,
+                    );
                     stdvec::check(&vec.unwrap(), *n);
                 });
                 group.bench_with_input(BenchmarkId::new("rrbvec", p), p, |b, n| {
                     let mut vec = None;
-                    b.iter(|| vec = Some(util_rrbvec::fold(rrbvec::$generate(*n))));
+                    b.iter_batched(
+                        || rrbvec::generate_indexed_iter(*n).with_min_len(2048),
+                        |data| vec = Some(util_rrbvec::fold(data)),
+                        BatchSize::SmallInput,
+                    );
                     rrbvec::check(&vec.unwrap(), *n);
                 });
                 group.bench_with_input(BenchmarkId::new("pvec", p), p, |b, n| {
                     let mut vec = None;
-                    b.iter(|| vec = Some(util_pvec::fold(pvec::$generate(*n))));
+                    b.iter_batched(
+                        || pvec::generate_indexed_iter(*n).with_min_len(2048),
+                        |data| vec = Some(util_pvec::fold(data)),
+                        BatchSize::SmallInput,
+                    );
                     pvec::check(&vec.unwrap(), *n);
                 });
             }
@@ -350,7 +362,6 @@ mod vec_i {
         group.finish();
     }
 
-    // ToDo: prefix benchmarks to make them unique
     make_bench!(generate_indexed_iter, "iter");
 }
 
