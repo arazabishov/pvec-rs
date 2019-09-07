@@ -1,7 +1,6 @@
 #![cfg_attr(test, feature(test))]
 
 extern crate criterion;
-extern crate dogged;
 extern crate im;
 extern crate num;
 extern crate pvec;
