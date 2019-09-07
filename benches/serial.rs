@@ -1,5 +1,4 @@
 use criterion::*;
-use dogged::DVec;
 use im::Vector as IVec;
 use rand::{RngCore, SeedableRng};
 use rand_xorshift::XorShiftRng;
@@ -31,7 +30,6 @@ fn push(criterion: &mut Criterion) {
 
     for p in params.iter() {
         make_bench!(group, p, Vec, push, "std");
-        make_bench!(group, p, DVec, push, "dvec");
         make_bench!(group, p, IVec, push_back, "im");
         make_bench!(group, p, RrbVec, push, "rrbvec");
         make_bench!(group, p, PVec, push, "pvec");
@@ -65,7 +63,6 @@ fn push_clone(criterion: &mut Criterion) {
     let params = vec![10, 20, 50, 100, 500, 1000, 5000, 10000, 20000];
     for p in params.iter() {
         make_bench!(group, p, Vec, push, "std");
-        make_bench!(group, p, DVec, push, "dvec");
         make_bench!(group, p, IVec, push_back, "im");
         make_bench!(group, p, RrbVec, push, "rrbvec");
         make_bench!(group, p, PVec, push, "pvec");
@@ -191,7 +188,6 @@ fn index_sequentially(criterion: &mut Criterion) {
     ];
     for p in params.iter() {
         make_bench!(group, p, Vec, push, "std");
-        make_bench!(group, p, DVec, push, "dvec");
         make_bench!(group, p, IVec, push_back, "im-rs");
         make_bench!(group, p, RrbVec, push, "rrbvec");
         make_bench!(group, p, PVec, push, "pvec");
@@ -238,7 +234,6 @@ fn index_randomly(criterion: &mut Criterion) {
 
     for p in params.iter() {
         make_bench!(group, p, Vec, push, "std");
-        make_bench!(group, p, DVec, push, "dvec");
         make_bench!(group, p, IVec, push_back, "im-rs");
         make_bench!(group, p, RrbVec, push, "rrbvec");
         make_bench!(group, p, PVec, push, "pvec");
