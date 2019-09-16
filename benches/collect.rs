@@ -287,8 +287,11 @@ macro_rules! make_bench {
             group.finish();
         }
 
-        pub fn with_fold(criterion: &mut Criterion) {
-            let mut group = criterion.benchmark_group("with_fold_".to_owned() + $postfix);
+        fn with_fold(criterion: &mut Criterion, num_threads: usize) {
+            let mut group = criterion.benchmark_group(format!(
+                "with_fold_{}_with_thread_num_{}",
+                $postfix, num_threads
+            ));
             group.plot_config(PlotConfiguration::default().summary_scale(AxisScale::Logarithmic));
 
             let params = vec![
@@ -296,35 +299,84 @@ macro_rules! make_bench {
             ];
             for p in params.iter() {
                 group.bench_with_input(BenchmarkId::new("std", p), p, |b, n| {
-                    let mut vec = None;
-                    b.iter_batched(
-                        || stdvec::generate_indexed_iter(*n).with_min_len(2048),
-                        |data| vec = Some(util_stdvec::fold(data)),
-                        BatchSize::SmallInput,
-                    );
-                    stdvec::check(&vec.unwrap(), *n);
+                    let pool = rayon::ThreadPoolBuilder::new()
+                        .num_threads(num_threads)
+                        .build()
+                        .unwrap();
+
+                    pool.install(|| {
+                        let mut vec = None;
+                        b.iter_batched(
+                            || stdvec::generate_indexed_iter(*n).with_min_len(2048),
+                            |data| vec = Some(util_stdvec::fold(data)),
+                            BatchSize::SmallInput,
+                        );
+                        stdvec::check(&vec.unwrap(), *n);
+                    });
                 });
                 group.bench_with_input(BenchmarkId::new("rrbvec", p), p, |b, n| {
-                    let mut vec = None;
-                    b.iter_batched(
-                        || rrbvec::generate_indexed_iter(*n).with_min_len(2048),
-                        |data| vec = Some(util_rrbvec::fold(data)),
-                        BatchSize::SmallInput,
-                    );
-                    rrbvec::check(&vec.unwrap(), *n);
+                    let pool = rayon::ThreadPoolBuilder::new()
+                        .num_threads(num_threads)
+                        .build()
+                        .unwrap();
+
+                    pool.install(|| {
+                        let mut vec = None;
+                        b.iter_batched(
+                            || rrbvec::generate_indexed_iter(*n).with_min_len(2048),
+                            |data| vec = Some(util_rrbvec::fold(data)),
+                            BatchSize::SmallInput,
+                        );
+                        rrbvec::check(&vec.unwrap(), *n);
+                    });
                 });
                 group.bench_with_input(BenchmarkId::new("pvec", p), p, |b, n| {
-                    let mut vec = None;
-                    b.iter_batched(
-                        || pvec::generate_indexed_iter(*n).with_min_len(2048),
-                        |data| vec = Some(util_pvec::fold(data)),
-                        BatchSize::SmallInput,
-                    );
-                    pvec::check(&vec.unwrap(), *n);
+                    let pool = rayon::ThreadPoolBuilder::new()
+                        .num_threads(num_threads)
+                        .build()
+                        .unwrap();
+
+                    pool.install(|| {
+                        let mut vec = None;
+                        b.iter_batched(
+                            || pvec::generate_indexed_iter(*n).with_min_len(2048),
+                            |data| vec = Some(util_pvec::fold(data)),
+                            BatchSize::SmallInput,
+                        );
+                        pvec::check(&vec.unwrap(), *n);
+                    });
                 });
             }
 
             group.finish();
+        }
+
+        pub fn with_fold_1(criterion: &mut Criterion) {
+            with_fold(criterion, 1);
+        }
+
+        pub fn with_fold_2(criterion: &mut Criterion) {
+            with_fold(criterion, 2);
+        }
+
+        pub fn with_fold_4(criterion: &mut Criterion) {
+            with_fold(criterion, 4);
+        }
+
+        pub fn with_fold_8(criterion: &mut Criterion) {
+            with_fold(criterion, 8);
+        }
+
+        pub fn with_fold_16(criterion: &mut Criterion) {
+            with_fold(criterion, 16);
+        }
+
+        pub fn with_fold_32(criterion: &mut Criterion) {
+            with_fold(criterion, 32);
+        }
+
+        pub fn with_fold_64(criterion: &mut Criterion) {
+            with_fold(criterion, 64);
         }
     };
 }
@@ -376,8 +428,20 @@ criterion_group!(
     vec_i::with_collect_into_vec,
     vec_i::with_collect,
     vec_i::with_linked_list_collect_vec,
-    vec_i::with_fold,
+    vec_i::with_fold_1,
+    vec_i::with_fold_2,
+    vec_i::with_fold_4,
+    vec_i::with_fold_8,
+    vec_i::with_fold_16,
+    vec_i::with_fold_32,
+    vec_i::with_fold_64,
     vec_i_filtered::with_collect,
     vec_i_filtered::with_linked_list_collect_vec,
-    vec_i_filtered::with_fold,
+    vec_i_filtered::with_fold_1,
+    vec_i_filtered::with_fold_2,
+    vec_i_filtered::with_fold_4,
+    vec_i_filtered::with_fold_8,
+    vec_i_filtered::with_fold_16,
+    vec_i_filtered::with_fold_32,
+    vec_i_filtered::with_fold_64,
 );
