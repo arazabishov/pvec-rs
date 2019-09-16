@@ -154,6 +154,85 @@ fn push_clone(criterion: &mut Criterion) {
     group.finish();
 }
 
+fn unbalanced_push_clone(criterion: &mut Criterion) {
+    macro_rules! make_bench {
+        ($group:ident, $p:ident, $vec:ident, $op:ident, $name:literal, $append:expr) => {
+            $group.bench_with_input(BenchmarkId::new($name, $p), $p, |b, n| {
+                b.iter_batched(
+                    || {
+                        let mut vec = $vec::new();
+
+                        for i in 0..128 {
+                            let mut another_vec = $vec::new();
+
+                            for j in 0..i {
+                                another_vec.$op(j);
+                            }
+
+                            $append(&mut vec, another_vec);
+                        }
+
+                        vec
+                    },
+                    |data| {
+                        let mut vec = data;
+                        let mut vec_one = vec.clone();
+
+                        for i in 0..*n {
+                            vec.$op(i);
+                            vec_one = vec.clone();
+                        }
+
+                        drop(vec_one);
+                    },
+                    BatchSize::SmallInput,
+                )
+            });
+        };
+    }
+
+    let mut group = criterion.benchmark_group("unbalanced_push_clone");
+    group.plot_config(PlotConfiguration::default().summary_scale(AxisScale::Logarithmic));
+
+    let params = vec![10, 20, 50, 100, 500, 1000, 5000, 10000, 20000];
+    for p in params.iter() {
+        make_bench!(
+            group,
+            p,
+            Vec,
+            push,
+            "std",
+            |vec: &mut Vec<usize>, mut data| { vec.append(&mut data) }
+        );
+        make_bench!(
+            group,
+            p,
+            IVec,
+            push_back,
+            "im",
+            |vec: &mut IVec<usize>, data| { vec.append(data) }
+        );
+        make_bench!(
+            group,
+            p,
+            RrbVec,
+            push,
+            "rrbvec",
+            |vec: &mut RrbVec<usize>, mut data| { vec.append(&mut data) }
+        );
+        make_bench!(
+            group,
+            p,
+            PVec,
+            push,
+            "pvec",
+            |vec: &mut PVec<usize>, mut data| { vec.append(&mut data) }
+        );
+    }
+
+    group.finish();
+}
+
 fn pop(criterion: &mut Criterion) {
     macro_rules! make_bench {
         ($group:ident, $p:ident, $vec:ident, $push:ident, $pop:ident, $name:literal) => {
@@ -727,6 +806,7 @@ criterion_group!(
     push,
     unbalanced_push,
     push_clone,
+    unbalanced_push_clone,
     pop,
     pop_clone,
     index_sequentially,
