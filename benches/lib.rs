@@ -1,7 +1,12 @@
 #![cfg_attr(test, feature(test))]
 
 extern crate criterion;
+
+#[cfg(feature = "arc")]
 extern crate im;
+
+#[cfg(not(feature = "arc"))]
+extern crate im_rc;
 extern crate num;
 extern crate pvec;
 extern crate rand;
@@ -15,16 +20,16 @@ use criterion::*;
 
 mod serial;
 
-#[cfg(all(test, feature = "arc", feature = "rayon-iter"))]
+#[cfg(all(feature = "arc", feature = "rayon-iter"))]
 mod life;
 
-#[cfg(all(test, feature = "arc", feature = "rayon-iter"))]
+#[cfg(all(feature = "arc", feature = "rayon-iter"))]
 mod pythagoras;
 
-#[cfg(all(test, feature = "arc", feature = "rayon-iter"))]
+#[cfg(all(feature = "arc", feature = "rayon-iter"))]
 mod factorial;
 
-#[cfg(all(test, feature = "arc", feature = "rayon-iter"))]
+#[cfg(all(feature = "arc", feature = "rayon-iter"))]
 mod collect;
 
 #[cfg(all(feature = "arc", feature = "rayon-iter"))]
