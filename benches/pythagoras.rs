@@ -67,8 +67,8 @@ mod stdvec {
 
 mod rrbvec {
     use super::*;
-    use pvec::core::iter::RrbVecParIter;
-    use pvec::core::RrbVec;
+    use crate::pvec::core::iter::RrbVecParIter;
+    use crate::pvec::core::RrbVec;
 
     /// Same as par_euclid, without using rayon.
     pub fn euclid() -> u32 {
@@ -144,8 +144,8 @@ mod rrbvec {
 
 mod pvec {
     use super::*;
-    use pvec::iter::PVecParIter;
-    use pvec::PVec;
+    use crate::pvec::iter::PVecParIter;
+    use crate::pvec::PVec;
 
     /// Same as par_euclid, without using rayon.
     pub fn euclid() -> u32 {
@@ -237,8 +237,8 @@ fn euclid_serial(criterion: &mut Criterion) {
 }
 
 fn euclid_faux_serial(criterion: &mut Criterion) {
-    use pvec::core::iter::RrbVecParIter;
-    use pvec::iter::PVecParIter;
+    use crate::pvec::core::iter::RrbVecParIter;
+    use crate::pvec::iter::PVecParIter;
 
     let mut group = criterion.benchmark_group("euclid_faux_serial");
     group.bench_function("std", |b| {
@@ -294,8 +294,8 @@ fn euclid_parallel_one(criterion: &mut Criterion) {
 }
 
 fn euclid_parallel_outer(criterion: &mut Criterion) {
-    use pvec::core::iter::RrbVecParIter;
-    use pvec::iter::PVecParIter;
+    use crate::pvec::core::iter::RrbVecParIter;
+    use crate::pvec::iter::PVecParIter;
 
     let mut group = criterion.benchmark_group("euclid_parallel_outer");
     group.bench_function("std", |b| {
@@ -317,8 +317,8 @@ fn euclid_parallel_outer(criterion: &mut Criterion) {
 }
 
 fn euclid_parallel_full(criterion: &mut Criterion) {
-    use pvec::core::iter::RrbVecParIter;
-    use pvec::iter::PVecParIter;
+    use crate::pvec::core::iter::RrbVecParIter;
+    use crate::pvec::iter::PVecParIter;
 
     let mut group = criterion.benchmark_group("euclid_parallel_full");
     group.bench_function("std", |b| {

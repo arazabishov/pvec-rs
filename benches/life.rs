@@ -167,7 +167,7 @@ mod stdvec {
 
 mod rrbvec {
     use super::*;
-    use pvec::core::RrbVec;
+    use crate::pvec::core::RrbVec;
 
     #[derive(PartialEq, Eq, Clone, Debug)]
     pub struct Board {
@@ -356,7 +356,7 @@ mod rrbvec {
 
 mod pvec {
     use super::*;
-    use pvec::PVec;
+    use crate::pvec::PVec;
 
     #[derive(PartialEq, Eq, Clone, Debug)]
     pub struct Board {
