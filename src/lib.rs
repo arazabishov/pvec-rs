@@ -11,8 +11,8 @@ use std::ops;
 
 pub mod iter;
 
-use core::RrbVec;
-use utils::sharedptr::SharedPtr;
+use crate::core::RrbVec;
+use crate::utils::sharedptr::SharedPtr;
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 enum Flavor<T> {

@@ -9,10 +9,10 @@ pub const BRANCH_FACTOR: usize = 32;
 #[cfg(all(test, feature = "small_branch"))]
 pub const BRANCH_FACTOR: usize = 4;
 
-use core::iter::RrbVecIter;
-use core::RrbVec;
+use crate::core::iter::RrbVecIter;
+use crate::core::RrbVec;
 use std::vec::IntoIter as VecIter;
-use utils::sharedptr::Take;
+use crate::utils::sharedptr::Take;
 
 #[cfg(all(feature = "arc", feature = "rayon-iter"))]
 use rayon::iter::plumbing::{bridge, Consumer, Producer, ProducerCallback, UnindexedConsumer};
