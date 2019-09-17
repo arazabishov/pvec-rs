@@ -5,6 +5,8 @@ members = ["pvec-core", "pvec-utils"]
 name = "pvec"
 version = "0.2.0"
 authors = ["Araz Abishov <araz@abishov.com>"]
+autobenches = false
+edition = "2018"
 
 [dependencies]
 pvec-core = { version = "0.1.0", path = "pvec-core" }

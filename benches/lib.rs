@@ -1,5 +1,3 @@
-#![cfg_attr(test, feature(test))]
-
 extern crate criterion;
 
 #[cfg(feature = "arc")]
@@ -11,7 +9,6 @@ extern crate num;
 extern crate pvec;
 extern crate rand;
 extern crate rand_xorshift;
-extern crate test as test_crate;
 
 #[cfg(all(feature = "arc", feature = "rayon-iter"))]
 extern crate rayon;
