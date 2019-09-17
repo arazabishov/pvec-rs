@@ -11,8 +11,8 @@ pub const BRANCH_FACTOR: usize = 4;
 
 use crate::core::iter::RrbVecIter;
 use crate::core::RrbVec;
-use std::vec::IntoIter as VecIter;
 use crate::utils::sharedptr::Take;
+use std::vec::IntoIter as VecIter;
 
 #[cfg(all(feature = "arc", feature = "rayon-iter"))]
 use rayon::iter::plumbing::{bridge, Consumer, Producer, ProducerCallback, UnindexedConsumer};

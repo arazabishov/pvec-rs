@@ -1,5 +1,3 @@
-#![feature(nll)]
-
 #[macro_use]
 #[cfg(feature = "serde-serializer")]
 extern crate serde_json;

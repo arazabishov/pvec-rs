@@ -1,5 +1,3 @@
-#![feature(nll)]
-
 pub extern crate pvec_core as core;
 extern crate pvec_utils as utils;
 

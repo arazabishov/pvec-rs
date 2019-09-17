@@ -1,6 +1,6 @@
 use super::RrbVec;
-use rrbtree::iter::RrbTreeIter;
-use rrbtree::BRANCH_FACTOR;
+use crate::rrbtree::iter::RrbTreeIter;
+use crate::rrbtree::BRANCH_FACTOR;
 use std::fmt::Debug;
 
 #[cfg(all(feature = "arc", feature = "rayon-iter"))]
