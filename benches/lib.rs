@@ -15,7 +15,7 @@ extern crate rayon;
 
 use criterion::*;
 
-mod serial;
+mod sequential;
 
 #[cfg(all(feature = "arc", feature = "rayon-iter"))]
 mod life;
@@ -39,4 +39,4 @@ criterion_main!(
 );
 
 #[cfg(not(all(feature = "arc", feature = "rayon-iter")))]
-criterion_main!(serial::benches);
+criterion_main!(sequential::benches);
