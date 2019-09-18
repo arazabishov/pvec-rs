@@ -54,8 +54,7 @@ impl<T: Clone + Debug> PVec<T> {
 
     pub fn get_mut(&mut self, index: usize) -> Option<&mut T> {
         match self.0 {
-            Flavor::Standard(ref mut vec_arc) => {
-                dbg!(SharedPtr::strong_count(vec_arc));
+            Flavor::Standard(ref mut vec_arc) => {                
                 SharedPtr::make_mut(vec_arc).get_mut(index)
             }
             Flavor::Persistent(ref mut pvec) => pvec.get_mut(index),
