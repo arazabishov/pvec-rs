@@ -349,13 +349,43 @@ fn index_sequentially(criterion: &mut Criterion) {
             )
         });
 
-        group.bench_with_input(BenchmarkId::new("im-rs", p), p, |b, n| {
+        group.bench_with_input(BenchmarkId::new("im-rs-rbtree", p), p, |b, n| {
             b.iter_batched(
                 || {
                     let mut vec = IVec::new();
 
                     for i in 0..*n {
                         vec.push_back(i * 2);
+                    }
+
+                    vec
+                },
+                |data| {
+                    for i in 0..*n {
+                        black_box(data[i]);
+                    }
+
+                    data
+                },
+                BatchSize::SmallInput,
+            )
+        });
+
+        group.bench_with_input(BenchmarkId::new("im-rs-rrbtree", p), p, |b, n| {
+            b.iter_batched(
+                || {
+                    let mut vec = IVec::new();
+
+                    for i in 0..*n {
+                        let mut another_vec = IVec::new();
+                        let mut j = 0;
+
+                        while j < i && (vec.len() + another_vec.len() < *n) {
+                            another_vec.push_back(j);
+                            j += 1;
+                        }
+
+                        vec.append(another_vec);
                     }
 
                     vec
@@ -423,13 +453,43 @@ fn index_sequentially(criterion: &mut Criterion) {
             )
         });
 
-        group.bench_with_input(BenchmarkId::new("pvec", p), p, |b, n| {
+        group.bench_with_input(BenchmarkId::new("pvec-rbtree", p), p, |b, n| {
             b.iter_batched(
                 || {
                     let mut vec = PVec::new();
 
                     for i in 0..*n {
                         vec.push(i * 2);
+                    }
+
+                    vec
+                },
+                |data| {
+                    for i in 0..*n {
+                        black_box(data[i]);
+                    }
+
+                    data
+                },
+                BatchSize::SmallInput,
+            )
+        });
+
+        group.bench_with_input(BenchmarkId::new("pvec-rrbtree", p), p, |b, n| {
+            b.iter_batched(
+                || {
+                    let mut vec = PVec::new();
+
+                    for i in 0..*n {
+                        let mut another_vec = PVec::new();
+                        let mut j = 0;
+
+                        while j < i && (vec.len() + another_vec.len() < *n) {
+                            another_vec.push(j);
+                            j += 1;
+                        }
+
+                        vec.append(&mut another_vec);
                     }
 
                     vec
