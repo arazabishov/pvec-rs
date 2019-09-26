@@ -376,7 +376,7 @@ fn index_sequentially(criterion: &mut Criterion) {
                 || {
                     let mut vec = IVec::new();
 
-                    for i in 0..*n {
+                    for i in (n / 2)..*n {
                         let mut another_vec = IVec::new();
                         let mut j = 0;
 
@@ -480,7 +480,7 @@ fn index_sequentially(criterion: &mut Criterion) {
                 || {
                     let mut vec = PVec::new();
 
-                    for i in 0..*n {
+                    for i in (n / 2)..*n {
                         let mut another_vec = PVec::new();
                         let mut j = 0;
 
