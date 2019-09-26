@@ -12,6 +12,8 @@ pub mod iter;
 use crate::core::RrbVec;
 use crate::utils::sharedptr::SharedPtr;
 
+const THRESHOLD: usize = 4096;
+
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 enum Flavor<T> {
     Standard(SharedPtr<Vec<T>>),
@@ -28,7 +30,7 @@ impl<T: Clone + Debug> PVec<T> {
 
     #[cold]
     pub fn push(&mut self, item: T) {
-        if self.is_standard() && self.len() > 2048 {
+        if self.is_standard() && self.len() > THRESHOLD {
             self.upgrade();
         }
 
@@ -102,7 +104,7 @@ impl<T: Clone + Debug> PVec<T> {
         // a(s), b(p) (upgrade a, a append b)
         // a(p), b(p) (a append b)
 
-        if self.len() + that.len() > 2048 {
+        if self.len() + that.len() > THRESHOLD {
             if self.is_standard() {
                 self.upgrade();
             }
