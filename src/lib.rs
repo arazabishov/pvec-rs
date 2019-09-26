@@ -4,6 +4,12 @@ extern crate pvec_utils as utils;
 #[cfg(all(feature = "arc", feature = "rayon-iter"))]
 extern crate rayon;
 
+#[cfg(not(feature = "small_branch"))]
+const BRANCH_FACTOR: usize = 32;
+
+#[cfg(feature = "small_branch")]
+const BRANCH_FACTOR: usize = 4;
+
 use std::fmt::Debug;
 use std::ops;
 
@@ -25,7 +31,8 @@ pub struct PVec<T>(Flavor<T>);
 
 impl<T: Clone + Debug> PVec<T> {
     pub fn new() -> Self {
-        PVec(Flavor::Standard(SharedPtr::new(Vec::new())))
+        let vec = Vec::with_capacity(BRANCH_FACTOR);
+        PVec(Flavor::Standard(SharedPtr::new(vec)))
     }
 
     #[cold]
