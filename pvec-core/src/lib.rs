@@ -39,19 +39,6 @@ impl<T: Clone + Debug> RrbVec<T> {
         }
     }
 
-    pub fn from(vec: &[T]) -> Self {
-        // ToDo: do something smart to pre-allocate space for all new items?
-
-        let vec = vec.to_owned();
-        let mut rrbvec = RrbVec::new();
-
-        for item in vec.into_iter() {
-            rrbvec.push(item)
-        }
-
-        rrbvec
-    }
-
     #[cold]
     pub fn push(&mut self, item: T) {
         self.tail[self.tail_len] = Some(item);
