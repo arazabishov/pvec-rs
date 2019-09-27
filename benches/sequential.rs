@@ -374,18 +374,22 @@ fn index_sequentially(criterion: &mut Criterion) {
         group.bench_with_input(BenchmarkId::new("im-rs-rrbtree", p), p, |b, n| {
             b.iter_batched(
                 || {
+                    let mut i = 1;
                     let mut vec = IVec::new();
 
-                    for i in (n / 2)..*n {
+                    while i < *n && (vec.len() + i) <= *n {
                         let mut another_vec = IVec::new();
-                        let mut j = 0;
 
-                        while j < i && (vec.len() + another_vec.len() < *n) {
+                        for j in 0..i {
                             another_vec.push_back(j);
-                            j += 1;
                         }
 
                         vec.append(another_vec);
+                        i *= 2;
+                    }
+
+                    while vec.len() < *n {
+                        vec.push_back(i);
                     }
 
                     vec
@@ -426,18 +430,22 @@ fn index_sequentially(criterion: &mut Criterion) {
         group.bench_with_input(BenchmarkId::new("rrbvec", p), p, |b, n| {
             b.iter_batched(
                 || {
+                    let mut i = 1;
                     let mut vec = RrbVec::new();
 
-                    for i in 0..*n {
+                    while i < *n && (vec.len() + i) <= *n {
                         let mut another_vec = RrbVec::new();
-                        let mut j = 0;
 
-                        while j < i && (vec.len() + another_vec.len() < *n) {
+                        for j in 0..i {
                             another_vec.push(j);
-                            j += 1;
                         }
 
                         vec.append(&mut another_vec);
+                        i *= 2;
+                    }
+
+                    while vec.len() < *n {
+                        vec.push(i);
                     }
 
                     vec
@@ -478,18 +486,22 @@ fn index_sequentially(criterion: &mut Criterion) {
         group.bench_with_input(BenchmarkId::new("pvec-rrbtree", p), p, |b, n| {
             b.iter_batched(
                 || {
+                    let mut i = 1;
                     let mut vec = PVec::new();
 
-                    for i in (n / 2)..*n {
+                    while i < *n && (vec.len() + i) <= *n {
                         let mut another_vec = PVec::new();
-                        let mut j = 0;
 
-                        while j < i && (vec.len() + another_vec.len() < *n) {
+                        for j in 0..i {
                             another_vec.push(j);
-                            j += 1;
                         }
 
                         vec.append(&mut another_vec);
+                        i *= 2;
+                    }
+
+                    while vec.len() < *n {
+                        vec.push(i);
                     }
 
                     vec
