@@ -34,7 +34,7 @@ criterion_main!(
     life::benches,
     pythagoras::benches,
     factorial::benches,
-    serial::benches,
+    sequential::benches,
     collect::benches
 );
 
