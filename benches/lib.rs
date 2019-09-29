@@ -29,6 +29,14 @@ mod factorial;
 #[cfg(all(feature = "arc", feature = "rayon-iter"))]
 mod collect;
 
+const STD_VEC: &str = "std-vec";
+const IM_RS_VECTOR_BALANCED: &str = "im-rs-vector-balanced";
+const IM_RS_VECTOR_UNBALANCED: &str = "im-rs-vector-unbalanced";
+const RRBVEC_BALANCED: &str = "rrbvec-balanced";
+const RRBVEC_UNBALANCED: &str = "rrbvec-unbalanced";
+const PVEC_BALANCED: &str = "pvec-balanced";
+const PVEC_UNBALANCED: &str = "pvec-unbalanced";
+
 #[cfg(all(feature = "arc", feature = "rayon-iter"))]
 criterion_main!(
     life::benches,
