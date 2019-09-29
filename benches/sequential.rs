@@ -12,6 +12,366 @@ use rand_xorshift::XorShiftRng;
 use pvec::core::RrbVec;
 use pvec::PVec;
 
+fn index_sequentially(criterion: &mut Criterion) {
+    let mut group = criterion.benchmark_group("index_sequentially");
+    group.plot_config(PlotConfiguration::default().summary_scale(AxisScale::Logarithmic));
+
+    macro_rules! bench_balanced {
+        ($name:literal, $p:ident, $vec:ident, $op:ident) => {
+            group.bench_with_input(BenchmarkId::new($name, $p), $p, |b, n| {
+                b.iter_batched(
+                    || {
+                        let mut vec = $vec::new();
+
+                        for i in 0..*n {
+                            vec.$op(i * 2);
+                        }
+
+                        vec
+                    },
+                    |data| {
+                        for i in 0..*n {
+                            black_box(data[i]);
+                        }
+                    },
+                    BatchSize::SmallInput,
+                )
+            });
+        };
+    }
+
+    macro_rules! bench_unbalanced {
+        ($name:literal, $p:ident, $vec:ident, $op:ident, $append:expr) => {
+            group.bench_with_input(BenchmarkId::new($name, $p), $p, |b, n| {
+                b.iter_batched(
+                    || {
+                        let mut i = 1;
+                        let mut vec = $vec::new();
+
+                        while i < *n && (vec.len() + i) <= *n {
+                            let mut another_vec = $vec::new();
+
+                            for j in 0..i {
+                                another_vec.$op(j);
+                            }
+
+                            $append(&mut vec, another_vec);
+                            i *= 2;
+                        }
+
+                        while vec.len() < *n {
+                            vec.$op(i);
+                        }
+
+                        vec
+                    },
+                    |data| {
+                        for i in 0..*n {
+                            black_box(data[i]);
+                        }
+                    },
+                    BatchSize::SmallInput,
+                )
+            });
+        };
+    }
+
+    let params = vec![
+        10, 20, 40, 60, 80, 100, 200, 400, 600, 800, 1000, 2000, 4000, 6000, 8000, 10000, 20000,
+        40000, 60000, 80000, 100000, 200000, 400000, 600000, 800000, 1000000,
+    ];
+
+    let append_ivec = |vec: &mut IVec<usize>, data| vec.append(data);
+    let append_pvec = |vec: &mut PVec<usize>, mut data| vec.append(&mut data);
+    let append_rrbvec = |vec: &mut RrbVec<usize>, mut data| vec.append(&mut data);
+
+    for p in params.iter() {
+        bench_balanced!("std", p, Vec, push);
+        bench_balanced!("pvec-balanced", p, PVec, push);
+        bench_balanced!("rrbvec-balanced", p, RrbVec, push);
+        bench_balanced!("im-vector-balanced", p, IVec, push_back);
+
+        bench_unbalanced!("pvec-unbalanced", p, PVec, push, append_pvec);
+        bench_unbalanced!("rrbvec-unbalanced", p, RrbVec, push, append_rrbvec);
+        bench_unbalanced!("im-vector-unbalanced", p, IVec, push_back, append_ivec);
+    }
+
+    group.finish();
+}
+
+fn index_randomly(criterion: &mut Criterion) {
+    let mut group = criterion.benchmark_group("index_randomly");
+    group.plot_config(PlotConfiguration::default().summary_scale(AxisScale::Logarithmic));
+
+    macro_rules! bench_balanced {
+        ($name:literal, $p:ident, $vec:ident, $op:ident) => {
+            group.bench_with_input(BenchmarkId::new($name, $p), $p, |b, n| {
+                let mut rng =
+                    XorShiftRng::from_seed([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
+
+                b.iter_batched(
+                    || {
+                        let mut vec = $vec::new();
+
+                        for i in 0..*n {
+                            vec.$op(i * 2);
+                        }
+
+                        vec
+                    },
+                    |data| {
+                        for _ in 0..*n {
+                            let j = (rng.next_u32() as usize) % *n;
+                            black_box(data[j]);
+                        }
+
+                        data
+                    },
+                    BatchSize::SmallInput,
+                )
+            });
+        };
+    }
+
+    macro_rules! bench_unbalanced {
+        ($name:literal, $p:ident, $vec:ident, $op:ident, $append:expr) => {
+            group.bench_with_input(BenchmarkId::new($name, $p), $p, |b, n| {
+                let mut rng =
+                    XorShiftRng::from_seed([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
+
+                b.iter_batched(
+                    || {
+                        let mut i = 1;
+                        let mut vec = $vec::new();
+
+                        while i < *n && (vec.len() + i) <= *n {
+                            let mut another_vec = $vec::new();
+
+                            for j in 0..i {
+                                another_vec.$op(j);
+                            }
+
+                            $append(&mut vec, another_vec);
+                            i *= 2;
+                        }
+
+                        while vec.len() < *n {
+                            vec.$op(i);
+                        }
+
+                        vec
+                    },
+                    |data| {
+                        for _ in 0..*n {
+                            let j = (rng.next_u32() as usize) % *n;
+                            black_box(data[j]);
+                        }
+
+                        data
+                    },
+                    BatchSize::SmallInput,
+                )
+            });
+        };
+    }
+
+    let params = vec![
+        10, 20, 40, 60, 80, 100, 200, 400, 600, 800, 1000, 2000, 4000, 6000, 8000, 10000, 20000,
+        40000, 60000, 80000, 100000, 200000, 400000,
+    ];
+
+    let append_ivec = |vec: &mut IVec<usize>, data| vec.append(data);
+    let append_pvec = |vec: &mut PVec<usize>, mut data| vec.append(&mut data);
+    let append_rrbvec = |vec: &mut RrbVec<usize>, mut data| vec.append(&mut data);
+
+    for p in params.iter() {
+        bench_balanced!("std", p, Vec, push);
+        bench_balanced!("pvec-balanced", p, PVec, push);
+        bench_balanced!("rrbvec-balanced", p, RrbVec, push);
+        bench_balanced!("im-vector-balanced", p, IVec, push_back);
+
+        bench_unbalanced!("pvec-unbalanced", p, PVec, push, append_pvec);
+        bench_unbalanced!("rrbvec-unbalanced", p, RrbVec, push, append_rrbvec);
+        bench_unbalanced!("im-vector-unbalanced", p, IVec, push_back, append_ivec);
+    }
+
+    group.finish();
+}
+
+fn iterator_next(criterion: &mut Criterion) {
+    let mut group = criterion.benchmark_group("iterator_next");
+    group.plot_config(PlotConfiguration::default().summary_scale(AxisScale::Logarithmic));
+
+    macro_rules! bench_balanced {
+        ($name:literal, $p:ident, $vec:ident, $op:ident) => {
+            group.bench_with_input(BenchmarkId::new($name, $p), $p, |b, n| {
+                b.iter_batched(
+                    || {
+                        let mut vec = $vec::new();
+
+                        for i in 0..*n {
+                            vec.$op(i * 2);
+                        }
+
+                        vec
+                    },
+                    |data| {
+                        for i in data.into_iter() {
+                            black_box(i);
+                        }
+                    },
+                    BatchSize::SmallInput,
+                )
+            });
+        };
+    }
+
+    macro_rules! bench_unbalanced {
+        ($name:literal, $p:ident, $vec:ident, $op:ident, $append:expr) => {
+            group.bench_with_input(BenchmarkId::new($name, $p), $p, |b, n| {
+                b.iter_batched(
+                    || {
+                        let mut i = 1;
+                        let mut vec = $vec::new();
+
+                        while i < *n && (vec.len() + i) <= *n {
+                            let mut another_vec = $vec::new();
+
+                            for j in 0..i {
+                                another_vec.$op(j);
+                            }
+
+                            $append(&mut vec, another_vec);
+                            i *= 2;
+                        }
+
+                        while vec.len() < *n {
+                            vec.$op(i);
+                        }
+
+                        vec
+                    },
+                    |data| {
+                        for i in data.into_iter() {
+                            black_box(i);
+                        }
+                    },
+                    BatchSize::SmallInput,
+                )
+            });
+        };
+    }
+
+    let params = vec![
+        10, 20, 40, 60, 80, 100, 200, 400, 600, 800, 1000, 2000, 4000, 6000, 8000, 10000, 20000,
+        40000, 60000, 80000, 100000, 200000, 400000, 600000, 800000, 1000000,
+    ];
+
+    let append_ivec = |vec: &mut IVec<usize>, data| vec.append(data);
+    let append_pvec = |vec: &mut PVec<usize>, mut data| vec.append(&mut data);
+    let append_rrbvec = |vec: &mut RrbVec<usize>, mut data| vec.append(&mut data);
+
+    for p in params.iter() {
+        bench_balanced!("std", p, Vec, push);
+        bench_balanced!("pvec-balanced", p, PVec, push);
+        bench_balanced!("rrbvec-balanced", p, RrbVec, push);
+        bench_balanced!("im-vector-balanced", p, IVec, push_back);
+
+        bench_unbalanced!("pvec-unbalanced", p, PVec, push, append_pvec);
+        bench_unbalanced!("rrbvec-unbalanced", p, RrbVec, push, append_rrbvec);
+        bench_unbalanced!("im-vector-unbalanced", p, IVec, push_back, append_ivec);
+    }
+
+    group.finish();
+}
+
+fn iterator_next_back(criterion: &mut Criterion) {
+    let mut group = criterion.benchmark_group("iterator_next_back");
+    group.plot_config(PlotConfiguration::default().summary_scale(AxisScale::Logarithmic));
+
+    macro_rules! bench_balanced {
+        ($name:literal, $p:ident, $vec:ident, $op:ident) => {
+            group.bench_with_input(BenchmarkId::new($name, $p), $p, |b, n| {
+                b.iter_batched(
+                    || {
+                        let mut vec = $vec::new();
+
+                        for i in 0..*n {
+                            vec.$op(i * 2);
+                        }
+
+                        vec
+                    },
+                    |data| {
+                        for i in data.into_iter().rev() {
+                            black_box(i);
+                        }
+                    },
+                    BatchSize::SmallInput,
+                )
+            });
+        };
+    }
+
+    macro_rules! bench_unbalanced {
+        ($name:literal, $p:ident, $vec:ident, $op:ident, $append:expr) => {
+            group.bench_with_input(BenchmarkId::new($name, $p), $p, |b, n| {
+                b.iter_batched(
+                    || {
+                        let mut i = 1;
+                        let mut vec = $vec::new();
+
+                        while i < *n && (vec.len() + i) <= *n {
+                            let mut another_vec = $vec::new();
+
+                            for j in 0..i {
+                                another_vec.$op(j);
+                            }
+
+                            $append(&mut vec, another_vec);
+                            i *= 2;
+                        }
+
+                        while vec.len() < *n {
+                            vec.$op(i);
+                        }
+
+                        vec
+                    },
+                    |data| {
+                        for i in data.into_iter().rev() {
+                            black_box(i);
+                        }
+                    },
+                    BatchSize::SmallInput,
+                )
+            });
+        };
+    }
+
+    let params = vec![
+        10, 20, 40, 60, 80, 100, 200, 400, 600, 800, 1000, 2000, 4000, 6000, 8000, 10000, 20000,
+        40000, 60000, 80000, 100000, 200000, 400000, 600000, 800000, 1000000,
+    ];
+
+    let append_ivec = |vec: &mut IVec<usize>, data| vec.append(data);
+    let append_pvec = |vec: &mut PVec<usize>, mut data| vec.append(&mut data);
+    let append_rrbvec = |vec: &mut RrbVec<usize>, mut data| vec.append(&mut data);
+
+    for p in params.iter() {
+        bench_balanced!("std", p, Vec, push);
+        bench_balanced!("pvec-balanced", p, PVec, push);
+        bench_balanced!("rrbvec-balanced", p, RrbVec, push);
+        bench_balanced!("im-vector-balanced", p, IVec, push_back);
+
+        bench_unbalanced!("pvec-unbalanced", p, PVec, push, append_pvec);
+        bench_unbalanced!("rrbvec-unbalanced", p, RrbVec, push, append_rrbvec);
+        bench_unbalanced!("im-vector-unbalanced", p, IVec, push_back, append_ivec);
+    }
+
+    group.finish();
+}
+
 fn push(criterion: &mut Criterion) {
     macro_rules! make_bench {
         ($group:ident, $p:ident, $vec:ident, $op:ident, $name:literal) => {
@@ -317,192 +677,6 @@ fn pop_clone(criterion: &mut Criterion) {
     group.finish();
 }
 
-fn index_sequentially(criterion: &mut Criterion) {
-    let mut group = criterion.benchmark_group("index_sequentially");
-    group.plot_config(PlotConfiguration::default().summary_scale(AxisScale::Logarithmic));
-
-    macro_rules! bench_balanced {
-        ($name:literal, $p:ident, $vec:ident, $op:ident) => {
-            group.bench_with_input(BenchmarkId::new($name, $p), $p, |b, n| {
-                b.iter_batched(
-                    || {
-                        let mut vec = $vec::new();
-
-                        for i in 0..*n {
-                            vec.$op(i * 2);
-                        }
-
-                        vec
-                    },
-                    |data| {
-                        for i in 0..*n {
-                            black_box(data[i]);
-                        }
-                    },
-                    BatchSize::SmallInput,
-                )
-            });
-        };
-    }
-
-    macro_rules! bench_unbalanced {
-        ($name:literal, $p:ident, $vec:ident, $op:ident, $append:expr) => {
-            group.bench_with_input(BenchmarkId::new($name, $p), $p, |b, n| {
-                b.iter_batched(
-                    || {
-                        let mut i = 1;
-                        let mut vec = $vec::new();
-
-                        while i < *n && (vec.len() + i) <= *n {
-                            let mut another_vec = $vec::new();
-
-                            for j in 0..i {
-                                another_vec.$op(j);
-                            }
-
-                            $append(&mut vec, another_vec);
-                            i *= 2;
-                        }
-
-                        while vec.len() < *n {
-                            vec.$op(i);
-                        }
-
-                        vec
-                    },
-                    |data| {
-                        for i in 0..*n {
-                            black_box(data[i]);
-                        }
-                    },
-                    BatchSize::SmallInput,
-                )
-            });
-        };
-    }
-
-    let params = vec![
-        10, 20, 40, 60, 80, 100, 200, 400, 600, 800, 1000, 2000, 4000, 6000, 8000, 10000, 20000,
-        40000, 60000, 80000, 100000, 200000, 400000, 600000, 800000, 1000000,
-    ];
-
-    let append_ivec = |vec: &mut IVec<usize>, data| vec.append(data);
-    let append_pvec = |vec: &mut PVec<usize>, mut data| vec.append(&mut data);
-    let append_rrbvec = |vec: &mut RrbVec<usize>, mut data| vec.append(&mut data);
-
-    for p in params.iter() {
-        bench_balanced!("std", p, Vec, push);
-        bench_balanced!("pvec-balanced", p, PVec, push);
-        bench_balanced!("rrbvec-balanced", p, RrbVec, push);
-        bench_balanced!("im-vector-balanced", p, IVec, push_back);
-
-        bench_unbalanced!("pvec-unbalanced", p, PVec, push, append_pvec);
-        bench_unbalanced!("rrbvec-unbalanced", p, RrbVec, push, append_rrbvec);
-        bench_unbalanced!("im-vector-unbalanced", p, IVec, push_back, append_ivec);
-    }
-
-    group.finish();
-}
-
-fn index_randomly(criterion: &mut Criterion) {
-    let mut group = criterion.benchmark_group("index_randomly");
-    group.plot_config(PlotConfiguration::default().summary_scale(AxisScale::Logarithmic));
-
-    macro_rules! bench_balanced {
-        ($name:literal, $p:ident, $vec:ident, $op:ident) => {
-            group.bench_with_input(BenchmarkId::new($name, $p), $p, |b, n| {
-                let mut rng =
-                    XorShiftRng::from_seed([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
-
-                b.iter_batched(
-                    || {
-                        let mut vec = $vec::new();
-
-                        for i in 0..*n {
-                            vec.$op(i * 2);
-                        }
-
-                        vec
-                    },
-                    |data| {
-                        for _ in 0..*n {
-                            let j = (rng.next_u32() as usize) % *n;
-                            black_box(data[j]);
-                        }
-
-                        data
-                    },
-                    BatchSize::SmallInput,
-                )
-            });
-        };
-    }
-
-    macro_rules! bench_unbalanced {
-        ($name:literal, $p:ident, $vec:ident, $op:ident, $append:expr) => {
-            group.bench_with_input(BenchmarkId::new($name, $p), $p, |b, n| {
-                let mut rng =
-                    XorShiftRng::from_seed([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
-
-                b.iter_batched(
-                    || {
-                        let mut i = 1;
-                        let mut vec = $vec::new();
-
-                        while i < *n && (vec.len() + i) <= *n {
-                            let mut another_vec = $vec::new();
-
-                            for j in 0..i {
-                                another_vec.$op(j);
-                            }
-
-                            $append(&mut vec, another_vec);
-                            i *= 2;
-                        }
-
-                        while vec.len() < *n {
-                            vec.$op(i);
-                        }
-
-                        vec
-                    },
-                    |data| {
-                        for _ in 0..*n {
-                            let j = (rng.next_u32() as usize) % *n;
-                            black_box(data[j]);
-                        }
-
-                        data
-                    },
-                    BatchSize::SmallInput,
-                )
-            });
-        };
-    }
-
-    let params = vec![
-        10, 20, 40, 60, 80, 100, 200, 400, 600, 800, 1000, 2000, 4000, 6000, 8000, 10000, 20000,
-        40000, 60000, 80000, 100000, 200000, 400000,
-    ];
-
-    let append_ivec = |vec: &mut IVec<usize>, data| vec.append(data);
-    let append_pvec = |vec: &mut PVec<usize>, mut data| vec.append(&mut data);
-    let append_rrbvec = |vec: &mut RrbVec<usize>, mut data| vec.append(&mut data);
-
-    for p in params.iter() {
-        bench_balanced!("std", p, Vec, push);
-        bench_balanced!("pvec-balanced", p, PVec, push);
-        bench_balanced!("rrbvec-balanced", p, RrbVec, push);
-        bench_balanced!("im-vector-balanced", p, IVec, push_back);
-
-        bench_unbalanced!("pvec-unbalanced", p, PVec, push, append_pvec);
-        bench_unbalanced!("rrbvec-unbalanced", p, RrbVec, push, append_rrbvec);
-        bench_unbalanced!("im-vector-unbalanced", p, IVec, push_back, append_ivec);
-    }
-
-    group.finish();
-}
-
 fn append(criterion: &mut Criterion) {
     macro_rules! create_input {
         ($n:ident, $vec:ident, $op:ident) => {
@@ -769,88 +943,6 @@ fn append_push(criterion: &mut Criterion) {
                 BatchSize::SmallInput,
             )
         });
-    }
-
-    group.finish();
-}
-
-fn iterator_next(criterion: &mut Criterion) {
-    macro_rules! make_bench {
-        ($group:ident, $p:ident, $vec:ident, $op:ident, $name:literal) => {
-            $group.bench_with_input(BenchmarkId::new($name, $p), $p, |b, n| {
-                b.iter_batched(
-                    || {
-                        let mut vec = $vec::new();
-
-                        for i in 0..*n {
-                            vec.$op(i * 2);
-                        }
-
-                        vec
-                    },
-                    |data| {
-                        for i in data.into_iter() {
-                            black_box(i);
-                        }
-                    },
-                    BatchSize::SmallInput,
-                )
-            });
-        };
-    }
-
-    let mut group = criterion.benchmark_group("iterator_next");
-    group.plot_config(PlotConfiguration::default().summary_scale(AxisScale::Logarithmic));
-
-    let params = vec![
-        10, 20, 30, 50, 100, 200, 500, 1000, 2000, 4000, 8000, 16000, 32000, 64000,
-    ];
-    for p in params.iter() {
-        make_bench!(group, p, Vec, push, "std");
-        make_bench!(group, p, IVec, push_back, "im-rs");
-        make_bench!(group, p, RrbVec, push, "rrbvec");
-        make_bench!(group, p, PVec, push, "pvec");
-    }
-
-    group.finish();
-}
-
-fn iterator_next_back(criterion: &mut Criterion) {
-    macro_rules! make_bench {
-        ($group:ident, $p:ident, $vec:ident, $op:ident, $name:literal) => {
-            $group.bench_with_input(BenchmarkId::new($name, $p), $p, |b, n| {
-                b.iter_batched(
-                    || {
-                        let mut vec = $vec::new();
-
-                        for i in 0..*n {
-                            vec.$op(i * 2);
-                        }
-
-                        vec
-                    },
-                    |data| {
-                        for i in data.into_iter().rev() {
-                            black_box(i);
-                        }
-                    },
-                    BatchSize::SmallInput,
-                )
-            });
-        };
-    }
-
-    let mut group = criterion.benchmark_group("iterator_next_back");
-    group.plot_config(PlotConfiguration::default().summary_scale(AxisScale::Logarithmic));
-
-    let params = vec![
-        10, 20, 30, 50, 100, 200, 500, 1000, 2000, 4000, 8000, 16000, 32000, 64000,
-    ];
-    for p in params.iter() {
-        make_bench!(group, p, Vec, push, "std");
-        make_bench!(group, p, IVec, push_back, "im-rs");
-        make_bench!(group, p, RrbVec, push, "rrbvec");
-        make_bench!(group, p, PVec, push, "pvec");
     }
 
     group.finish();
