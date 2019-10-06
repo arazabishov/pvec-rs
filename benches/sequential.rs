@@ -1133,24 +1133,45 @@ fn append(criterion: &mut Criterion) {
         ($n:ident, $vec:ident, $op:ident) => {
             || {
                 let mut input = Vec::new();
-                for _ in 0..16 {
-                    let mut vec = $vec::new();
+                let mut input_len = 0;
+                let mut i = 1;
 
-                    for i in 0..*$n {
-                        vec.$op(i);
+                while i < *$n && (input_len + i) <= *$n {
+                    let mut another_vec = $vec::new();
+
+                    for j in 0..i {
+                        another_vec.$op(j);
                     }
 
-                    input.push(vec)
+                    input_len += another_vec.len();
+                    input.push(another_vec);
+
+                    i *= 2;
                 }
+
+                let mut another_vec = $vec::new();
+                let mut j = 0;
+
+                while input_len < *$n {
+                    another_vec.$op(j);
+                    input_len += 1;
+                    j += 1;
+                }
+
+                input.push(another_vec);
                 input
             }
         };
     }
 
+    let params = vec![
+        10, 20, 40, 60, 80, 100, 200, 400, 600, 800, 1000, 2000, 4000, 6000, 8000, 10000, 20000,
+        40000, 60000, 80000, 100000, 200000, 400000, 600000, 800000, 1000000,
+    ];
+
     let mut group = criterion.benchmark_group("append");
     group.plot_config(PlotConfiguration::default().summary_scale(AxisScale::Logarithmic));
 
-    let params = vec![8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096, 8192];
     for p in params.iter() {
         group.bench_with_input(BenchmarkId::new(STD_VEC, p), p, |b, n| {
             b.iter_batched(
@@ -1208,89 +1229,6 @@ fn append(criterion: &mut Criterion) {
                     }
 
                     vec_two
-                },
-                BatchSize::SmallInput,
-            )
-        });
-    }
-
-    group.finish();
-}
-
-fn append_clone(criterion: &mut Criterion) {
-    macro_rules! create_input {
-        ($n:ident, $vec:ident, $op:ident) => {
-            || {
-                let mut vec = $vec::new();
-                for i in 0..*$n {
-                    vec.$op(i);
-                }
-                vec
-            }
-        };
-    }
-
-    let mut group = criterion.benchmark_group("append_clone");
-    group.plot_config(PlotConfiguration::default().summary_scale(AxisScale::Logarithmic));
-
-    let params = vec![100, 500, 1000, 5000, 10000, 50000, 100000, 200000, 500000];
-    for p in params.iter() {
-        group.bench_with_input(BenchmarkId::new(STD_VEC, p), p, |b, n| {
-            b.iter_batched(
-                create_input!(n, Vec, push),
-                |data| {
-                    let mut vec = Vec::new();
-
-                    for _ in 0..16 {
-                        vec.append(&mut data.clone());
-                    }
-
-                    drop(vec)
-                },
-                BatchSize::SmallInput,
-            )
-        });
-        group.bench_with_input(BenchmarkId::new(IM_RS_VECTOR_UNBALANCED, p), p, |b, n| {
-            b.iter_batched(
-                create_input!(n, IVec, push_back),
-                |data| {
-                    let mut vec = IVec::new();
-
-                    for _ in 0..16 {
-                        vec.append(data.clone());
-                    }
-
-                    drop(vec)
-                },
-                BatchSize::SmallInput,
-            )
-        });
-        group.bench_with_input(BenchmarkId::new(RRBVEC_UNBALANCED, p), p, |b, n| {
-            b.iter_batched(
-                create_input!(n, RrbVec, push),
-                |data| {
-                    let mut vec = RrbVec::new();
-
-                    for _ in 0..16 {
-                        vec.append(&mut data.clone());
-                    }
-
-                    drop(vec)
-                },
-                BatchSize::SmallInput,
-            )
-        });
-        group.bench_with_input(BenchmarkId::new(PVEC_UNBALANCED, p), p, |b, n| {
-            b.iter_batched(
-                create_input!(n, PVec, push),
-                |data| {
-                    let mut vec = PVec::new();
-
-                    for _ in 0..16 {
-                        vec.append(&mut data.clone());
-                    }
-
-                    drop(vec)
                 },
                 BatchSize::SmallInput,
             )
@@ -1361,6 +1299,5 @@ criterion_group!(
     pop,
     pop_clone,
     append,
-    append_clone,
     split_off
 );
