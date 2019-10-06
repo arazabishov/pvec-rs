@@ -7,8 +7,14 @@ extern crate rayon;
 #[cfg(not(feature = "small_branch"))]
 const BRANCH_FACTOR: usize = 32;
 
+#[cfg(not(feature = "small_branch"))]
+const THRESHOLD: usize = 4096;
+
 #[cfg(feature = "small_branch")]
 const BRANCH_FACTOR: usize = 4;
+
+#[cfg(feature = "small_branch")]
+const THRESHOLD: usize = 1024;
 
 use std::fmt::Debug;
 use std::ops;
@@ -20,8 +26,6 @@ use crate::utils::sharedptr::SharedPtr;
 use crate::utils::sharedptr::Take;
 
 use std::mem;
-
-const THRESHOLD: usize = 4096;
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 enum Flavor<T> {
@@ -58,29 +62,43 @@ impl<T: Clone + Debug> PVec<T> {
 
     #[cold]
     pub fn push(&mut self, item: T) {
-        let is_standard = match self.0 {
-            Flavor::Standard(ref mut vec_arc) => {
-                SharedPtr::make_mut(vec_arc).push(item);
-                true
+        let (is_standard, len) = match self.0 {
+            Flavor::Standard(ref mut ptr) => {
+                let vec = SharedPtr::make_mut(ptr);
+                let vec_len = vec.len() + 1;
+
+                vec.push(item);
+                (true, vec_len)
             }
             Flavor::Persistent(ref mut pvec) => {
+                let pvec_len = pvec.len() + 1;
+
                 pvec.push(item);
-                false
+                (false, pvec_len)
             }
         };
 
-        if is_standard && self.len() > THRESHOLD {
+        if is_standard && len > THRESHOLD {
             self.upgrade();
         }
     }
 
     pub fn pop(&mut self) -> Option<T> {
-        let (item, is_standard) = match self.0 {
-            Flavor::Standard(ref mut vec_arc) => (SharedPtr::make_mut(vec_arc).pop(), true),
-            Flavor::Persistent(ref mut pvec) => (pvec.pop(), false),
+        let (item, is_standard, len) = match self.0 {
+            Flavor::Standard(ref mut ptr) => {
+                let vec = SharedPtr::make_mut(ptr);
+                let vec_len = vec.len() - 1;
+
+                (vec.pop(), true, vec_len)
+            }
+            Flavor::Persistent(ref mut pvec) => {
+                let pvec_len = pvec.len() - 1;
+
+                (pvec.pop(), false, pvec_len)
+            }
         };
 
-        if !is_standard && self.len() <= THRESHOLD {
+        if !is_standard && len <= THRESHOLD {
             self.downgrade();
         }
 

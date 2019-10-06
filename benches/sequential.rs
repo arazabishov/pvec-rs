@@ -391,7 +391,7 @@ fn push(criterion: &mut Criterion) {
     macro_rules! bench_balanced {
         ($p:ident, $vec:ident, $op:ident, $name:ident) => {
             group.bench_with_input(BenchmarkId::new($name, $p), $p, |b, n| {
-                b.iter(|| {
+                b.iter_with_large_drop(|| {
                     let mut vec = $vec::new();
                     for i in 0..*n {
                         vec.$op(i);
