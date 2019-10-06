@@ -992,7 +992,8 @@ fn pop(criterion: &mut Criterion) {
     }
 
     let params = vec![
-        8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096, 8192, 16000, 32000, 64000,
+        10, 20, 40, 60, 80, 100, 200, 400, 600, 800, 1000, 2000, 4000, 6000, 8000, 10000, 20000,
+        40000, 60000,
     ];
 
     let append_ivec = |vec: &mut IVec<usize>, data| vec.append(data);
@@ -1096,7 +1097,9 @@ fn pop_clone(criterion: &mut Criterion) {
         };
     }
 
-    let params = vec![100, 500, 1000, 5000, 10000, 20000];
+    let params = vec![
+        10, 20, 40, 60, 80, 100, 200, 400, 600, 800, 1000, 2000, 4000, 6000, 8000, 10000, 20000,
+    ];
 
     let append_ivec = |vec: &mut IVec<usize>, data| vec.append(data);
     let append_pvec = |vec: &mut PVec<usize>, mut data| vec.append(&mut data);
