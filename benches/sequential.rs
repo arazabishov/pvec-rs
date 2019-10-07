@@ -651,97 +651,6 @@ fn update(criterion: &mut Criterion) {
     group.plot_config(PlotConfiguration::default().summary_scale(AxisScale::Logarithmic));
 
     macro_rules! bench_balanced {
-        ($p:ident, $vec:ident, $op:ident, $name:ident) => {
-            group.bench_with_input(BenchmarkId::new($name, $p), $p, |b, n| {
-                b.iter_batched(
-                    || {
-                        let mut vec = $vec::new();
-
-                        for i in 0..*n {
-                            vec.$op(i * 2);
-                        }
-
-                        vec
-                    },
-                    |mut data| {
-                        for i in 0..*n {
-                            (*data.get_mut(i).unwrap()) += 1;
-                        }
-                        data
-                    },
-                    BatchSize::SmallInput,
-                )
-            });
-        };
-    }
-
-    let params = vec![
-        10, 20, 40, 60, 80, 100, 200, 400, 600, 800, 1000, 2000, 4000, 6000, 8000, 10000, 20000,
-        40000, 60000, 80000, 100000, 200000, 400000, 600000, 800000, 1000000,
-    ];
-
-    for p in params.iter() {
-        bench_balanced!(p, Vec, push, STD_VEC);
-        bench_balanced!(p, IVec, push_back, IM_RS_VECTOR_BALANCED);
-        bench_balanced!(p, RrbVec, push, RRBVEC_BALANCED);
-        bench_balanced!(p, PVec, push, PVEC_BALANCED);
-    }
-
-    group.finish();
-}
-
-fn update_clone(criterion: &mut Criterion) {
-    let mut group = criterion.benchmark_group("update_clone");
-    group.plot_config(PlotConfiguration::default().summary_scale(AxisScale::Logarithmic));
-
-    macro_rules! bench_balanced {
-        ($p:ident, $vec:ident, $op:ident, $name:ident) => {
-            group.bench_with_input(BenchmarkId::new($name, $p), $p, |b, n| {
-                b.iter_batched(
-                    || {
-                        let mut vec = $vec::new();
-
-                        for i in 0..*n {
-                            vec.$op(i * 2);
-                        }
-
-                        vec
-                    },
-                    |mut data| {
-                        let mut data_one = data.clone();
-
-                        for i in 0..*n {
-                            (*data.get_mut(i).unwrap()) += 1;
-                            data_one = data.clone();
-                        }
-
-                        data_one
-                    },
-                    BatchSize::SmallInput,
-                )
-            });
-        };
-    }
-
-    let params = vec![
-        10, 20, 40, 60, 80, 100, 200, 400, 600, 800, 1000, 2000, 4000, 6000, 8000, 10000, 20000,
-    ];
-
-    for p in params.iter() {
-        bench_balanced!(p, Vec, push, STD_VEC);
-        bench_balanced!(p, IVec, push_back, IM_RS_VECTOR_BALANCED);
-        bench_balanced!(p, RrbVec, push, RRBVEC_BALANCED);
-        bench_balanced!(p, PVec, push, PVEC_BALANCED);
-    }
-
-    group.finish();
-}
-
-fn update_unbalanced(criterion: &mut Criterion) {
-    let mut group = criterion.benchmark_group("update_unbalanced");
-    group.plot_config(PlotConfiguration::default().summary_scale(AxisScale::Logarithmic));
-
-    macro_rules! bench_balanced {
         ($name:ident, $p:ident, $vec:ident, $op:ident) => {
             group.bench_with_input(BenchmarkId::new($name, $p), $p, |b, n| {
                 b.iter_batched(
@@ -829,8 +738,8 @@ fn update_unbalanced(criterion: &mut Criterion) {
     group.finish();
 }
 
-fn update_clone_unbalanced(criterion: &mut Criterion) {
-    let mut group = criterion.benchmark_group("update_clone_unbalanced");
+fn update_clone(criterion: &mut Criterion) {
+    let mut group = criterion.benchmark_group("update_clone");
     group.plot_config(PlotConfiguration::default().summary_scale(AxisScale::Logarithmic));
 
     macro_rules! bench_balanced {
@@ -1289,9 +1198,7 @@ criterion_group!(
     iterator_next,
     iterator_next_back,
     update,
-    update_clone,
-    update_unbalanced,
-    update_clone_unbalanced,
+    update_clone,    
     push,
     push_unbalanced,
     push_clone,
