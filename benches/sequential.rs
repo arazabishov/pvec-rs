@@ -1198,7 +1198,7 @@ criterion_group!(
     iterator_next,
     iterator_next_back,
     update,
-    update_clone,    
+    update_clone,
     push,
     push_unbalanced,
     push_clone,
