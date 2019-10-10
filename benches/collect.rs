@@ -1,5 +1,4 @@
 use super::*;
-use criterion::*;
 use rayon::prelude::*;
 
 mod util_stdvec {
@@ -173,7 +172,11 @@ mod pvec {
 macro_rules! make_bench {
     ($generate:ident, $postfix:literal) => {
         fn with_collect(criterion: &mut Criterion, num_threads: usize) {
-            let mut group = criterion.benchmark_group("with_collect_".to_owned() + $postfix);
+            let mut group = criterion.benchmark_group(format!(
+                "with_collect_{}_with_thread_num_{}",
+                $postfix, num_threads
+            ));
+
             group.plot_config(PlotConfiguration::default().summary_scale(AxisScale::Logarithmic));
 
             let params = vec![
