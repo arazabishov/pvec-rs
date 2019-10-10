@@ -739,7 +739,7 @@ fn update(criterion: &mut Criterion) {
 }
 
 fn update_randomly(criterion: &mut Criterion) {
-    let mut group = criterion.benchmark_group("update");
+    let mut group = criterion.benchmark_group("update_randomly");
     group.plot_config(PlotConfiguration::default().summary_scale(AxisScale::Logarithmic));
 
     macro_rules! bench_balanced {
