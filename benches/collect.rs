@@ -181,7 +181,7 @@ macro_rules! make_bench {
 
             let params = vec![
                 10, 20, 40, 60, 80, 100, 200, 400, 600, 800, 1000, 2000, 4000, 6000, 8000, 10000,
-                20000, 40000, 60000, 80000, 100000, 200000, 400000, 600000, 800000, 1000000,
+                20000, 40000,
             ];
             for p in params.iter() {
                 group.bench_with_input(BenchmarkId::new(STD_VEC, p), p, |b, n| {
@@ -234,7 +234,7 @@ macro_rules! make_bench {
 
             let params = vec![
                 10, 20, 40, 60, 80, 100, 200, 400, 600, 800, 1000, 2000, 4000, 6000, 8000, 10000,
-                20000, 40000, 60000, 80000, 100000, 200000, 400000, 600000, 800000, 1000000,
+                20000, 40000,
             ];
             for p in params.iter() {
                 group.bench_with_input(BenchmarkId::new(STD_VEC, p), p, |b, n| {
