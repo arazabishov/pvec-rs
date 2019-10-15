@@ -1,11 +1,9 @@
 use criterion::*;
 
-use num::{BigUint, One};
 use pvec::core::RrbVec;
 use pvec::PVec;
 use rayon::prelude::*;
 use std::fs;
-use std::ops::Mul;
 
 use super::*;
 
@@ -45,7 +43,7 @@ fn is_palindrome(word: &str) -> bool {
 fn words_map_seq(criterion: &mut Criterion) {
     *criterion = Criterion::default().with_plots().sample_size(50);
 
-    let mut group = criterion.benchmark_group(format!("words_map_par_with_thread_num_1"));
+    let mut group = criterion.benchmark_group(format!("words_map_with_thread_num_1"));
     group.plot_config(PlotConfiguration::default().summary_scale(AxisScale::Logarithmic));
 
     let file = fs::read_to_string("benches/words/words.txt").expect("Oops, something went wrong");
@@ -84,8 +82,7 @@ fn words_map_seq(criterion: &mut Criterion) {
 fn words_map_par(criterion: &mut Criterion, num_threads: usize) {
     *criterion = Criterion::default().with_plots().sample_size(50);
 
-    let mut group =
-        criterion.benchmark_group(format!("words_map_par_with_thread_num_{}", num_threads));
+    let mut group = criterion.benchmark_group(format!("words_map_with_thread_num_{}", num_threads));
     group.plot_config(PlotConfiguration::default().summary_scale(AxisScale::Logarithmic));
 
     let file = fs::read_to_string("benches/words/words.txt").expect("Oops, something went wrong");
@@ -128,30 +125,30 @@ fn words_map_par(criterion: &mut Criterion, num_threads: usize) {
     group.finish();
 }
 
-fn words_map_par_1(criterion: &mut Criterion) {
+fn words_map_1(criterion: &mut Criterion) {
     words_map_seq(criterion);
 }
 
-fn words_map_par_2(criterion: &mut Criterion) {
+fn words_map_2(criterion: &mut Criterion) {
     words_map_par(criterion, 2);
 }
 
-fn words_map_par_4(criterion: &mut Criterion) {
+fn words_map_4(criterion: &mut Criterion) {
     words_map_par(criterion, 4);
 }
 
-fn words_map_par_8(criterion: &mut Criterion) {
+fn words_map_8(criterion: &mut Criterion) {
     words_map_par(criterion, 8);
 }
 
-fn words_map_par_16(criterion: &mut Criterion) {
+fn words_map_16(criterion: &mut Criterion) {
     words_map_par(criterion, 16);
 }
 
 fn words_filter_seq(criterion: &mut Criterion) {
     *criterion = Criterion::default().with_plots().sample_size(50);
 
-    let mut group = criterion.benchmark_group(format!("words_filter_par_with_thread_num_1"));
+    let mut group = criterion.benchmark_group(format!("words_filter_with_thread_num_1"));
     group.plot_config(PlotConfiguration::default().summary_scale(AxisScale::Logarithmic));
 
     let file = fs::read_to_string("benches/words/words.txt").expect("Oops, something went wrong");
@@ -191,7 +188,7 @@ fn words_filter_par(criterion: &mut Criterion, num_threads: usize) {
     *criterion = Criterion::default().with_plots().sample_size(50);
 
     let mut group =
-        criterion.benchmark_group(format!("words_filter_par_with_thread_num_{}", num_threads));
+        criterion.benchmark_group(format!("words_filter_with_thread_num_{}", num_threads));
     group.plot_config(PlotConfiguration::default().summary_scale(AxisScale::Logarithmic));
 
     let file = fs::read_to_string("benches/words/words.txt").expect("Oops, something went wrong");
@@ -234,36 +231,36 @@ fn words_filter_par(criterion: &mut Criterion, num_threads: usize) {
     group.finish();
 }
 
-fn words_filter_par_1(criterion: &mut Criterion) {
+fn words_filter_1(criterion: &mut Criterion) {
     words_filter_seq(criterion);
 }
 
-fn words_filter_par_2(criterion: &mut Criterion) {
+fn words_filter_2(criterion: &mut Criterion) {
     words_filter_par(criterion, 2);
 }
 
-fn words_filter_par_4(criterion: &mut Criterion) {
+fn words_filter_4(criterion: &mut Criterion) {
     words_filter_par(criterion, 4);
 }
 
-fn words_filter_par_8(criterion: &mut Criterion) {
+fn words_filter_8(criterion: &mut Criterion) {
     words_filter_par(criterion, 8);
 }
 
-fn words_filter_par_16(criterion: &mut Criterion) {
+fn words_filter_16(criterion: &mut Criterion) {
     words_filter_par(criterion, 16);
 }
 
 criterion_group!(
     benches,
-    words_map_par_1,
-    words_map_par_2,
-    words_map_par_4,
-    words_map_par_8,
-    words_map_par_16,
-    words_filter_par_1,
-    words_filter_par_2,
-    words_filter_par_4,
-    words_filter_par_8,
-    words_filter_par_16
+    words_map_1,
+    words_map_2,
+    words_map_4,
+    words_map_8,
+    words_map_16,
+    words_filter_1,
+    words_filter_2,
+    words_filter_4,
+    words_filter_8,
+    words_filter_16
 );
