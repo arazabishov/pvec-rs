@@ -12,6 +12,7 @@ pub const BRANCH_FACTOR: usize = 4;
 use crate::core::iter::RrbVecIter;
 use crate::core::RrbVec;
 use crate::utils::sharedptr::Take;
+use std::iter::FromIterator;
 use std::vec::IntoIter as VecIter;
 
 #[cfg(all(feature = "arc", feature = "rayon-iter"))]
@@ -200,6 +201,16 @@ where
                 list1.append(&mut list2);
                 list1
             })
+    }
+}
+
+impl<T: Clone + Debug> FromIterator<T> for PVec<T> {
+    fn from_iter<I: IntoIterator<Item = T>>(iter: I) -> Self {
+        let mut vec = PVec::new();
+        for i in iter {
+            vec.push(i);
+        }
+        vec
     }
 }
 
