@@ -2,6 +2,7 @@ use super::RrbVec;
 use crate::rrbtree::iter::RrbTreeIter;
 use crate::rrbtree::BRANCH_FACTOR;
 use std::fmt::Debug;
+use std::iter::FromIterator;
 
 #[cfg(all(feature = "arc", feature = "rayon-iter"))]
 use rayon::iter::plumbing::{bridge, Consumer, Producer, ProducerCallback, UnindexedConsumer};
@@ -241,6 +242,16 @@ where
                 list1.append(&mut list2);
                 list1
             })
+    }
+}
+
+impl<T: Clone + Debug> FromIterator<T> for RrbVec<T> {
+    fn from_iter<I: IntoIterator<Item = T>>(iter: I) -> Self {
+        let mut vec = RrbVec::new();
+        for i in iter {
+            vec.push(i);
+        }
+        vec
     }
 }
 

@@ -27,7 +27,13 @@ mod pythagoras;
 mod factorial;
 
 #[cfg(all(feature = "arc", feature = "rayon-iter"))]
-mod collect;
+mod scalar;
+
+#[cfg(all(feature = "arc", feature = "rayon-iter"))]
+mod words;
+
+#[cfg(all(feature = "arc", feature = "rayon-iter"))]
+mod fold;
 
 const STD_VEC: &str = "std-vec";
 const IM_RS_VECTOR_BALANCED: &str = "im-rs-vector-balanced";
@@ -43,7 +49,9 @@ criterion_main!(
     pythagoras::benches,
     factorial::benches,
     sequential::benches,
-    collect::benches
+    scalar::benches,
+    words::benches,
+    fold::benches,
 );
 
 #[cfg(not(all(feature = "arc", feature = "rayon-iter")))]
