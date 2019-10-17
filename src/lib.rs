@@ -8,13 +8,13 @@ extern crate rayon;
 const BRANCH_FACTOR: usize = 32;
 
 #[cfg(not(feature = "small_branch"))]
-const THRESHOLD: usize = 4096;
+const THRESHOLD: usize = 1024;
 
 #[cfg(feature = "small_branch")]
 const BRANCH_FACTOR: usize = 4;
 
 #[cfg(feature = "small_branch")]
-const THRESHOLD: usize = 1024;
+const THRESHOLD: usize = 256;
 
 use std::fmt::Debug;
 use std::ops;
@@ -49,6 +49,30 @@ impl<T: Clone + Debug> Flavor<T> {
             Flavor::Persistent(ptr) => ptr.take(),
         }
     }
+
+    #[inline(always)]
+    fn as_mut_standard(&mut self) -> &mut Vec<T> {
+        match self {
+            Flavor::Standard(ref mut vec_arc) => SharedPtr::make_mut(vec_arc),
+            Flavor::Persistent(..) => unreachable!(),
+        }
+    }
+
+    #[inline(always)]
+    fn as_mut_persistent(&mut self) -> &mut RrbVec<T> {
+        match self {
+            Flavor::Standard(..) => unreachable!(),
+            Flavor::Persistent(ref mut ptr) => SharedPtr::make_mut(ptr),
+        }
+    }
+
+    #[inline(always)]
+    fn is_standard(&self) -> bool {
+        match self {
+            Flavor::Standard(..) => true,
+            Flavor::Persistent(..) => false,
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
@@ -60,26 +84,27 @@ impl<T: Clone + Debug> PVec<T> {
         PVec(Flavor::Standard(SharedPtr::new(vec)))
     }
 
-    #[cold]
     pub fn push(&mut self, item: T) {
-        let (is_standard, len) = match self.0 {
+        let (ref_count, is_standard, len) = match self.0 {
             Flavor::Standard(ref mut ptr) => {
+                let ref_count = SharedPtr::strong_count(ptr);
+
                 let vec = SharedPtr::make_mut(ptr);
                 let vec_len = vec.len() + 1;
 
                 vec.push(item);
-                (true, vec_len)
+                (ref_count, true, vec_len)
             }
             Flavor::Persistent(ref mut ptr) => {
                 let pvec = SharedPtr::make_mut(ptr);
                 let pvec_len = pvec.len() + 1;
 
                 pvec.push(item);
-                (false, pvec_len)
+                (0, false, pvec_len)
             }
         };
 
-        if is_standard && len > THRESHOLD {
+        if is_standard && ref_count > 1 && len > THRESHOLD {
             self.upgrade();
         }
     }
@@ -132,30 +157,6 @@ impl<T: Clone + Debug> PVec<T> {
         self.len() == 0
     }
 
-    #[inline(always)]
-    fn is_standard(&self) -> bool {
-        match self.0 {
-            Flavor::Standard(..) => true,
-            Flavor::Persistent(..) => false,
-        }
-    }
-
-    #[inline(always)]
-    fn as_mut_standard(&mut self) -> &mut Vec<T> {
-        match self.0 {
-            Flavor::Standard(ref mut vec_arc) => SharedPtr::make_mut(vec_arc),
-            Flavor::Persistent(..) => unreachable!(),
-        }
-    }
-
-    #[inline(always)]
-    fn as_mut_persistent(&mut self) -> &mut RrbVec<T> {
-        match self.0 {
-            Flavor::Standard(..) => unreachable!(),
-            Flavor::Persistent(ref mut ptr) => SharedPtr::make_mut(ptr),
-        }
-    }
-
     pub fn append(&mut self, that: &mut PVec<T>) {
         // a(s), b(s) (upgrade a, push b into a)
         // a(p), b(s) (push b into a)
@@ -163,11 +164,11 @@ impl<T: Clone + Debug> PVec<T> {
         // a(p), b(p) (a append b)
 
         if self.len() + that.len() > THRESHOLD {
-            if self.is_standard() {
+            if self.0.is_standard() {
                 self.upgrade();
             }
 
-            let rrbvec = self.as_mut_persistent();
+            let rrbvec = self.0.as_mut_persistent();
 
             match that.0 {
                 Flavor::Standard(ref mut vec_arc) => {
@@ -179,16 +180,16 @@ impl<T: Clone + Debug> PVec<T> {
                 Flavor::Persistent(ref mut ptr) => rrbvec.append(SharedPtr::make_mut(ptr)),
             }
         } else {
-            let self_vec = self.as_mut_standard();
-            let that_vec = that.as_mut_standard();
+            let self_vec = self.0.as_mut_standard();
+            let that_vec = that.0.as_mut_standard();
 
             self_vec.append(that_vec);
         }
     }
 
     pub fn split_off(&mut self, mid: usize) -> Self {
-        let flavor = if self.is_standard() {
-            let vec = self.as_mut_standard();
+        let flavor = if self.0.is_standard() {
+            let vec = self.0.as_mut_standard();
             let right = vec.split_off(mid);
 
             Flavor::Standard(SharedPtr::new(right))
@@ -203,14 +204,14 @@ impl<T: Clone + Debug> PVec<T> {
                 let mut old_vec = old_flavor.into_persistent();
                 let old_that_vec = old_vec.split_off(mid);
 
-                let new_vec = self.as_mut_standard();
+                let new_vec = self.0.as_mut_standard();
                 for item in old_vec.into_iter() {
                     new_vec.push(item);
                 }
 
                 old_that_vec
             } else {
-                let self_vec = self.as_mut_persistent();
+                let self_vec = self.0.as_mut_persistent();
                 let that_vec = self_vec.split_off(mid);
 
                 that_vec
@@ -237,10 +238,10 @@ impl<T: Clone + Debug> PVec<T> {
         let old_flavor = mem::replace(&mut self.0, new_flavor);
 
         let old_vec = old_flavor.into_standard();
-        let new_vec = self.as_mut_persistent();
+        let new_vec = self.0.as_mut_persistent();
 
-        for item in old_vec.into_iter() {
-            new_vec.push(item);
+        for item in old_vec.iter() {
+            new_vec.push(item.clone());
         }
     }
 
@@ -252,7 +253,7 @@ impl<T: Clone + Debug> PVec<T> {
         let old_flavor = mem::replace(&mut self.0, new_flavor);
 
         let old_vec = old_flavor.into_persistent();
-        let new_vec = self.as_mut_standard();
+        let new_vec = self.0.as_mut_standard();
 
         for item in old_vec.into_iter() {
             new_vec.push(item);
@@ -334,60 +335,73 @@ mod test {
 
     #[test]
     fn pop_must_downgrade_to_standard_vec() {
-        let mut pvec = PVec::new();
-
-        for item in 0..THRESHOLD * 2 {
-            pvec.push(item);
+        let mut pvec_one = PVec::new();
+        for item in 0..(THRESHOLD * 2) - 1 {
+            pvec_one.push(item);
         }
 
-        for _ in (THRESHOLD + 1..pvec.len()).rev() {
-            pvec.pop();
-            assert!(!pvec.is_standard());
+        // calling push after cloning a vector
+        // over a threshold size must upgrade it
+        let mut pvec_two = pvec_one.clone();
+        pvec_two.push(0xdeadbeef);
+
+        for _ in (THRESHOLD + 1..pvec_two.len()).rev() {
+            pvec_two.pop();
+            assert!(!pvec_two.0.is_standard());
         }
 
         for _ in (0..THRESHOLD + 1).rev() {
-            pvec.pop();
-            assert!(pvec.is_standard());
+            pvec_two.pop();
+            assert!(pvec_two.0.is_standard());
         }
 
-        assert!(pvec.is_empty());
+        assert!(pvec_two.is_empty());
     }
 
     #[test]
     fn split_off_must_downgrade_to_standard() {
-        let mut self_vec = PVec::new();
-
-        for item in 0..THRESHOLD * 2 {
-            self_vec.push(item);
+        let mut vec_one = PVec::new();
+        for item in 0..(THRESHOLD * 2) - 1 {
+            vec_one.push(item);
         }
 
-        assert!(!self_vec.is_standard());
-        let that_vec = self_vec.split_off(THRESHOLD);
+        // calling push after cloning a vector
+        // over a threshold size must upgrade it
+        let mut vec_two = vec_one.clone();
+        vec_two.push(0xdeadbeef);
 
-        assert!(that_vec.is_standard());
-        assert!(self_vec.is_standard());
+        assert!(!vec_two.0.is_standard());
+        let vec_two_that = vec_two.split_off(THRESHOLD);
+
+        assert!(vec_two_that.0.is_standard());
+        assert!(vec_two.0.is_standard());
     }
 
     #[test]
     fn split_off_must_downgrade_to_standard_only_one_half() {
-        let mut self_vec_one = PVec::new();
+        let mut self_vec = PVec::new();
 
-        for item in 0..THRESHOLD * 4 {
-            self_vec_one.push(item);
+        for item in 0..(THRESHOLD * 4) - 1 {
+            self_vec.push(item);
         }
+
+        // calling push after cloning a vector
+        // over a threshold size must upgrade it
+        let mut self_vec_one = self_vec.clone();
+        self_vec_one.push(0xdeadbeef);
 
         let mut self_vec_two = self_vec_one.clone();
 
-        assert!(!self_vec_one.is_standard());
-        assert!(!self_vec_two.is_standard());
+        assert!(!self_vec_one.0.is_standard());
+        assert!(!self_vec_two.0.is_standard());
 
         let that_vec_one = self_vec_one.split_off(THRESHOLD);
         let that_vec_two = self_vec_two.split_off(THRESHOLD * 3);
 
-        assert!(self_vec_one.is_standard());
-        assert!(that_vec_two.is_standard());
+        assert!(self_vec_one.0.is_standard());
+        assert!(that_vec_two.0.is_standard());
 
-        assert!(!self_vec_two.is_standard());
-        assert!(!that_vec_one.is_standard());
+        assert!(!self_vec_two.0.is_standard());
+        assert!(!that_vec_one.0.is_standard());
     }
 }

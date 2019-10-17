@@ -39,7 +39,6 @@ impl<T: Clone + Debug> RrbVec<T> {
         }
     }
 
-    #[cold]
     pub fn push(&mut self, item: T) {
         self.tail[self.tail_len] = Some(item);
         self.tail_len += 1;
