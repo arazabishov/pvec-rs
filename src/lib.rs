@@ -30,7 +30,7 @@ use std::mem;
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 enum Flavor<T> {
     Standard(SharedPtr<Vec<T>>),
-    Persistent(RrbVec<T>),
+    Persistent(SharedPtr<RrbVec<T>>),
 }
 
 impl<T: Clone + Debug> Flavor<T> {
@@ -46,7 +46,7 @@ impl<T: Clone + Debug> Flavor<T> {
     fn into_persistent(self) -> RrbVec<T> {
         match self {
             Flavor::Standard(..) => unreachable!(),
-            Flavor::Persistent(vec) => vec,
+            Flavor::Persistent(ptr) => ptr.take(),
         }
     }
 }
@@ -70,7 +70,8 @@ impl<T: Clone + Debug> PVec<T> {
                 vec.push(item);
                 (true, vec_len)
             }
-            Flavor::Persistent(ref mut pvec) => {
+            Flavor::Persistent(ref mut ptr) => {
+                let pvec = SharedPtr::make_mut(ptr);
                 let pvec_len = pvec.len() + 1;
 
                 pvec.push(item);
@@ -91,7 +92,8 @@ impl<T: Clone + Debug> PVec<T> {
 
                 (vec.pop(), true, vec_len)
             }
-            Flavor::Persistent(ref mut pvec) => {
+            Flavor::Persistent(ref mut ptr) => {
+                let pvec = SharedPtr::make_mut(ptr);
                 let pvec_len = pvec.len() - 1;
 
                 (pvec.pop(), false, pvec_len)
@@ -107,15 +109,15 @@ impl<T: Clone + Debug> PVec<T> {
 
     pub fn get(&self, index: usize) -> Option<&T> {
         match self.0 {
-            Flavor::Standard(ref vec_arc) => vec_arc.get(index),
-            Flavor::Persistent(ref pvec) => pvec.get(index),
+            Flavor::Standard(ref ptr) => ptr.get(index),
+            Flavor::Persistent(ref ptr) => ptr.get(index),
         }
     }
 
     pub fn get_mut(&mut self, index: usize) -> Option<&mut T> {
         match self.0 {
-            Flavor::Standard(ref mut vec_arc) => SharedPtr::make_mut(vec_arc).get_mut(index),
-            Flavor::Persistent(ref mut pvec) => pvec.get_mut(index),
+            Flavor::Standard(ref mut ptr) => SharedPtr::make_mut(ptr).get_mut(index),
+            Flavor::Persistent(ref mut ptr) => SharedPtr::make_mut(ptr).get_mut(index),
         }
     }
 
@@ -150,7 +152,7 @@ impl<T: Clone + Debug> PVec<T> {
     fn as_mut_persistent(&mut self) -> &mut RrbVec<T> {
         match self.0 {
             Flavor::Standard(..) => unreachable!(),
-            Flavor::Persistent(ref mut rrbvec) => rrbvec,
+            Flavor::Persistent(ref mut ptr) => SharedPtr::make_mut(ptr),
         }
     }
 
@@ -174,7 +176,7 @@ impl<T: Clone + Debug> PVec<T> {
                         rrbvec.push(i);
                     }
                 }
-                Flavor::Persistent(ref mut rrbvec_that) => rrbvec.append(rrbvec_that),
+                Flavor::Persistent(ref mut ptr) => rrbvec.append(SharedPtr::make_mut(ptr)),
             }
         } else {
             let self_vec = self.as_mut_standard();
@@ -222,7 +224,7 @@ impl<T: Clone + Debug> PVec<T> {
 
                 Flavor::Standard(SharedPtr::new(new_that_vec))
             } else {
-                Flavor::Persistent(old_that_vec)
+                Flavor::Persistent(SharedPtr::new(old_that_vec))
             }
         };
 
@@ -231,7 +233,7 @@ impl<T: Clone + Debug> PVec<T> {
 
     #[inline(always)]
     fn upgrade(&mut self) {
-        let new_flavor = Flavor::Persistent(RrbVec::new());
+        let new_flavor = Flavor::Persistent(SharedPtr::new(RrbVec::new()));
         let old_flavor = mem::replace(&mut self.0, new_flavor);
 
         let old_vec = old_flavor.into_standard();
@@ -293,8 +295,16 @@ impl<T: Clone + Debug> ops::IndexMut<usize> for PVec<T> {
 #[cfg(test)]
 #[macro_use]
 mod test {
+    use super::core::RrbVec;
     use super::PVec;
+    use super::SharedPtr;
     use super::THRESHOLD;
+
+    #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+    pub struct PVecTwo<T> {
+        inline: Option<SharedPtr<Vec<T>>>,
+        spilled: Option<RrbVec<T>>,
+    }
 
     #[test]
     fn interleaving_append_split_off_operations() {
