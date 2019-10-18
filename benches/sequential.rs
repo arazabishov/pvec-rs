@@ -9,6 +9,7 @@ use im_rc::Vector as IVec;
 use rand::{RngCore, SeedableRng};
 use rand_xorshift::XorShiftRng;
 
+use pvec::core::RbVec;
 use pvec::core::RrbVec;
 use pvec::PVec;
 
@@ -1338,12 +1339,12 @@ fn append(criterion: &mut Criterion) {
         });
         group.bench_with_input(BenchmarkId::new(RRBVEC_BALANCED, p), p, |b, n| {
             b.iter_batched(
-                create_input!(n, RrbVec, push),
+                create_input!(n, RbVec, push),
                 |mut data| {
-                    let mut vec_two = RrbVec::new();
+                    let mut vec_two = RbVec::new();
 
                     for mut input in data.iter_mut() {
-                        vec_two.append_naive(&mut input);
+                        vec_two.append(&mut input);
                     }
 
                     vec_two
@@ -1373,7 +1374,7 @@ fn append(criterion: &mut Criterion) {
 
 fn split_off(criterion: &mut Criterion) {
     macro_rules! make_bench {
-        ($group:ident, $p:ident, $vec:ident, $push:ident, $split:ident, $name:ident) => {
+        ($group:ident, $p:ident, $vec:ident, $push:ident, $name:ident) => {
             $group.bench_with_input(BenchmarkId::new($name, $p), $p, |b, n| {
                 b.iter_batched(
                     || {
@@ -1386,8 +1387,8 @@ fn split_off(criterion: &mut Criterion) {
                         vec
                     },
                     |mut data| {
-                        while data.len() > 64 {
-                            data = data.$split(64)
+                        while data.len() > 512 {
+                            data = data.split_off(512)
                         }
 
                         data
@@ -1401,18 +1402,16 @@ fn split_off(criterion: &mut Criterion) {
     let mut group = criterion.benchmark_group("split_off");
     group.plot_config(PlotConfiguration::default().summary_scale(AxisScale::Logarithmic));
 
-    let params = vec![
-        32, 64, 128, 512, 768, 1024, 2048, 4096, 10000, 20000, 40000, 50000, // 100000, 500000,
-    ];
-
+    let params = vec![128, 512, 768, 1024, 2048, 4096, 10000, 20000, 30000, 40000];
     for p in params.iter() {
-        make_bench!(group, p, Vec, push, split_off, STD_VEC);
+        // TODO: uncomment this bench, when the bug in split_off is fixed:
+        //   https://github.com/bodil/im-rs/pull/107
         // make_bench!(group, p, IVec, push_back, IM_RS_VECTOR_UNBALANCED);
-        make_bench!(group, p, RrbVec, push, split_off_naive, RRBVEC_BALANCED);
-        let name = format!("{}_naive_2", RRBVEC_BALANCED);
-        make_bench!(group, p, RrbVec, push, split_off_naive_2, name);
-        make_bench!(group, p, RrbVec, push, split_off, RRBVEC_UNBALANCED);
-        make_bench!(group, p, PVec, push, split_off, PVEC_UNBALANCED);
+
+        make_bench!(group, p, Vec, push, STD_VEC);
+        make_bench!(group, p, RbVec, push, RRBVEC_BALANCED);
+        make_bench!(group, p, RrbVec, push, RRBVEC_UNBALANCED);
+        make_bench!(group, p, PVec, push, PVEC_UNBALANCED);
     }
 
     group.finish();

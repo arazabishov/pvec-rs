@@ -1,6 +1,7 @@
 use super::*;
 use rayon::prelude::*;
 
+use crate::pvec::core::RbVec;
 use crate::pvec::core::RrbVec;
 use crate::pvec::PVec;
 
@@ -11,6 +12,18 @@ mod stdvec {
             vec.push(i);
         }
         vec
+    }
+}
+
+mod rbvec {
+    use pvec::core::RbVec;
+
+    pub fn generate_vec(n: u32) -> RbVec<u32> {
+        let mut pvec = RbVec::new();
+        for i in 0_u32..n {
+            pvec.push(i);
+        }
+        pvec
     }
 }
 
@@ -69,6 +82,7 @@ fn map_fold_seq(criterion: &mut Criterion) {
     for p in params.iter() {
         bench!(STD_VEC, p, stdvec, Vec);
         bench!(PVEC_UNBALANCED, p, pvec, PVec);
+        bench!(RRBVEC_BALANCED, p, rbvec, RbVec);
         bench!(RRBVEC_UNBALANCED, p, rrbvec, RrbVec);
     }
 
@@ -117,6 +131,7 @@ fn map_fold_par(criterion: &mut Criterion, num_threads: usize) {
     for p in params.iter() {
         bench!(STD_VEC, p, stdvec, Vec);
         bench!(PVEC_UNBALANCED, p, pvec, PVec);
+        bench!(RRBVEC_BALANCED, p, rbvec, RbVec);
         bench!(RRBVEC_UNBALANCED, p, rrbvec, RrbVec);
     }
 
@@ -175,6 +190,7 @@ fn filter_fold_seq(criterion: &mut Criterion) {
     for p in params.iter() {
         bench!(STD_VEC, p, stdvec, Vec);
         bench!(PVEC_UNBALANCED, p, pvec, PVec);
+        bench!(RRBVEC_BALANCED, p, rbvec, RbVec);
         bench!(RRBVEC_UNBALANCED, p, rrbvec, RrbVec);
     }
 
@@ -224,6 +240,7 @@ fn filter_fold_par(criterion: &mut Criterion, num_threads: usize) {
     for p in params.iter() {
         bench!(STD_VEC, p, stdvec, Vec);
         bench!(PVEC_UNBALANCED, p, pvec, PVec);
+        bench!(RRBVEC_BALANCED, p, rbvec, RbVec);
         bench!(RRBVEC_UNBALANCED, p, rrbvec, RrbVec);
     }
 
