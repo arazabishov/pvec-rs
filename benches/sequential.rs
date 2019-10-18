@@ -1336,6 +1336,21 @@ fn append(criterion: &mut Criterion) {
                 BatchSize::SmallInput,
             )
         });
+        group.bench_with_input(BenchmarkId::new(RRBVEC_BALANCED, p), p, |b, n| {
+            b.iter_batched(
+                create_input!(n, RrbVec, push),
+                |mut data| {
+                    let mut vec_two = RrbVec::new();
+
+                    for mut input in data.iter_mut() {
+                        vec_two.append_naive(&mut input);
+                    }
+
+                    vec_two
+                },
+                BatchSize::SmallInput,
+            )
+        });
         group.bench_with_input(BenchmarkId::new(PVEC_UNBALANCED, p), p, |b, n| {
             b.iter_batched(
                 create_input!(n, PVec, push),
@@ -1358,21 +1373,21 @@ fn append(criterion: &mut Criterion) {
 
 fn split_off(criterion: &mut Criterion) {
     macro_rules! make_bench {
-        ($group:ident, $p:ident, $vec:ident, $op:ident, $name:ident) => {
+        ($group:ident, $p:ident, $vec:ident, $push:ident, $split:ident, $name:ident) => {
             $group.bench_with_input(BenchmarkId::new($name, $p), $p, |b, n| {
                 b.iter_batched(
                     || {
                         let mut vec = $vec::new();
 
                         for i in 0..*n {
-                            vec.$op(i * 2);
+                            vec.$push(i * 2);
                         }
 
                         vec
                     },
                     |mut data| {
                         while data.len() > 64 {
-                            data = data.split_off(64)
+                            data = data.$split(64)
                         }
 
                         data
@@ -1387,14 +1402,17 @@ fn split_off(criterion: &mut Criterion) {
     group.plot_config(PlotConfiguration::default().summary_scale(AxisScale::Logarithmic));
 
     let params = vec![
-        32, 64, 128, 512, 768, 1024, 2048, 4096, 10000, 20000, 40000, 50000, 100000, 500000,
+        32, 64, 128, 512, 768, 1024, 2048, 4096, 10000, 20000, 40000, 50000, // 100000, 500000,
     ];
 
     for p in params.iter() {
-        make_bench!(group, p, Vec, push, STD_VEC);
-        make_bench!(group, p, IVec, push_back, IM_RS_VECTOR_UNBALANCED);
-        make_bench!(group, p, RrbVec, push, RRBVEC_UNBALANCED);
-        make_bench!(group, p, PVec, push, PVEC_UNBALANCED);
+        make_bench!(group, p, Vec, push, split_off, STD_VEC);
+        // make_bench!(group, p, IVec, push_back, IM_RS_VECTOR_UNBALANCED);
+        make_bench!(group, p, RrbVec, push, split_off_naive, RRBVEC_BALANCED);
+        let name = format!("{}_naive_2", RRBVEC_BALANCED);
+        make_bench!(group, p, RrbVec, push, split_off_naive_2, name);
+        make_bench!(group, p, RrbVec, push, split_off, RRBVEC_UNBALANCED);
+        make_bench!(group, p, PVec, push, split_off, PVEC_UNBALANCED);
     }
 
     group.finish();

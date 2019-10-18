@@ -23,6 +23,9 @@ mod rrbtree;
 #[cfg(feature = "serde-serializer")]
 mod serializer;
 
+// TODO: separate out RbVec from RrbVec
+// TODO: what to do with PVec then? RbPVec? RrbPVec? FUCK
+
 #[derive(Clone, Debug, Ord, PartialOrd, Eq, PartialEq)]
 pub struct RrbVec<T> {
     tree: RrbTree<T>,
@@ -184,6 +187,101 @@ impl<T: Clone + Debug> RrbVec<T> {
         }
     }
 
+    pub fn split_off_naive(&mut self, mid: usize) -> Self {
+        if mid == 0 {
+            mem::replace(self, RrbVec::new())
+        } else if mid < self.len() {
+            if self.tree.len() > mid {
+                let chunks_count = (self.tree.len() - mid) / BRANCH_FACTOR;
+                let mut chunks = Vec::with_capacity(chunks_count);
+
+                while self.tree.len() - BRANCH_FACTOR > mid {
+                    chunks.push(self.tree.pop());
+                }
+
+                let (mut left_tail, mut left_tail_len) = self.tree.pop();
+
+                let from_i = mid - self.tree.len();
+                let to_len = left_tail_len;
+
+                let mut right = RrbVec::new();
+                for i in from_i..to_len {
+                    right.push(left_tail[i].take().unwrap());
+                    left_tail_len -= 1;
+                }
+
+                let mut right_tail = mem::replace(&mut self.tail, left_tail);
+                let right_tail_len = mem::replace(&mut self.tail_len, left_tail_len);
+
+                for (mut chunk, chunk_len) in chunks.into_iter().rev() {
+                    for i in 0..chunk_len {
+                        right.push(chunk[i].take().unwrap());
+                    }
+                }
+
+                for i in 0..right_tail_len {
+                    right.push(right_tail[i].take().unwrap());
+                }
+
+                right
+            } else {
+                let left_tail_len = mid - self.tree.len();
+
+                let mut right_tail = new_branch!();
+                let mut right_tail_len = 0;
+
+                for i in left_tail_len..self.tail_len {
+                    right_tail[right_tail_len] = self.tail[i].take();
+                    right_tail_len += 1;
+                }
+
+                self.tail_len = left_tail_len;
+
+                RrbVec {
+                    tree: RrbTree::new(),
+                    tail: right_tail,
+                    tail_len: right_tail_len,
+                }
+            }
+        } else if mid == self.len() {
+            RrbVec::new()
+        } else {
+            panic!()
+        }
+    }
+
+    pub fn split_off_naive_2(&mut self, mid: usize) -> Self {
+        if mid == 0 {
+            mem::replace(self, RrbVec::new())
+        } else if mid < self.len() {
+            let self_tree = mem::replace(&mut self.tree, RrbTree::new());
+            let self_tail = mem::replace(&mut self.tail, new_branch!());
+
+            let self_tail_len = self.tail_len;
+            self.tail_len = 0;
+
+            let self_vec = RrbVec {
+                tree: self_tree,
+                tail: self_tail,
+                tail_len: self_tail_len,
+            };
+
+            let mut that_vec = RrbVec::new();
+            for (i, item) in self_vec.into_iter().enumerate() {
+                if i < mid {
+                    self.push(item);
+                } else {
+                    that_vec.push(item);
+                }
+            }
+            that_vec
+        } else if mid == self.len() {
+            RrbVec::new()
+        } else {
+            panic!()
+        }
+    }
+
     pub fn append(&mut self, that: &mut RrbVec<T>) {
         if self.is_empty() {
             self.tail = mem::replace(&mut that.tail, new_branch!());
@@ -248,6 +346,32 @@ impl<T: Clone + Debug> RrbVec<T> {
         }
 
         self.push_tail();
+    }
+
+    pub fn append_naive(&mut self, that: &mut RrbVec<T>) {
+        let that_is_empty = that.is_empty();
+
+        let that_tree = mem::replace(&mut that.tree, RrbTree::new());
+        let that_tail = mem::replace(&mut that.tail, new_branch!());
+
+        let that_tail_len = that.tail_len;
+        that.tail_len = 0;
+
+        if self.is_empty() {
+            self.tree = that_tree;
+            self.tail = that_tail;
+            self.tail_len = that_tail_len;
+        } else if !that_is_empty {
+            let that_vec = RrbVec {
+                tree: that_tree,
+                tail: that_tail,
+                tail_len: that_tail_len,
+            };
+
+            for value in that_vec.into_iter() {
+                self.push(value);
+            }
+        }
     }
 }
 
