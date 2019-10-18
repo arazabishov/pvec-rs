@@ -8,5 +8,5 @@ before_script:
 
 script:
   - cargo fmt --all -- --check
-  - cargo test
-  - cargo test --features "small_branch"
+  - cargo test --all
+  - cargo test --all --features "small_branch"
