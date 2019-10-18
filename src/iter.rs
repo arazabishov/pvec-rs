@@ -99,8 +99,8 @@ impl<T: Clone + Debug> IntoIterator for PVec<T> {
 
     fn into_iter(self) -> Self::IntoIter {
         match self.0 {
-            Flavor::Standard(vec_arc) => PVecIter::from_vec(vec_arc.take()),
-            Flavor::Persistent(pvec) => PVecIter::from_rrbvec(pvec),
+            Flavor::Standard(ptr) => PVecIter::from_vec(ptr.take()),
+            Flavor::Persistent(ptr) => PVecIter::from_rrbvec(ptr.take()),
         }
     }
 }

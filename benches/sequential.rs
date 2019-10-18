@@ -391,7 +391,7 @@ fn push(criterion: &mut Criterion) {
     macro_rules! bench_balanced {
         ($p:ident, $vec:ident, $op:ident, $name:ident) => {
             group.bench_with_input(BenchmarkId::new($name, $p), $p, |b, n| {
-                b.iter_with_large_drop(|| {
+                b.iter(|| {
                     let mut vec = $vec::new();
                     for i in 0..*n {
                         vec.$op(i);
@@ -424,7 +424,7 @@ fn push_clone(criterion: &mut Criterion) {
     macro_rules! bench_balanced {
         ($p:ident, $vec:ident, $op:ident, $name:ident) => {
             group.bench_with_input(BenchmarkId::new($name, $p), $p, |b, n| {
-                b.iter_with_large_drop(|| {
+                b.iter(|| {
                     let mut vec = $vec::new();
                     let mut vec_one = vec.clone();
 
@@ -1166,7 +1166,7 @@ fn pop_clone(criterion: &mut Criterion) {
                             vec_two = vec_one.clone();
                         }
 
-                        drop(vec_two);
+                        vec_two
                     },
                     BatchSize::SmallInput,
                 )
@@ -1207,7 +1207,7 @@ fn pop_clone(criterion: &mut Criterion) {
                             vec_two = vec_one.clone();
                         }
 
-                        drop(vec_two);
+                        vec_two
                     },
                     BatchSize::SmallInput,
                 )
