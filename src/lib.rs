@@ -140,6 +140,15 @@ impl<T: Clone + Debug> PVec<T> {
     }
 
     pub fn get_mut(&mut self, index: usize) -> Option<&mut T> {
+        let (is_standard, vec_len, ref_count) = match self.0 {
+            Flavor::Standard(ref ptr) => (true, ptr.len(), SharedPtr::strong_count(ptr)),
+            Flavor::Persistent(ref ptr) => (false, ptr.len(), 0),
+        };
+
+        if is_standard && vec_len > THRESHOLD && ref_count > 1 {
+            self.upgrade();
+        }
+
         match self.0 {
             Flavor::Standard(ref mut ptr) => SharedPtr::make_mut(ptr).get_mut(index),
             Flavor::Persistent(ref mut ptr) => SharedPtr::make_mut(ptr).get_mut(index),
@@ -296,16 +305,8 @@ impl<T: Clone + Debug> ops::IndexMut<usize> for PVec<T> {
 #[cfg(test)]
 #[macro_use]
 mod test {
-    use super::core::RrbVec;
     use super::PVec;
-    use super::SharedPtr;
     use super::THRESHOLD;
-
-    #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
-    pub struct PVecTwo<T> {
-        inline: Option<SharedPtr<Vec<T>>>,
-        spilled: Option<RrbVec<T>>,
-    }
 
     #[test]
     fn interleaving_append_split_off_operations() {
