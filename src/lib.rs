@@ -7,11 +7,11 @@ extern crate rayon;
 #[cfg(not(feature = "small_branch"))]
 const BRANCH_FACTOR: usize = 32;
 
-#[cfg(not(feature = "small_branch"))]
-const THRESHOLD: usize = 1024;
-
 #[cfg(feature = "small_branch")]
 const BRANCH_FACTOR: usize = 4;
+
+#[cfg(not(feature = "small_branch"))]
+const THRESHOLD: usize = 1024;
 
 #[cfg(feature = "small_branch")]
 const THRESHOLD: usize = 256;
@@ -53,7 +53,7 @@ impl<T: Clone + Debug> Flavor<T> {
     #[inline(always)]
     fn as_mut_standard(&mut self) -> &mut Vec<T> {
         match self {
-            Flavor::Standard(ref mut vec_arc) => SharedPtr::make_mut(vec_arc),
+            Flavor::Standard(ref mut ptr) => SharedPtr::make_mut(ptr),
             Flavor::Persistent(..) => unreachable!(),
         }
     }
@@ -172,17 +172,20 @@ impl<T: Clone + Debug> PVec<T> {
         // a(s), b(p) (upgrade a, a append b)
         // a(p), b(p) (a append b)
 
-        if self.len() + that.len() > THRESHOLD {
-            if self.0.is_standard() {
+        let (self_is_standard, self_len) = match self.0 {
+            Flavor::Standard(ref ptr) => (true, ptr.len()),
+            Flavor::Persistent(ref ptr) => (false, ptr.len()),
+        };
+
+        if self_len + that.len() > THRESHOLD {
+            if self_is_standard {
                 self.upgrade();
             }
 
             let rrbvec = self.0.as_mut_persistent();
-
             match that.0 {
-                Flavor::Standard(ref mut vec_arc) => {
-                    // ToDo: drain might be causing performance issues
-                    for i in SharedPtr::make_mut(vec_arc).drain(..) {
+                Flavor::Standard(ref mut ptr) => {
+                    for i in SharedPtr::make_mut(ptr).drain(..) {
                         rrbvec.push(i);
                     }
                 }
