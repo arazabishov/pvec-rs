@@ -1,5 +1,6 @@
 use criterion::*;
 
+use pvec::core::RbVec;
 use pvec::core::RrbVec;
 use pvec::PVec;
 use rayon::prelude::*;
@@ -73,6 +74,7 @@ fn words_map_seq(criterion: &mut Criterion) {
     for p in params.iter() {
         bench!(STD_VEC, p, Vec);
         bench!(PVEC_UNBALANCED, p, PVec);
+        bench!(RRBVEC_BALANCED, p, RbVec);
         bench!(RRBVEC_UNBALANCED, p, RrbVec);
     }
 
@@ -119,6 +121,7 @@ fn words_map_par(criterion: &mut Criterion, num_threads: usize) {
     for p in params.iter() {
         bench!(STD_VEC, p, Vec);
         bench!(PVEC_UNBALANCED, p, PVec);
+        bench!(RRBVEC_BALANCED, p, RbVec);
         bench!(RRBVEC_UNBALANCED, p, RrbVec);
     }
 
@@ -178,6 +181,7 @@ fn words_filter_seq(criterion: &mut Criterion) {
     for p in params.iter() {
         bench!(STD_VEC, p, Vec);
         bench!(PVEC_UNBALANCED, p, PVec);
+        bench!(RRBVEC_BALANCED, p, RbVec);
         bench!(RRBVEC_UNBALANCED, p, RrbVec);
     }
 
@@ -225,6 +229,7 @@ fn words_filter_par(criterion: &mut Criterion, num_threads: usize) {
     for p in params.iter() {
         bench!(STD_VEC, p, Vec);
         bench!(PVEC_UNBALANCED, p, PVec);
+        bench!(RRBVEC_BALANCED, p, RbVec);
         bench!(RRBVEC_UNBALANCED, p, RrbVec);
     }
 
