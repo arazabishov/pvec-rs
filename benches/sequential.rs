@@ -1255,12 +1255,16 @@ fn append(criterion: &mut Criterion) {
                 let mut input_len = 0;
                 let mut i = 1;
 
+                let mut _another_vec_cloned = $vec::new();
                 while i < *$n && (input_len + i) <= *$n {
                     let mut another_vec = $vec::new();
 
-                    for j in 0..i {
+                    for j in 0..(i - 1) {
                         another_vec.$op(j);
                     }
+
+                    _another_vec_cloned = another_vec.clone();
+                    another_vec.$op(i - 1);
 
                     input_len += another_vec.len();
                     input.push(another_vec);
@@ -1271,11 +1275,14 @@ fn append(criterion: &mut Criterion) {
                 let mut another_vec = $vec::new();
                 let mut j = 0;
 
-                while input_len < *$n {
+                while input_len < (*$n - 1) {
                     another_vec.$op(j);
                     input_len += 1;
                     j += 1;
                 }
+
+                _another_vec_cloned = another_vec.clone();
+                another_vec.$op(*$n - 1);
 
                 input.push(another_vec);
                 input
