@@ -7,11 +7,11 @@ extern crate rayon;
 #[cfg(not(feature = "small_branch"))]
 const BRANCH_FACTOR: usize = 32;
 
-#[cfg(not(feature = "small_branch"))]
-const THRESHOLD: usize = 1024;
-
 #[cfg(feature = "small_branch")]
 const BRANCH_FACTOR: usize = 4;
+
+#[cfg(not(feature = "small_branch"))]
+const THRESHOLD: usize = 1024;
 
 #[cfg(feature = "small_branch")]
 const THRESHOLD: usize = 256;
@@ -53,7 +53,7 @@ impl<T: Clone + Debug> Flavor<T> {
     #[inline(always)]
     fn as_mut_standard(&mut self) -> &mut Vec<T> {
         match self {
-            Flavor::Standard(ref mut vec_arc) => SharedPtr::make_mut(vec_arc),
+            Flavor::Standard(ref mut ptr) => SharedPtr::make_mut(ptr),
             Flavor::Persistent(..) => unreachable!(),
         }
     }
@@ -140,6 +140,15 @@ impl<T: Clone + Debug> PVec<T> {
     }
 
     pub fn get_mut(&mut self, index: usize) -> Option<&mut T> {
+        let (is_standard, vec_len, ref_count) = match self.0 {
+            Flavor::Standard(ref ptr) => (true, ptr.len(), SharedPtr::strong_count(ptr)),
+            Flavor::Persistent(ref ptr) => (false, ptr.len(), 0),
+        };
+
+        if is_standard && vec_len > THRESHOLD && ref_count > 1 {
+            self.upgrade();
+        }
+
         match self.0 {
             Flavor::Standard(ref mut ptr) => SharedPtr::make_mut(ptr).get_mut(index),
             Flavor::Persistent(ref mut ptr) => SharedPtr::make_mut(ptr).get_mut(index),
@@ -163,17 +172,20 @@ impl<T: Clone + Debug> PVec<T> {
         // a(s), b(p) (upgrade a, a append b)
         // a(p), b(p) (a append b)
 
-        if self.len() + that.len() > THRESHOLD {
-            if self.0.is_standard() {
+        let (self_is_standard, self_len) = match self.0 {
+            Flavor::Standard(ref ptr) => (true, ptr.len()),
+            Flavor::Persistent(ref ptr) => (false, ptr.len()),
+        };
+
+        if self_len + that.len() > THRESHOLD {
+            if self_is_standard {
                 self.upgrade();
             }
 
             let rrbvec = self.0.as_mut_persistent();
-
             match that.0 {
-                Flavor::Standard(ref mut vec_arc) => {
-                    // ToDo: drain might be causing performance issues
-                    for i in SharedPtr::make_mut(vec_arc).drain(..) {
+                Flavor::Standard(ref mut ptr) => {
+                    for i in SharedPtr::make_mut(ptr).drain(..) {
                         rrbvec.push(i);
                     }
                 }
@@ -296,16 +308,8 @@ impl<T: Clone + Debug> ops::IndexMut<usize> for PVec<T> {
 #[cfg(test)]
 #[macro_use]
 mod test {
-    use super::core::RrbVec;
     use super::PVec;
-    use super::SharedPtr;
     use super::THRESHOLD;
-
-    #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
-    pub struct PVecTwo<T> {
-        inline: Option<SharedPtr<Vec<T>>>,
-        spilled: Option<RrbVec<T>>,
-    }
 
     #[test]
     fn interleaving_append_split_off_operations() {

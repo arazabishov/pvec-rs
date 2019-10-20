@@ -11,6 +11,18 @@ mod stdvec {
     }
 }
 
+mod rbvec {
+    use pvec::core::RbVec;
+
+    pub fn generate_vec(n: u32) -> RbVec<u32> {
+        let mut pvec = RbVec::new();
+        for i in 0_u32..n {
+            pvec.push(i);
+        }
+        pvec
+    }
+}
+
 mod rrbvec {
     use pvec::core::RrbVec;
 
@@ -65,6 +77,7 @@ fn scalar_product_seq(criterion: &mut Criterion) {
     for p in params.iter() {
         bench!(STD_VEC, p, stdvec);
         bench!(PVEC_UNBALANCED, p, pvec);
+        bench!(RRBVEC_BALANCED, p, rbvec);
         bench!(RRBVEC_UNBALANCED, p, rrbvec);
     }
 
@@ -109,6 +122,7 @@ fn scalar_product_par(criterion: &mut Criterion, num_threads: usize) {
     for p in params.iter() {
         bench!(STD_VEC, p, stdvec);
         bench!(PVEC_UNBALANCED, p, pvec);
+        bench!(RRBVEC_BALANCED, p, rbvec);
         bench!(RRBVEC_UNBALANCED, p, rrbvec);
     }
 

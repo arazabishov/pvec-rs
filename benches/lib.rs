@@ -18,15 +18,6 @@ use criterion::*;
 mod sequential;
 
 #[cfg(all(feature = "arc", feature = "rayon-iter"))]
-mod life;
-
-#[cfg(all(feature = "arc", feature = "rayon-iter"))]
-mod pythagoras;
-
-#[cfg(all(feature = "arc", feature = "rayon-iter"))]
-mod factorial;
-
-#[cfg(all(feature = "arc", feature = "rayon-iter"))]
 mod scalar;
 
 #[cfg(all(feature = "arc", feature = "rayon-iter"))]
@@ -45,9 +36,6 @@ const PVEC_UNBALANCED: &str = "pvec-unbalanced";
 
 #[cfg(all(feature = "arc", feature = "rayon-iter"))]
 criterion_main!(
-    life::benches,
-    pythagoras::benches,
-    factorial::benches,
     sequential::benches,
     scalar::benches,
     words::benches,
