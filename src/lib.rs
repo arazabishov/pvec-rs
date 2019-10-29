@@ -172,12 +172,18 @@ impl<T: Clone + Debug> PVec<T> {
         // a(s), b(p) (upgrade a, a append b)
         // a(p), b(p) (a append b)
 
+        if that.len() == 0 {
+            return;
+        }
+
         let (self_is_standard, self_len) = match self.0 {
             Flavor::Standard(ref ptr) => (true, ptr.len()),
             Flavor::Persistent(ref ptr) => (false, ptr.len()),
         };
 
-        if self_len + that.len() > THRESHOLD {
+        if self_len == 0 {
+            mem::swap(&mut self.0, &mut that.0);
+        } else if self_len + that.len() > THRESHOLD {
             if self_is_standard {
                 self.upgrade();
             }

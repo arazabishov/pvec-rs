@@ -212,17 +212,17 @@ impl<T: Clone + Debug> RbVec<T> {
     pub fn append(&mut self, that: &mut RbVec<T>) {
         let that_is_empty = that.is_empty();
 
-        let that_tree = mem::replace(&mut that.tree, RrbTree::new());
-        let that_tail = mem::replace(&mut that.tail, new_branch!());
-
-        let that_tail_len = that.tail_len;
-        that.tail_len = 0;
-
         if self.is_empty() {
-            self.tree = that_tree;
-            self.tail = that_tail;
-            self.tail_len = that_tail_len;
+            mem::swap(&mut self.tree, &mut that.tree);
+            mem::swap(&mut self.tail, &mut that.tail);
+            mem::swap(&mut self.tail_len, &mut that.tail_len);
         } else if !that_is_empty {
+            let that_tree = mem::replace(&mut that.tree, RrbTree::new());
+            let that_tail = mem::replace(&mut that.tail, new_branch!());
+
+            let that_tail_len = that.tail_len;
+            that.tail_len = 0;
+
             let that_vec = RbVec {
                 tree: that_tree,
                 tail: that_tail,
