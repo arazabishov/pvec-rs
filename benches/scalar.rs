@@ -145,15 +145,10 @@ fn scalar_product_8(criterion: &mut Criterion) {
     scalar_product_par(criterion, 8);
 }
 
-fn scalar_product_16(criterion: &mut Criterion) {
-    scalar_product_par(criterion, 16);
-}
-
 criterion_group!(
     benches,
     scalar_product_1,
     scalar_product_2,
     scalar_product_4,
-    scalar_product_8,
-    scalar_product_16,
+    scalar_product_8,    
 );

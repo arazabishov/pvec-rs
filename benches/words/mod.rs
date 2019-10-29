@@ -151,10 +151,6 @@ fn words_map_8(criterion: &mut Criterion) {
     words_map_par(criterion, 8);
 }
 
-fn words_map_16(criterion: &mut Criterion) {
-    words_map_par(criterion, 16);
-}
-
 fn words_filter_seq(criterion: &mut Criterion) {
     *criterion = Criterion::default().with_plots().sample_size(50);
 
@@ -266,20 +262,14 @@ fn words_filter_8(criterion: &mut Criterion) {
     words_filter_par(criterion, 8);
 }
 
-fn words_filter_16(criterion: &mut Criterion) {
-    words_filter_par(criterion, 16);
-}
-
 criterion_group!(
     benches,
     words_map_1,
     words_map_2,
     words_map_4,
-    words_map_8,
-    words_map_16,
+    words_map_8,    
     words_filter_1,
     words_filter_2,
     words_filter_4,
-    words_filter_8,
-    words_filter_16
+    words_filter_8,    
 );

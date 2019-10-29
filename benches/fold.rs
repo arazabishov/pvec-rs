@@ -154,10 +154,6 @@ pub fn map_fold_8(criterion: &mut Criterion) {
     map_fold_par(criterion, 8);
 }
 
-pub fn map_fold_16(criterion: &mut Criterion) {
-    map_fold_par(criterion, 16);
-}
-
 fn filter_fold_seq(criterion: &mut Criterion) {
     let mut group = criterion.benchmark_group("filter_fold_with_thread_num_1");
     group.plot_config(PlotConfiguration::default().summary_scale(AxisScale::Logarithmic));
@@ -263,20 +259,14 @@ pub fn filter_fold_8(criterion: &mut Criterion) {
     filter_fold_par(criterion, 8);
 }
 
-pub fn filter_fold_16(criterion: &mut Criterion) {
-    filter_fold_par(criterion, 16);
-}
-
 criterion_group!(
     benches,
     map_fold_1,
     map_fold_2,
     map_fold_4,
-    map_fold_8,
-    map_fold_16,
+    map_fold_8,    
     filter_fold_1,
     filter_fold_2,
     filter_fold_4,
-    filter_fold_8,
-    filter_fold_16,
+    filter_fold_8,    
 );
