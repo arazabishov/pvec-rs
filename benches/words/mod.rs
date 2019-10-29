@@ -87,29 +87,36 @@ fn words_map_par(criterion: &mut Criterion, num_threads: usize) {
     let mut group = criterion.benchmark_group(format!("words_map_with_thread_num_{}", num_threads));
     group.plot_config(PlotConfiguration::default().summary_scale(AxisScale::Logarithmic));
 
+    let pool = rayon::ThreadPoolBuilder::new()
+        .num_threads(num_threads)
+        .build()
+        .unwrap();
+
     let file = fs::read_to_string("benches/words/words.txt").expect("Oops, something went wrong");
     let lines = file.lines();
 
     macro_rules! bench {
         ($name:ident, $p:ident, $vec:ident) => {
             group.bench_with_input(BenchmarkId::new($name, $p), $p, |b, n| {
-                b.iter_batched(
-                    || lines.clone().take(*n).collect::<$vec<&str>>(),
-                    |words| {
-                        words
-                            .into_par_iter()
-                            .map(|it| (it, is_palindrome(&it)))
-                            .fold($vec::new, |mut vec, x| {
-                                vec.push(x);
-                                vec
-                            })
-                            .reduce($vec::new, |mut vec1, mut vec2| {
-                                vec1.append(&mut vec2);
-                                vec1
-                            })
-                    },
-                    BatchSize::SmallInput,
-                );
+                pool.install(|| {
+                    b.iter_batched(
+                        || lines.clone().take(*n).collect::<$vec<&str>>(),
+                        |words| {
+                            words
+                                .into_par_iter()
+                                .map(|it| (it, is_palindrome(&it)))
+                                .fold($vec::new, |mut vec, x| {
+                                    vec.push(x);
+                                    vec
+                                })
+                                .reduce($vec::new, |mut vec1, mut vec2| {
+                                    vec1.append(&mut vec2);
+                                    vec1
+                                })
+                        },
+                        BatchSize::SmallInput,
+                    );
+                });
             });
         };
     }
@@ -195,29 +202,36 @@ fn words_filter_par(criterion: &mut Criterion, num_threads: usize) {
         criterion.benchmark_group(format!("words_filter_with_thread_num_{}", num_threads));
     group.plot_config(PlotConfiguration::default().summary_scale(AxisScale::Logarithmic));
 
+    let pool = rayon::ThreadPoolBuilder::new()
+        .num_threads(num_threads)
+        .build()
+        .unwrap();
+
     let file = fs::read_to_string("benches/words/words.txt").expect("Oops, something went wrong");
     let lines = file.lines();
 
     macro_rules! bench {
         ($name:ident, $p:ident, $vec:ident) => {
             group.bench_with_input(BenchmarkId::new($name, $p), $p, |b, n| {
-                b.iter_batched(
-                    || lines.clone().take(*n).collect::<$vec<&str>>(),
-                    |words| {
-                        words
-                            .into_par_iter()
-                            .filter(|it| is_palindrome(&it))
-                            .fold($vec::new, |mut vec, x| {
-                                vec.push(x);
-                                vec
-                            })
-                            .reduce($vec::new, |mut vec1, mut vec2| {
-                                vec1.append(&mut vec2);
-                                vec1
-                            })
-                    },
-                    BatchSize::SmallInput,
-                );
+                pool.install(|| {
+                    b.iter_batched(
+                        || lines.clone().take(*n).collect::<$vec<&str>>(),
+                        |words| {
+                            words
+                                .into_par_iter()
+                                .filter(|it| is_palindrome(&it))
+                                .fold($vec::new, |mut vec, x| {
+                                    vec.push(x);
+                                    vec
+                                })
+                                .reduce($vec::new, |mut vec1, mut vec2| {
+                                    vec1.append(&mut vec2);
+                                    vec1
+                                })
+                        },
+                        BatchSize::SmallInput,
+                    );
+                });
             });
         };
     }
