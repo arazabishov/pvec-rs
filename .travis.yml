@@ -10,3 +10,4 @@ script:
   - cargo fmt --all -- --check
   - cargo test --all
   - cargo test --all --features "small_branch"
+  - cargo test --benches --features=arc,rayon-iter
