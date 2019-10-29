@@ -150,5 +150,5 @@ criterion_group!(
     scalar_product_1,
     scalar_product_2,
     scalar_product_4,
-    scalar_product_8,    
+    scalar_product_8,
 );

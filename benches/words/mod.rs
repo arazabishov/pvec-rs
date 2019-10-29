@@ -267,9 +267,9 @@ criterion_group!(
     words_map_1,
     words_map_2,
     words_map_4,
-    words_map_8,    
+    words_map_8,
     words_filter_1,
     words_filter_2,
     words_filter_4,
-    words_filter_8,    
+    words_filter_8,
 );

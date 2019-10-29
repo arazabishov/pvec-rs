@@ -264,9 +264,9 @@ criterion_group!(
     map_fold_1,
     map_fold_2,
     map_fold_4,
-    map_fold_8,    
+    map_fold_8,
     filter_fold_1,
     filter_fold_2,
     filter_fold_4,
-    filter_fold_8,    
+    filter_fold_8,
 );
