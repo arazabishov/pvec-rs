@@ -1,6 +1,10 @@
 use super::*;
 use rayon::prelude::*;
 
+use crate::pvec::core::RbVec;
+use crate::pvec::core::RrbVec;
+use crate::pvec::PVec;
+
 mod stdvec {
     pub fn generate_vec(n: u32) -> Vec<u32> {
         let mut vec = Vec::new();
@@ -12,7 +16,7 @@ mod stdvec {
 }
 
 mod rbvec {
-    use pvec::core::RbVec;
+    use super::RbVec;
 
     pub fn generate_vec(n: u32) -> RbVec<u32> {
         let mut pvec = RbVec::new();
@@ -24,7 +28,7 @@ mod rbvec {
 }
 
 mod rrbvec {
-    use pvec::core::RrbVec;
+    use super::RrbVec;
 
     pub fn generate_vec(n: u32) -> RrbVec<u32> {
         let mut pvec = RrbVec::new();
@@ -36,7 +40,7 @@ mod rrbvec {
 }
 
 mod pvec {
-    use pvec::PVec;
+    use super::PVec;
 
     pub fn generate_vec(n: u32) -> PVec<u32> {
         let mut pvec = PVec::new();
@@ -47,12 +51,12 @@ mod pvec {
     }
 }
 
-fn scalar_product_seq(criterion: &mut Criterion) {
-    let mut group = criterion.benchmark_group("scalar_product_with_thread_num_1");
+fn vector_addition_seq(criterion: &mut Criterion) {
+    let mut group = criterion.benchmark_group("vector_addition_with_thread_num_1");
     group.plot_config(PlotConfiguration::default().summary_scale(AxisScale::Logarithmic));
 
     macro_rules! bench {
-        ($name:ident, $p:ident, $module:ident) => {
+        ($name:ident, $p:ident, $module:ident, $vec:ident) => {
             group.bench_with_input(BenchmarkId::new($name, $p), $p, |b, n| {
                 b.iter_batched(
                     || ($module::generate_vec(*n), $module::generate_vec(*n)),
@@ -60,8 +64,11 @@ fn scalar_product_seq(criterion: &mut Criterion) {
                         vec_one
                             .into_iter()
                             .zip(vec_two)
-                            .map(|(e1, e2)| e1 * e2)
-                            .fold(0, |a, b| a + b)
+                            .map(|(e1, e2)| e1 + e2)
+                            .fold($vec::new(), |mut vec1, x| {
+                                vec1.push(x);
+                                vec1
+                            })
                     },
                     BatchSize::SmallInput,
                 );
@@ -75,18 +82,18 @@ fn scalar_product_seq(criterion: &mut Criterion) {
     ];
 
     for p in params.iter() {
-        bench!(STD_VEC, p, stdvec);
-        bench!(PVEC_UNBALANCED, p, pvec);
-        bench!(RRBVEC_BALANCED, p, rbvec);
-        bench!(RRBVEC_UNBALANCED, p, rrbvec);
+        bench!(STD_VEC, p, stdvec, Vec);
+        bench!(PVEC_UNBALANCED, p, pvec, PVec);
+        bench!(RRBVEC_BALANCED, p, rbvec, RbVec);
+        bench!(RRBVEC_UNBALANCED, p, rrbvec, RrbVec);
     }
 
     group.finish();
 }
 
-fn scalar_product_par(criterion: &mut Criterion, num_threads: usize) {
+fn vector_addition_par(criterion: &mut Criterion, num_threads: usize) {
     let mut group =
-        criterion.benchmark_group(format!("scalar_product_with_thread_num_{}", num_threads));
+        criterion.benchmark_group(format!("vector_addition_with_thread_num_{}", num_threads));
     group.plot_config(PlotConfiguration::default().summary_scale(AxisScale::Logarithmic));
 
     let pool = rayon::ThreadPoolBuilder::new()
@@ -95,7 +102,7 @@ fn scalar_product_par(criterion: &mut Criterion, num_threads: usize) {
         .unwrap();
 
     macro_rules! bench {
-        ($name:ident, $p:ident, $module:ident) => {
+        ($name:ident, $p:ident, $module:ident, $vec:ident) => {
             group.bench_with_input(BenchmarkId::new($name, $p), $p, |b, n| {
                 pool.install(|| {
                     b.iter_batched(
@@ -104,8 +111,15 @@ fn scalar_product_par(criterion: &mut Criterion, num_threads: usize) {
                             vec_one
                                 .into_par_iter()
                                 .zip(vec_two)
-                                .map(|(e1, e2)| e1 * e2)
-                                .reduce(|| 0, |a, b| a + b)
+                                .map(|(e1, e2)| e1 + e2)
+                                .fold($vec::new, |mut vec1, x| {
+                                    vec1.push(x);
+                                    vec1
+                                })
+                                .reduce($vec::new, |mut vec1, mut vec2| {
+                                    vec1.append(&mut vec2);
+                                    vec1
+                                })
                         },
                         BatchSize::SmallInput,
                     );
@@ -120,35 +134,35 @@ fn scalar_product_par(criterion: &mut Criterion, num_threads: usize) {
     ];
 
     for p in params.iter() {
-        bench!(STD_VEC, p, stdvec);
-        bench!(PVEC_UNBALANCED, p, pvec);
-        bench!(RRBVEC_BALANCED, p, rbvec);
-        bench!(RRBVEC_UNBALANCED, p, rrbvec);
+        bench!(STD_VEC, p, stdvec, Vec);
+        bench!(PVEC_UNBALANCED, p, pvec, PVec);
+        bench!(RRBVEC_BALANCED, p, rbvec, RbVec);
+        bench!(RRBVEC_UNBALANCED, p, rrbvec, RrbVec);
     }
 
     group.finish();
 }
 
-fn scalar_product_1(criterion: &mut Criterion) {
-    scalar_product_seq(criterion);
+fn vector_addition_1(criterion: &mut Criterion) {
+    vector_addition_seq(criterion);
 }
 
-fn scalar_product_2(criterion: &mut Criterion) {
-    scalar_product_par(criterion, 2);
+fn vector_addition_2(criterion: &mut Criterion) {
+    vector_addition_par(criterion, 2);
 }
 
-fn scalar_product_4(criterion: &mut Criterion) {
-    scalar_product_par(criterion, 4);
+fn vector_addition_4(criterion: &mut Criterion) {
+    vector_addition_par(criterion, 4);
 }
 
-fn scalar_product_8(criterion: &mut Criterion) {
-    scalar_product_par(criterion, 8);
+fn vector_addition_8(criterion: &mut Criterion) {
+    vector_addition_par(criterion, 8);
 }
 
 criterion_group!(
     benches,
-    scalar_product_1,
-    scalar_product_2,
-    scalar_product_4,
-    scalar_product_8,
+    vector_addition_1,
+    vector_addition_2,
+    vector_addition_4,
+    vector_addition_8,
 );

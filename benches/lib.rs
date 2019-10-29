@@ -18,7 +18,7 @@ use criterion::*;
 mod sequential;
 
 #[cfg(all(feature = "arc", feature = "rayon-iter"))]
-mod scalar;
+mod vecaddition;
 
 #[cfg(all(feature = "arc", feature = "rayon-iter"))]
 mod words;
@@ -37,7 +37,7 @@ const PVEC_UNBALANCED: &str = "pvec-unbalanced";
 #[cfg(all(feature = "arc", feature = "rayon-iter"))]
 criterion_main!(
     sequential::benches,
-    scalar::benches,
+    vecaddition::benches,
     words::benches,
     fold::benches,
 );
