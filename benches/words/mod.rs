@@ -19,7 +19,7 @@ fn is_palindrome(word: &str) -> bool {
     let mut i = 0;
     let mut j = word.len() - 1;
 
-    while j >= i {
+    while j > i {
         let ch_f = match chars_f.next() {
             Some(ch) => ch,
             None => break,
@@ -42,8 +42,6 @@ fn is_palindrome(word: &str) -> bool {
 }
 
 fn words_map_seq(criterion: &mut Criterion) {
-    *criterion = Criterion::default().with_plots().sample_size(50);
-
     let mut group = criterion.benchmark_group(format!("words_map_with_thread_num_1"));
     group.plot_config(PlotConfiguration::default().summary_scale(AxisScale::Logarithmic));
 
@@ -82,8 +80,6 @@ fn words_map_seq(criterion: &mut Criterion) {
 }
 
 fn words_map_par(criterion: &mut Criterion, num_threads: usize) {
-    *criterion = Criterion::default().with_plots().sample_size(50);
-
     let mut group = criterion.benchmark_group(format!("words_map_with_thread_num_{}", num_threads));
     group.plot_config(PlotConfiguration::default().summary_scale(AxisScale::Logarithmic));
 
@@ -152,8 +148,6 @@ fn words_map_8(criterion: &mut Criterion) {
 }
 
 fn words_filter_seq(criterion: &mut Criterion) {
-    *criterion = Criterion::default().with_plots().sample_size(50);
-
     let mut group = criterion.benchmark_group(format!("words_filter_with_thread_num_1"));
     group.plot_config(PlotConfiguration::default().summary_scale(AxisScale::Logarithmic));
 
@@ -192,8 +186,6 @@ fn words_filter_seq(criterion: &mut Criterion) {
 }
 
 fn words_filter_par(criterion: &mut Criterion, num_threads: usize) {
-    *criterion = Criterion::default().with_plots().sample_size(50);
-
     let mut group =
         criterion.benchmark_group(format!("words_filter_with_thread_num_{}", num_threads));
     group.plot_config(PlotConfiguration::default().summary_scale(AxisScale::Logarithmic));
