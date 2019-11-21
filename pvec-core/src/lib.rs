@@ -21,7 +21,7 @@ pub mod iter;
 mod rrbtree;
 
 #[cfg(feature = "serde-serializer")]
-mod serializer;
+pub mod serializer;
 
 #[derive(Clone, Debug, Ord, PartialOrd, Eq, PartialEq)]
 pub struct RbVec<T> {
