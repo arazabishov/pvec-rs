@@ -25,7 +25,7 @@ num = "0.2.0"
 serde-serializer = ["pvec-core/serde-serializer"]
 rayon-iter = ["pvec-core/rayon-iter", "rayon"]
 arc = ["pvec-core/arc", "pvec-utils/arc",]
-small_branch = []
+small_branch = ["pvec-core/small_branch"]
 
 [[bench]]
 name = "lib"

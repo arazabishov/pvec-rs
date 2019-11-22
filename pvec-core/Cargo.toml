@@ -19,3 +19,4 @@ rayon = { version = "1.1.0", optional = true }
 serde-serializer = ["serde", "serde_json", "serde_derive"]
 rayon-iter = ["rayon"]
 arc = ["pvec-utils/arc"]
+small_branch = []
