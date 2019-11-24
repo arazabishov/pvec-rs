@@ -1394,8 +1394,8 @@ fn split_off(criterion: &mut Criterion) {
                         vec
                     },
                     |mut data| {
-                        while data.len() > 512 {
-                            data = data.split_off(512)
+                        while data.len() > 64 {
+                            data = data.split_off(64)
                         }
 
                         data
