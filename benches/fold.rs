@@ -259,6 +259,10 @@ pub fn filter_fold_8(criterion: &mut Criterion) {
     filter_fold_par(criterion, 8);
 }
 
+pub fn filter_fold_16(criterion: &mut Criterion) {
+    filter_fold_par(criterion, 16);
+}
+
 criterion_group!(
     benches,
     map_fold_1,
@@ -269,4 +273,5 @@ criterion_group!(
     filter_fold_2,
     filter_fold_4,
     filter_fold_8,
+    filter_fold_16,
 );

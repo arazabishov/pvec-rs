@@ -159,10 +159,15 @@ fn vector_addition_8(criterion: &mut Criterion) {
     vector_addition_par(criterion, 8);
 }
 
+fn vector_addition_16(criterion: &mut Criterion) {
+    vector_addition_par(criterion, 16);
+}
+
 criterion_group!(
     benches,
     vector_addition_1,
     vector_addition_2,
     vector_addition_4,
     vector_addition_8,
+    vector_addition_16,
 );

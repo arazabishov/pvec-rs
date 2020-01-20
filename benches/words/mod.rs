@@ -254,6 +254,10 @@ fn words_filter_8(criterion: &mut Criterion) {
     words_filter_par(criterion, 8);
 }
 
+fn words_filter_16(criterion: &mut Criterion) {
+    words_filter_par(criterion, 16);
+}
+
 criterion_group!(
     benches,
     words_map_1,
@@ -264,4 +268,5 @@ criterion_group!(
     words_filter_2,
     words_filter_4,
     words_filter_8,
+    words_filter_16,
 );
