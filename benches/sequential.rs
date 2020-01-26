@@ -96,7 +96,7 @@ fn index_sequentially(criterion: &mut Criterion) {
         bench_balanced!(IM_RS_VECTOR_BALANCED, p, IVec, push_back);
         bench_unbalanced!(IM_RS_VECTOR_UNBALANCED, p, IVec, push_back, append_ivec);
 
-        bench_balanced!(RRBVEC_BALANCED, p, RbVec, push);
+        bench_balanced!(RBVEC_BALANCED, p, RbVec, push);
         bench_unbalanced!(RRBVEC_UNBALANCED, p, RrbVec, push, append_rrbvec);
 
         bench_balanced!(PVEC_BALANCED, p, PVec, push);
@@ -200,7 +200,7 @@ fn index_randomly(criterion: &mut Criterion) {
         bench_balanced!(PVEC_BALANCED, p, PVec, push);
         bench_unbalanced!(PVEC_UNBALANCED, p, PVec, push, append_pvec);
 
-        bench_balanced!(RRBVEC_BALANCED, p, RbVec, push);
+        bench_balanced!(RBVEC_BALANCED, p, RbVec, push);
         bench_unbalanced!(RRBVEC_UNBALANCED, p, RrbVec, push, append_rrbvec);
     }
 
@@ -286,7 +286,7 @@ fn iterator_next(criterion: &mut Criterion) {
         bench_balanced!(IM_RS_VECTOR_BALANCED, p, IVec, push_back);
         bench_unbalanced!(IM_RS_VECTOR_UNBALANCED, p, IVec, push_back, append_ivec);
 
-        bench_balanced!(RRBVEC_BALANCED, p, RbVec, push);
+        bench_balanced!(RBVEC_BALANCED, p, RbVec, push);
         bench_unbalanced!(RRBVEC_UNBALANCED, p, RrbVec, push, append_rrbvec);
 
         bench_balanced!(PVEC_BALANCED, p, PVec, push);
@@ -375,7 +375,7 @@ fn iterator_next_back(criterion: &mut Criterion) {
         bench_balanced!(IM_RS_VECTOR_BALANCED, p, IVec, push_back);
         bench_unbalanced!(IM_RS_VECTOR_UNBALANCED, p, IVec, push_back, append_ivec);
 
-        bench_balanced!(RRBVEC_BALANCED, p, RbVec, push);
+        bench_balanced!(RBVEC_BALANCED, p, RbVec, push);
         bench_unbalanced!(RRBVEC_UNBALANCED, p, RrbVec, push, append_rrbvec);
 
         bench_balanced!(PVEC_BALANCED, p, PVec, push);
@@ -411,7 +411,7 @@ fn push(criterion: &mut Criterion) {
     for p in params.iter() {
         bench_balanced!(p, Vec, push, STD_VEC);
         bench_balanced!(p, IVec, push_back, IM_RS_VECTOR_BALANCED);
-        bench_balanced!(p, RbVec, push, RRBVEC_BALANCED);
+        bench_balanced!(p, RbVec, push, RBVEC_BALANCED);
         bench_balanced!(p, PVec, push, PVEC_BALANCED);
     }
 
@@ -447,7 +447,7 @@ fn push_clone(criterion: &mut Criterion) {
     for p in params.iter() {
         bench_balanced!(p, Vec, push, STD_VEC);
         bench_balanced!(p, IVec, push_back, IM_RS_VECTOR_BALANCED);
-        bench_balanced!(p, RbVec, push, RRBVEC_BALANCED);
+        bench_balanced!(p, RbVec, push, RBVEC_BALANCED);
         bench_balanced!(p, PVec, push, PVEC_BALANCED);
     }
 
@@ -537,7 +537,7 @@ fn push_unbalanced(criterion: &mut Criterion) {
         bench_balanced!(IM_RS_VECTOR_BALANCED, p, IVec, push_back);
         bench_unbalanced!(IM_RS_VECTOR_UNBALANCED, p, IVec, push_back, append_ivec);
 
-        bench_balanced!(RRBVEC_BALANCED, p, RbVec, push);
+        bench_balanced!(RBVEC_BALANCED, p, RbVec, push);
         bench_unbalanced!(RRBVEC_UNBALANCED, p, RrbVec, push, append_rrbvec);
 
         bench_balanced!(PVEC_BALANCED, p, PVec, push);
@@ -637,7 +637,7 @@ fn push_clone_unbalanced(criterion: &mut Criterion) {
         bench_balanced!(IM_RS_VECTOR_BALANCED, p, IVec, push_back);
         bench_unbalanced!(IM_RS_VECTOR_UNBALANCED, p, IVec, push_back, append_ivec);
 
-        bench_balanced!(RRBVEC_BALANCED, p, RbVec, push);
+        bench_balanced!(RBVEC_BALANCED, p, RbVec, push);
         bench_unbalanced!(RRBVEC_UNBALANCED, p, RrbVec, push, append_rrbvec);
 
         bench_balanced!(PVEC_BALANCED, p, PVec, push);
@@ -729,7 +729,7 @@ fn update(criterion: &mut Criterion) {
         bench_balanced!(IM_RS_VECTOR_BALANCED, p, IVec, push_back);
         bench_unbalanced!(IM_RS_VECTOR_UNBALANCED, p, IVec, push_back, append_ivec);
 
-        bench_balanced!(RRBVEC_BALANCED, p, RbVec, push);
+        bench_balanced!(RBVEC_BALANCED, p, RbVec, push);
         bench_unbalanced!(RRBVEC_UNBALANCED, p, RrbVec, push, append_rrbvec);
 
         bench_balanced!(PVEC_BALANCED, p, PVec, push);
@@ -833,7 +833,7 @@ fn update_randomly(criterion: &mut Criterion) {
         bench_balanced!(PVEC_BALANCED, p, PVec, push);
         bench_unbalanced!(PVEC_UNBALANCED, p, PVec, push, append_pvec);
 
-        bench_balanced!(RRBVEC_BALANCED, p, RbVec, push);
+        bench_balanced!(RBVEC_BALANCED, p, RbVec, push);
         bench_unbalanced!(RRBVEC_UNBALANCED, p, RrbVec, push, append_rrbvec);
     }
 
@@ -928,7 +928,7 @@ fn update_clone(criterion: &mut Criterion) {
         bench_balanced!(IM_RS_VECTOR_BALANCED, p, IVec, push_back);
         bench_unbalanced!(IM_RS_VECTOR_UNBALANCED, p, IVec, push_back, append_ivec);
 
-        bench_balanced!(RRBVEC_BALANCED, p, RbVec, push);
+        bench_balanced!(RBVEC_BALANCED, p, RbVec, push);
         bench_unbalanced!(RRBVEC_UNBALANCED, p, RrbVec, push, append_rrbvec);
 
         bench_balanced!(PVEC_BALANCED, p, PVec, push);
@@ -1039,7 +1039,7 @@ fn update_clone_randomly(criterion: &mut Criterion) {
         bench_balanced!(PVEC_BALANCED, p, PVec, push);
         bench_unbalanced!(PVEC_UNBALANCED, p, PVec, push, append_pvec);
 
-        bench_balanced!(RRBVEC_BALANCED, p, RbVec, push);
+        bench_balanced!(RBVEC_BALANCED, p, RbVec, push);
         bench_unbalanced!(RRBVEC_UNBALANCED, p, RrbVec, push, append_rrbvec);
     }
 
@@ -1132,7 +1132,7 @@ fn pop(criterion: &mut Criterion) {
             append_ivec
         );
 
-        bench_balanced!(RRBVEC_BALANCED, p, RbVec, push, pop);
+        bench_balanced!(RBVEC_BALANCED, p, RbVec, push, pop);
         bench_unbalanced!(RRBVEC_UNBALANCED, p, RrbVec, push, pop, append_rrbvec);
 
         bench_balanced!(PVEC_BALANCED, p, PVec, push, pop);
@@ -1237,7 +1237,7 @@ fn pop_clone(criterion: &mut Criterion) {
             append_ivec
         );
 
-        bench_balanced!(RRBVEC_BALANCED, p, RbVec, push, pop);
+        bench_balanced!(RBVEC_BALANCED, p, RbVec, push, pop);
         bench_unbalanced!(RRBVEC_UNBALANCED, p, RrbVec, push, pop, append_rrbvec);
 
         bench_balanced!(PVEC_BALANCED, p, PVec, push, pop);
@@ -1344,7 +1344,7 @@ fn append(criterion: &mut Criterion) {
                 BatchSize::SmallInput,
             )
         });
-        group.bench_with_input(BenchmarkId::new(RRBVEC_BALANCED, p), p, |b, n| {
+        group.bench_with_input(BenchmarkId::new(RBVEC_BALANCED, p), p, |b, n| {
             b.iter_batched(
                 create_input!(n, RbVec, push),
                 |mut data| {
@@ -1412,7 +1412,7 @@ fn split_off(criterion: &mut Criterion) {
     let params = vec![128, 512, 768, 1024, 2048, 4096, 10000, 20000, 30000, 40000];
     for p in params.iter() {
         make_bench!(group, p, Vec, push, STD_VEC);
-        make_bench!(group, p, RbVec, push, RRBVEC_BALANCED);
+        make_bench!(group, p, RbVec, push, RBVEC_BALANCED);
         make_bench!(group, p, RrbVec, push, RRBVEC_UNBALANCED);
         make_bench!(group, p, PVec, push, PVEC_UNBALANCED);
         make_bench!(group, p, IVec, push_back, IM_RS_VECTOR_UNBALANCED);

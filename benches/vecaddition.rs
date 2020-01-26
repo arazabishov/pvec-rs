@@ -84,7 +84,7 @@ fn vector_addition_seq(criterion: &mut Criterion) {
     for p in params.iter() {
         bench!(STD_VEC, p, stdvec, Vec);
         bench!(PVEC_UNBALANCED, p, pvec, PVec);
-        bench!(RRBVEC_BALANCED, p, rbvec, RbVec);
+        bench!(RBVEC_BALANCED, p, rbvec, RbVec);
         bench!(RRBVEC_UNBALANCED, p, rrbvec, RrbVec);
     }
 
@@ -136,7 +136,7 @@ fn vector_addition_par(criterion: &mut Criterion, num_threads: usize) {
     for p in params.iter() {
         bench!(STD_VEC, p, stdvec, Vec);
         bench!(PVEC_UNBALANCED, p, pvec, PVec);
-        bench!(RRBVEC_BALANCED, p, rbvec, RbVec);
+        bench!(RBVEC_BALANCED, p, rbvec, RbVec);
         bench!(RRBVEC_UNBALANCED, p, rrbvec, RrbVec);
     }
 
