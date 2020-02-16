@@ -1379,7 +1379,11 @@ fn append(criterion: &mut Criterion) {
     group.finish();
 }
 
-fn split_off(criterion: &mut Criterion) {
+// TODO: configure sample_size for other benchmarks too?
+fn split_off(_: &mut Criterion) {
+    let mut criterion = Criterion::default();
+    criterion = criterion.with_plots().sample_size(10);
+
     macro_rules! make_bench {
         ($group:ident, $p:ident, $vec:ident, $push:ident, $name:ident) => {
             $group.bench_with_input(BenchmarkId::new($name, $p), $p, |b, n| {
@@ -1409,7 +1413,10 @@ fn split_off(criterion: &mut Criterion) {
     let mut group = criterion.benchmark_group("split_off");
     group.plot_config(PlotConfiguration::default().summary_scale(AxisScale::Logarithmic));
 
-    let params = vec![128, 512, 768, 1024, 2048, 4096, 10000, 20000, 30000, 40000];
+    let params = vec![
+        128, 512, 768, 1024, 2048, 4096, 10000, 20000, 30000, 40000, 60000, 80000, 100000, 200000,
+        400000,
+    ];
     for p in params.iter() {
         make_bench!(group, p, Vec, push, STD_VEC);
         make_bench!(group, p, RbVec, push, RBVEC_BALANCED);
