@@ -22,22 +22,21 @@ use std::ops;
 pub mod iter;
 
 use crate::core::RrbVec;
-use crate::utils::sharedptr::SharedPtr;
-use crate::utils::sharedptr::Take;
 
 use std::mem;
 
+// TODO: check the size of PVec struct using mem::size_of
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 enum Flavor<T> {
-    Standard(SharedPtr<Vec<T>>),
-    Persistent(SharedPtr<RrbVec<T>>),
+    Standard(Vec<T>),
+    Persistent(RrbVec<T>),
 }
 
 impl<T: Clone + Debug> Flavor<T> {
     #[inline(always)]
     fn into_standard(self) -> Vec<T> {
         match self {
-            Flavor::Standard(ptr) => ptr.take(),
+            Flavor::Standard(vec) => vec,
             Flavor::Persistent(..) => unreachable!(),
         }
     }
@@ -46,14 +45,14 @@ impl<T: Clone + Debug> Flavor<T> {
     fn into_persistent(self) -> RrbVec<T> {
         match self {
             Flavor::Standard(..) => unreachable!(),
-            Flavor::Persistent(ptr) => ptr.take(),
+            Flavor::Persistent(vec) => vec,
         }
     }
 
     #[inline(always)]
     fn as_mut_standard(&mut self) -> &mut Vec<T> {
         match self {
-            Flavor::Standard(ref mut ptr) => SharedPtr::make_mut(ptr),
+            Flavor::Standard(ref mut vec) => vec,
             Flavor::Persistent(..) => unreachable!(),
         }
     }
@@ -62,7 +61,7 @@ impl<T: Clone + Debug> Flavor<T> {
     fn as_mut_persistent(&mut self) -> &mut RrbVec<T> {
         match self {
             Flavor::Standard(..) => unreachable!(),
-            Flavor::Persistent(ref mut ptr) => SharedPtr::make_mut(ptr),
+            Flavor::Persistent(ref mut vec) => vec,
         }
     }
 
@@ -81,22 +80,22 @@ pub struct PVec<T>(Flavor<T>);
 impl<T: Clone + Debug> PVec<T> {
     pub fn new() -> Self {
         let vec = Vec::with_capacity(BRANCH_FACTOR);
-        PVec(Flavor::Standard(SharedPtr::new(vec)))
+        PVec(Flavor::Standard(vec))
     }
 
     pub fn push(&mut self, item: T) {
-        let (ref_count, is_standard, len) = match self.0 {
-            Flavor::Standard(ref mut ptr) => {
-                let ref_count = SharedPtr::strong_count(ptr);
+        let (_, is_standard, len) = match self.0 {
+            Flavor::Standard(ref mut vec) => {
+                // let ref_count = SharedPtr::strong_count(ptr);
 
-                let vec = SharedPtr::make_mut(ptr);
+                // let vec = SharedPtr::make_mut(ptr);
                 let vec_len = vec.len() + 1;
 
                 vec.push(item);
-                (ref_count, true, vec_len)
+                (0, true, vec_len)
             }
-            Flavor::Persistent(ref mut ptr) => {
-                let pvec = SharedPtr::make_mut(ptr);
+            Flavor::Persistent(ref mut pvec) => {
+                // let pvec = SharedPtr::make_mut(ptr);
                 let pvec_len = pvec.len() + 1;
 
                 pvec.push(item);
@@ -104,21 +103,21 @@ impl<T: Clone + Debug> PVec<T> {
             }
         };
 
-        if is_standard && ref_count > 1 && len > THRESHOLD {
+        if is_standard && len > THRESHOLD {
             self.upgrade();
         }
     }
 
     pub fn pop(&mut self) -> Option<T> {
         let (item, is_standard, len) = match self.0 {
-            Flavor::Standard(ref mut ptr) => {
-                let vec = SharedPtr::make_mut(ptr);
+            Flavor::Standard(ref mut vec) => {
+                // let vec = SharedPtr::make_mut(ptr);
                 let vec_len = vec.len() - 1;
 
                 (vec.pop(), true, vec_len)
             }
-            Flavor::Persistent(ref mut ptr) => {
-                let pvec = SharedPtr::make_mut(ptr);
+            Flavor::Persistent(ref mut pvec) => {
+                // let pvec = SharedPtr::make_mut(ptr);
                 let pvec_len = pvec.len() - 1;
 
                 (pvec.pop(), false, pvec_len)
@@ -134,15 +133,15 @@ impl<T: Clone + Debug> PVec<T> {
 
     pub fn get(&self, index: usize) -> Option<&T> {
         match self.0 {
-            Flavor::Standard(ref ptr) => ptr.get(index),
-            Flavor::Persistent(ref ptr) => ptr.get(index),
+            Flavor::Standard(ref vec) => vec.get(index),
+            Flavor::Persistent(ref vec) => vec.get(index),
         }
     }
 
     pub fn get_mut(&mut self, index: usize) -> Option<&mut T> {
         let (is_standard, vec_len, ref_count) = match self.0 {
-            Flavor::Standard(ref ptr) => (true, ptr.len(), SharedPtr::strong_count(ptr)),
-            Flavor::Persistent(ref ptr) => (false, ptr.len(), 0),
+            Flavor::Standard(ref vec) => (true, vec.len(), 0),
+            Flavor::Persistent(ref vec) => (false, vec.len(), 0),
         };
 
         if is_standard && vec_len > THRESHOLD && ref_count > 1 {
@@ -150,8 +149,8 @@ impl<T: Clone + Debug> PVec<T> {
         }
 
         match self.0 {
-            Flavor::Standard(ref mut ptr) => SharedPtr::make_mut(ptr).get_mut(index),
-            Flavor::Persistent(ref mut ptr) => SharedPtr::make_mut(ptr).get_mut(index),
+            Flavor::Standard(ref mut vec) => vec.get_mut(index),
+            Flavor::Persistent(ref mut vec) => vec.get_mut(index),
         }
     }
 
@@ -177,8 +176,8 @@ impl<T: Clone + Debug> PVec<T> {
         }
 
         let (self_is_standard, self_len) = match self.0 {
-            Flavor::Standard(ref ptr) => (true, ptr.len()),
-            Flavor::Persistent(ref ptr) => (false, ptr.len()),
+            Flavor::Standard(ref vec) => (true, vec.len()),
+            Flavor::Persistent(ref vec) => (false, vec.len()),
         };
 
         if self_len == 0 {
@@ -190,12 +189,12 @@ impl<T: Clone + Debug> PVec<T> {
 
             let rrbvec = self.0.as_mut_persistent();
             match that.0 {
-                Flavor::Standard(ref mut ptr) => {
-                    for i in SharedPtr::make_mut(ptr).drain(..) {
+                Flavor::Standard(ref mut vec) => {
+                    for i in vec.drain(..) {
                         rrbvec.push(i);
                     }
                 }
-                Flavor::Persistent(ref mut ptr) => rrbvec.append(SharedPtr::make_mut(ptr)),
+                Flavor::Persistent(ref mut vec) => rrbvec.append(vec),
             }
         } else {
             let self_vec = self.0.as_mut_standard();
@@ -217,7 +216,7 @@ impl<T: Clone + Debug> PVec<T> {
 
                 that_vec
             } else {
-                let new_flavor = Flavor::Persistent(SharedPtr::new(RrbVec::new()));
+                let new_flavor = Flavor::Persistent(RrbVec::new());
                 let old_flavor = mem::replace(&mut self.0, new_flavor);
 
                 let mut old_vec = old_flavor.into_standard();
@@ -232,18 +231,18 @@ impl<T: Clone + Debug> PVec<T> {
             };
 
             if that_should_be_standard {
-                Flavor::Standard(SharedPtr::new(old_that_vec))
+                Flavor::Standard(old_that_vec)
             } else {
                 let mut new_that_vec = RrbVec::new();
                 for item in old_that_vec.into_iter() {
                     new_that_vec.push(item);
                 }
 
-                Flavor::Persistent(SharedPtr::new(new_that_vec))
+                Flavor::Persistent(new_that_vec)
             }
         } else {
             let old_that_vec = if self_should_be_standard {
-                let new_flavor = Flavor::Standard(SharedPtr::new(Vec::with_capacity(mid)));
+                let new_flavor = Flavor::Standard(Vec::with_capacity(mid));
                 let old_flavor = mem::replace(&mut self.0, new_flavor);
 
                 let mut old_vec = old_flavor.into_persistent();
@@ -268,9 +267,9 @@ impl<T: Clone + Debug> PVec<T> {
                     new_that_vec.push(item);
                 }
 
-                Flavor::Standard(SharedPtr::new(new_that_vec))
+                Flavor::Standard(new_that_vec)
             } else {
-                Flavor::Persistent(SharedPtr::new(old_that_vec))
+                Flavor::Persistent(old_that_vec)
             }
         };
 
@@ -279,14 +278,14 @@ impl<T: Clone + Debug> PVec<T> {
 
     #[inline(always)]
     fn upgrade(&mut self) {
-        let new_flavor = Flavor::Persistent(SharedPtr::new(RrbVec::new()));
+        let new_flavor = Flavor::Persistent(RrbVec::new());
         let old_flavor = mem::replace(&mut self.0, new_flavor);
 
         let old_vec = old_flavor.into_standard();
         let new_vec = self.0.as_mut_persistent();
 
-        for item in old_vec.iter() {
-            new_vec.push(item.clone());
+        for item in old_vec.into_iter() {
+            new_vec.push(item);
         }
     }
 
@@ -294,7 +293,7 @@ impl<T: Clone + Debug> PVec<T> {
     fn downgrade(&mut self) {
         let len = self.len();
 
-        let new_flavor = Flavor::Standard(SharedPtr::new(Vec::with_capacity(len)));
+        let new_flavor = Flavor::Standard(Vec::with_capacity(len));
         let old_flavor = mem::replace(&mut self.0, new_flavor);
 
         let old_vec = old_flavor.into_persistent();
@@ -341,7 +340,9 @@ impl<T: Clone + Debug> ops::IndexMut<usize> for PVec<T> {
 #[cfg(test)]
 #[macro_use]
 mod test {
+    use super::Flavor;
     use super::PVec;
+    use super::RrbVec;
     use super::THRESHOLD;
 
     #[test]
@@ -440,5 +441,18 @@ mod test {
 
         assert!(!self_vec_two.0.is_standard());
         assert!(!that_vec_one.0.is_standard());
+    }
+
+    #[test]
+    fn sizes() {
+        let pvec_size = std::mem::size_of::<PVec<u8>>();
+        let rrbvec_size = std::mem::size_of::<RrbVec<u8>>();
+        let flavor_size = std::mem::size_of::<Flavor<u8>>();
+        let vec_size = std::mem::size_of::<Vec<u8>>();
+
+        println!("Size of PVec<u8>={}", pvec_size);
+        println!("Size of RrbVec<u8>={}", rrbvec_size);
+        println!("Size of Flavor<u8>={}", flavor_size);
+        println!("Size of Vec<u8>={}", vec_size);
     }
 }

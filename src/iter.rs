@@ -11,7 +11,6 @@ pub const BRANCH_FACTOR: usize = 4;
 
 use crate::core::iter::RrbVecIter;
 use crate::core::RrbVec;
-use crate::utils::sharedptr::Take;
 use std::iter::FromIterator;
 use std::vec::IntoIter as VecIter;
 
@@ -99,8 +98,8 @@ impl<T: Clone + Debug> IntoIterator for PVec<T> {
 
     fn into_iter(self) -> Self::IntoIter {
         match self.0 {
-            Flavor::Standard(ptr) => PVecIter::from_vec(ptr.take()),
-            Flavor::Persistent(ptr) => PVecIter::from_rrbvec(ptr.take()),
+            Flavor::Standard(vec) => PVecIter::from_vec(vec),
+            Flavor::Persistent(vec) => PVecIter::from_rrbvec(vec),
         }
     }
 }
