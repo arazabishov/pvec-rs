@@ -205,16 +205,43 @@ impl<T: Clone + Debug> PVec<T> {
         }
     }
 
+    // TODO: consider chunking Vec before pushing it onto RrbVec
     pub fn split_off(&mut self, mid: usize) -> Self {
+        let self_should_be_standard = mid <= THRESHOLD;
+        let that_should_be_standard = (self.len() - mid) <= THRESHOLD;
+
         let flavor = if self.0.is_standard() {
-            let vec = self.0.as_mut_standard();
-            let right = vec.split_off(mid);
+            let old_that_vec = if self_should_be_standard {
+                let self_vec = self.0.as_mut_standard();
+                let that_vec = self_vec.split_off(mid);
 
-            Flavor::Standard(SharedPtr::new(right))
+                that_vec
+            } else {
+                let new_flavor = Flavor::Persistent(SharedPtr::new(RrbVec::new()));
+                let old_flavor = mem::replace(&mut self.0, new_flavor);
+
+                let mut old_vec = old_flavor.into_standard();
+                let old_that_vec = old_vec.split_off(mid);
+
+                let new_vec = self.0.as_mut_persistent();
+                for item in old_vec.into_iter() {
+                    new_vec.push(item);
+                }
+
+                old_that_vec
+            };
+
+            if that_should_be_standard {
+                Flavor::Standard(SharedPtr::new(old_that_vec))
+            } else {
+                let mut new_that_vec = RrbVec::new();
+                for item in old_that_vec.into_iter() {
+                    new_that_vec.push(item);
+                }
+
+                Flavor::Persistent(SharedPtr::new(new_that_vec))
+            }
         } else {
-            let self_should_be_standard = mid <= THRESHOLD;
-            let that_should_be_standard = (self.len() - mid) <= THRESHOLD;
-
             let old_that_vec = if self_should_be_standard {
                 let new_flavor = Flavor::Standard(SharedPtr::new(Vec::with_capacity(mid)));
                 let old_flavor = mem::replace(&mut self.0, new_flavor);

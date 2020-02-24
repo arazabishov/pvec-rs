@@ -1409,7 +1409,10 @@ fn split_off(criterion: &mut Criterion) {
     let mut group = criterion.benchmark_group("split_off");
     group.plot_config(PlotConfiguration::default().summary_scale(AxisScale::Logarithmic));
 
-    let params = vec![128, 512, 768, 1024, 2048, 4096, 10000, 20000, 30000, 40000];
+    let params = vec![
+        128, 512, 768, 1024, 2048, 4096, 10000, 20000, 30000, 40000, 60000, 80000, 100000, 200000,
+        400000,
+    ];
     for p in params.iter() {
         make_bench!(group, p, Vec, push, STD_VEC);
         make_bench!(group, p, RbVec, push, RBVEC_BALANCED);
