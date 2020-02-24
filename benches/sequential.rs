@@ -1379,11 +1379,7 @@ fn append(criterion: &mut Criterion) {
     group.finish();
 }
 
-// TODO: configure sample_size for other benchmarks too?
-fn split_off(_: &mut Criterion) {
-    let mut criterion = Criterion::default();
-    criterion = criterion.with_plots().sample_size(10);
-
+fn split_off(criterion: &mut Criterion) {
     macro_rules! make_bench {
         ($group:ident, $p:ident, $vec:ident, $push:ident, $name:ident) => {
             $group.bench_with_input(BenchmarkId::new($name, $p), $p, |b, n| {
