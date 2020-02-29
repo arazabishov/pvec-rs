@@ -9,8 +9,8 @@ extern crate rayon;
 #[cfg(feature = "serde-serializer")]
 extern crate serde;
 
-use rrbtree::RrbTree;
-use rrbtree::BRANCH_FACTOR;
+pub use rrbtree::RrbTree;
+pub use rrbtree::BRANCH_FACTOR;
 use std::fmt::Debug;
 use std::mem;
 use std::ops;
@@ -18,7 +18,7 @@ use std::ops;
 pub mod iter;
 
 #[macro_use]
-mod rrbtree;
+pub mod rrbtree;
 
 #[cfg(feature = "serde-serializer")]
 pub mod serializer;
