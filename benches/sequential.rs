@@ -1387,50 +1387,54 @@ fn append(_: &mut Criterion) {
     group.finish();
 }
 
-// fn split_off(criterion: &mut Criterion) {
-//     macro_rules! make_bench {
-//         ($group:ident, $p:ident, $vec:ident, $push:ident, $name:ident) => {
-//             $group.bench_with_input(BenchmarkId::new($name, $p), $p, |b, n| {
-//                 b.iter_batched(
-//                     || {
-//                         let mut vec = $vec::new();
+fn split_off(_: &mut Criterion) {
+    let mut criterion = Criterion::default().sample_size(10).with_plots();
 
-//                         for i in 0..*n {
-//                             vec.$push(i * 2);
-//                         }
+    macro_rules! make_bench {
+        ($group:ident, $p:ident, $vec:ident, $push:ident, $name:ident) => {
+            $group.bench_with_input(BenchmarkId::new($name, $p), $p, |b, n| {
+                b.iter_batched(
+                    || {
+                        let mut vec = $vec::new();
 
-//                         vec
-//                     },
-//                     |mut data| {
-//                         while data.len() > 64 {
-//                             data = data.split_off(64)
-//                         }
+                        for i in 0..*n {
+                            vec.$push(i * 2);
+                        }
 
-//                         data
-//                     },
-//                     BatchSize::SmallInput,
-//                 )
-//             });
-//         };
-//     }
+                        // TODO: make sure that you bench both
+                        //   balanced and relaxed variants
+                        vec.clone()
+                    },
+                    |mut data| {
+                        while data.len() > 64 {
+                            data = data.split_off(64)
+                        }
 
-//     let mut group = criterion.benchmark_group("split_off");
-//     group.plot_config(PlotConfiguration::default().summary_scale(AxisScale::Logarithmic));
+                        data
+                    },
+                    BatchSize::SmallInput,
+                )
+            });
+        };
+    }
 
-//     let params = vec![
-//         128, 512, 768, 1024, 2048, 4096, 10000, 20000, 30000, 40000, 60000, 80000, 100000, 200000,
-//         400000,
-//     ];
-//     for p in params.iter() {
-//         make_bench!(group, p, Vec, push, STD_VEC);
-//         make_bench!(group, p, RbVec, push, RBVEC_BALANCED);
-//         make_bench!(group, p, RrbVec, push, RRBVEC_UNBALANCED);
-//         make_bench!(group, p, PVec, push, PVEC_UNBALANCED);
-//         make_bench!(group, p, IVec, push_back, IM_RS_VECTOR_UNBALANCED);
-//     }
+    let mut group = criterion.benchmark_group("split_off");
+    group.plot_config(PlotConfiguration::default().summary_scale(AxisScale::Logarithmic));
 
-//     group.finish();
-// }
+    let params = vec![
+        128, 512, 768, 1024, 2048, 4096, 10000, 20000, 30000, 40000, 60000,
+        80000, // 100000, 200000, 400000,
+    ];
+    for p in params.iter() {
+        make_bench!(group, p, Vec, push, STD_VEC);
+        make_bench!(group, p, RbVec, push, RBVEC_BALANCED);
+        make_bench!(group, p, RrbVec, push, RRBVEC_UNBALANCED);
+        make_bench!(group, p, PVec, push, PVEC_UNBALANCED);
+        make_bench!(group, p, IVec, push_back, IM_RS_VECTOR_UNBALANCED);
+    }
+
+    group.finish();
+}
 
 fn spill(_: &mut Criterion) {
     let mut criterion = Criterion::default().sample_size(10).with_plots();
@@ -1505,6 +1509,6 @@ criterion_group!(
     // push_clone_unbalanced,
     // pop,
     // pop_clone,
-    append,
-    // split_off,
+    // append,
+    split_off,
 );

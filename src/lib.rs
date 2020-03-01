@@ -4,20 +4,12 @@ extern crate pvec_utils as utils;
 #[cfg(all(feature = "arc", feature = "rayon-iter"))]
 extern crate rayon;
 
-#[cfg(not(feature = "small_branch"))]
-const THRESHOLD: usize = 1024;
-
-#[cfg(feature = "small_branch")]
-const THRESHOLD: usize = 256;
-
 use std::fmt::Debug;
 use std::ops;
 
 pub mod iter;
 
 use crate::core::{RrbVec, BRANCH_FACTOR};
-
-use std::mem;
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 enum Representation<T> {
@@ -26,22 +18,6 @@ enum Representation<T> {
 }
 
 impl<T: Clone + Debug> Representation<T> {
-    #[inline(always)]
-    fn into_flat(self) -> Vec<T> {
-        match self {
-            Representation::Flat(vec) => vec,
-            Representation::Tree(..) => unreachable!(),
-        }
-    }
-
-    #[inline(always)]
-    fn into_tree(self) -> RrbVec<T> {
-        match self {
-            Representation::Flat(..) => unreachable!(),
-            Representation::Tree(tree) => tree,
-        }
-    }
-
     #[inline(always)]
     fn as_flat(&self) -> &Vec<T> {
         match self {
@@ -95,8 +71,6 @@ impl<T: Clone + Debug> PVec<T> {
         }
     }
 
-    // TODO: consider downgrades
-    // TODO: consider using macro to cut down boilerplate
     pub fn pop(&mut self) -> Option<T> {
         match self.0 {
             Representation::Flat(ref mut vec) => vec.pop(),
@@ -129,162 +103,36 @@ impl<T: Clone + Debug> PVec<T> {
         self.len() == 0
     }
 
-    pub fn is_spilled(&self) -> bool {
-        self.0.is_flat()
-    }
-
-    pub fn spill(&mut self) {
-        self.0 = match self.0 {
-            Representation::Flat(ref vec) => Representation::spill(vec),
-            Representation::Tree(..) => unreachable!(),
-        }
-    }
-
-    // what about the following idea:
-    // - if both vectors that are going to be merged are
-    //      standard vectors, they won't be upgraded
-    // - if one of the vectors is not standard, then you upgrade
-
-    // What are the benefits? If you're working with a standard vector, you won't get 
-    // upgraded until you explicitly clone. Essentially, you're in control when and 
-    // why you would want to do this. 
-
-    // What about benchmarks? 
-    //  - pvec (std)
-    //  - pvec (rrbvec)
-    // Does it mean that you will force the transition in some cases
-
-    // Options:
-    //  1) Spill both vectors when appending
-    //  2) Spill either of vectors if non flat
-
-    // The selling point is that you don't have to upgrade
-    // if you don't need to, or basically the idea of zero cost 
-    // abstraction. See what Niko Mat wrote in his blog post. 
-
-    // Benefits:
-    // 1) you get fast push, pop, get, get_mut() operations when used without clones
-    // 2) you get very cheap clones(), appends(), split_offs() if needed
-    
-    // That's how you can up-sell the idea of zero cost abstractions
-    // Essentially, clone is the only place where you can upgrade
-    
     pub fn append(&mut self, that: &mut PVec<T>) {
-        if that.len() == 0 {
-            return;
-        }
+        let this = &mut self.0;
+        let that = &mut that.0;
 
-        let (self_is_flat, self_len) = match self.0 {
-            Representation::Flat(ref vec) => (true, vec.len()),
-            Representation::Tree(ref vec) => (false, vec.len()),
+        let this_is_flat = this.is_flat();
+        let that_is_flat = that.is_flat();
+
+        if this_is_flat && that_is_flat {
+            this.as_mut_flat().append(that.as_mut_flat());
+        } else if this_is_flat {
+            let mut vec = RrbVec::from(this.as_flat());
+            vec.append(that.as_mut_tree());
+
+            *this = Representation::Tree(vec);
+        } else if that_is_flat {
+            let mut vec = RrbVec::from(that.as_flat());
+            this.as_mut_tree().append(&mut vec);
+        } else {
+            this.as_mut_tree().append(that.as_mut_tree());
+        }
+    }
+
+    pub fn split_off(&mut self, mid: usize) -> Self {
+        let representation = match self.0 {
+            Representation::Flat(ref mut vec) => Representation::Flat(vec.split_off(mid)),
+            Representation::Tree(ref mut vec) => Representation::Tree(vec.split_off(mid)),
         };
 
-        if self_len == 0 {
-            mem::swap(&mut self.0, &mut that.0);
-            return;
-        }
-
-        if self_is_flat {            
-            self.0 = Representation::spill(self.0.as_flat());
-        }
-
-        let self_vec = self.0.as_mut_tree();
-        match that.0 {
-            Representation::Flat(ref mut that_vec) => {
-                for i in that_vec.drain(..) {
-                    self_vec.push(i);
-                }
-            }
-            Representation::Tree(ref mut that_vec) => self_vec.append(that_vec),
-        }
+        PVec(representation)
     }
-
-    // // TODO: consider chunking Vec before pushing it onto RrbVec
-    // pub fn split_off(&mut self, mid: usize) -> Self {
-    //     let self_should_be_standard = mid <= THRESHOLD;
-    //     let that_should_be_standard = (self.len() - mid) <= THRESHOLD;
-
-    //     let flavor = if self.0.is_standard() {
-    //         let old_that_vec = if self_should_be_standard {
-    //             let self_vec = self.0.as_mut_standard();
-    //             let that_vec = self_vec.split_off(mid);
-
-    //             that_vec
-    //         } else {
-    //             let new_flavor = Flavor::Persistent(RrbVec::new());
-    //             let old_flavor = mem::replace(&mut self.0, new_flavor);
-
-    //             let mut old_vec = old_flavor.into_standard();
-    //             let old_that_vec = old_vec.split_off(mid);
-
-    //             let new_vec = self.0.as_mut_persistent();
-    //             for item in old_vec.into_iter() {
-    //                 new_vec.push(item);
-    //             }
-
-    //             old_that_vec
-    //         };
-
-    //         if that_should_be_standard {
-    //             Flavor::Standard(old_that_vec)
-    //         } else {
-    //             let mut new_that_vec = RrbVec::new();
-    //             for item in old_that_vec.into_iter() {
-    //                 new_that_vec.push(item);
-    //             }
-
-    //             Flavor::Persistent(new_that_vec)
-    //         }
-    //     } else {
-    //         let old_that_vec = if self_should_be_standard {
-    //             let new_flavor = Flavor::Standard(Vec::with_capacity(mid));
-    //             let old_flavor = mem::replace(&mut self.0, new_flavor);
-
-    //             let mut old_vec = old_flavor.into_persistent();
-    //             let old_that_vec = old_vec.split_off(mid);
-
-    //             let new_vec = self.0.as_mut_standard();
-    //             for item in old_vec.into_iter() {
-    //                 new_vec.push(item);
-    //             }
-
-    //             old_that_vec
-    //         } else {
-    //             let self_vec = self.0.as_mut_persistent();
-    //             let that_vec = self_vec.split_off(mid);
-
-    //             that_vec
-    //         };
-
-    //         if that_should_be_standard {
-    //             let mut new_that_vec = Vec::with_capacity(old_that_vec.len());
-    //             for item in old_that_vec.into_iter() {
-    //                 new_that_vec.push(item);
-    //             }
-
-    //             Flavor::Standard(new_that_vec)
-    //         } else {
-    //             Flavor::Persistent(old_that_vec)
-    //         }
-    //     };
-
-    //     PVec(flavor)
-    // }
-
-    // #[inline(always)]
-    // fn downgrade(&mut self) {
-    //     let len = self.len();
-
-    //     let new_flavor = Flavor::Standard(Vec::with_capacity(len));
-    //     let old_flavor = mem::replace(&mut self.0, new_flavor);
-
-    //     let old_vec = old_flavor.into_persistent();
-    //     let new_vec = self.0.as_mut_standard();
-
-    //     for item in old_vec.into_iter() {
-    //         new_vec.push(item);
-    //     }
-    // }
 }
 
 impl<T: Clone + Debug> Default for PVec<T> {
@@ -333,118 +181,46 @@ impl<T: Clone + Debug> ops::IndexMut<usize> for PVec<T> {
 #[cfg(test)]
 #[macro_use]
 mod test {
-    use super::{PVec, RrbVec, THRESHOLD};
+    use super::{PVec, Representation, RrbVec};
 
-    // #[test]
-    // fn interleaving_append_split_off_operations() {
-    //     let mut pvec = PVec::new();
-    //     let mut value = 0;
+    #[test]
+    fn interleaving_append_split_off_operations() {
+        let mut vec_one = PVec::new();
+        let mut value = 0;
 
-    //     for size in 1..(32 * 8 + 32) {
-    //         let mut another_pvec = PVec::new();
-    //         for _ in 0..size {
-    //             another_pvec.push(value);
-    //             value += 1;
-    //         }
+        for size in 1..(32 * 8 + 32) {
+            let mut vec_two = PVec::new();
+            for _ in 0..size {
+                vec_two.push(value);
+                value += 1;
+            }
 
-    //         pvec.append(&mut another_pvec);
+            vec_one.append(&mut vec_two);
 
-    //         let mid = pvec.len() / 2;
-    //         let mut right = pvec.split_off(mid);
+            let mid = vec_one.len() / 2;
+            let mut right = vec_one.split_off(mid);
 
-    //         pvec.append(&mut right);
-    //         value = pvec.len();
-    //     }
+            vec_one.append(&mut right);
+            value = vec_one.len();
+        }
 
-    //     for i in 0..value {
-    //         assert_eq!(pvec.get(i).cloned(), Some(i));
-    //     }
-    // }
+        for i in 0..value {
+            assert_eq!(vec_one.get(i).cloned(), Some(i));
+        }
+    }
 
-    // #[test]
-    // fn pop_must_downgrade_to_standard_vec() {
-    //     let mut pvec_one = PVec::new();
-    //     for item in 0..(THRESHOLD * 2) - 1 {
-    //         pvec_one.push(item);
-    //     }
+    #[test]
+    fn sizes() {
+        let pvec_size = std::mem::size_of::<PVec<u8>>();
+        let rrbvec_size = std::mem::size_of::<RrbVec<u8>>();
+        let flavor_size = std::mem::size_of::<Representation<u8>>();
+        let vec_size = std::mem::size_of::<Vec<u8>>();
 
-    //     // calling push after cloning a vector
-    //     // over a threshold size must upgrade it
-    //     let mut pvec_two = pvec_one.clone();
-    //     pvec_two.push(0xdeadbeef);
-
-    //     for _ in (THRESHOLD + 1..pvec_two.len()).rev() {
-    //         pvec_two.pop();
-    //         assert!(!pvec_two.0.is_standard());
-    //     }
-
-    //     for _ in (0..THRESHOLD + 1).rev() {
-    //         pvec_two.pop();
-    //         assert!(pvec_two.0.is_standard());
-    //     }
-
-    //     assert!(pvec_two.is_empty());
-    // }
-
-    // #[test]
-    // fn split_off_must_downgrade_to_standard() {
-    //     let mut vec_one = PVec::new();
-    //     for item in 0..(THRESHOLD * 2) - 1 {
-    //         vec_one.push(item);
-    //     }
-
-    //     // calling push after cloning a vector
-    //     // over a threshold size must upgrade it
-    //     let mut vec_two = vec_one.clone();
-    //     vec_two.push(0xdeadbeef);
-
-    //     assert!(!vec_two.0.is_standard());
-    //     let vec_two_that = vec_two.split_off(THRESHOLD);
-
-    //     assert!(vec_two_that.0.is_standard());
-    //     assert!(vec_two.0.is_standard());
-    // }
-
-    // #[test]
-    // fn split_off_must_downgrade_to_standard_only_one_half() {
-    //     let mut self_vec = PVec::new();
-
-    //     for item in 0..(THRESHOLD * 4) - 1 {
-    //         self_vec.push(item);
-    //     }
-
-    //     // calling push after cloning a vector
-    //     // over a threshold size must upgrade it
-    //     let mut self_vec_one = self_vec.clone();
-    //     self_vec_one.push(0xdeadbeef);
-
-    //     let mut self_vec_two = self_vec_one.clone();
-
-    //     assert!(!self_vec_one.0.is_standard());
-    //     assert!(!self_vec_two.0.is_standard());
-
-    //     let that_vec_one = self_vec_one.split_off(THRESHOLD);
-    //     let that_vec_two = self_vec_two.split_off(THRESHOLD * 3);
-
-    //     assert!(self_vec_one.0.is_standard());
-    //     assert!(that_vec_two.0.is_standard());
-
-    //     assert!(!self_vec_two.0.is_standard());
-    //     assert!(!that_vec_one.0.is_standard());
-    // }
-
-    // #[test]
-    // fn sizes() {
-    //     let pvec_size = std::mem::size_of::<PVec<u8>>();
-    //     let rrbvec_size = std::mem::size_of::<RrbVec<u8>>();
-    //     let flavor_size = std::mem::size_of::<Flavor<u8>>();
-    //     let vec_size = std::mem::size_of::<Vec<u8>>();
-
-    //     println!("Size of PVec<u8>={}", pvec_size);
-    //     println!("Size of RrbVec<u8>={}", rrbvec_size);
-    //     println!("Size of Flavor<u8>={}", flavor_size);
-    //     println!("Size of Vec<u8>={}", vec_size);
-    // }
+        println!("Size of PVec<u8>={}", pvec_size);
+        println!("Size of RrbVec<u8>={}", rrbvec_size);
+        println!("Size of Flavor<u8>={}", flavor_size);
+        println!("Size of Vec<u8>={}", vec_size);
+    }
 
     #[test]
     fn push_clone() {
@@ -470,26 +246,16 @@ mod test {
     }
 
     #[test]
-    fn spill() {
-        let mut vec = Vec::new();
-
-        for i in 0..132 {
-            vec.push(Some(i));
-        }
-
-        let rrbvec = RrbVec::from(&vec);
-
-        println!("Size of vec={}", vec.len());
-        println!("Size of rrbvec={}", rrbvec.len());
-    }
-
-    #[test]
     fn internal_state() {
         let mut input = create_input(16000);
         let mut vec = PVec::new();
 
         for mut input in input.iter_mut() {
-            println!("input is flat={}", input.0.is_flat());
+            println!(
+                "input is flat={} && is len is={}",
+                input.0.is_flat(),
+                input.len()
+            );
             vec.append(&mut input);
             println!("vec is flat={}", vec.0.is_flat());
         }
@@ -526,26 +292,4 @@ mod test {
         input.push(vec.clone());
         input
     }
-
-    // fn create_input_2(n: usize) -> PVec<usize> {
-    //     let mut i = 1;
-    //     let mut vec = PVec::new();
-
-    //     while i < n && (vec.len() + i) <= n {
-    //         let mut another_vec = PVec::new();
-
-    //         for j in 0..i {
-    //             another_vec.push(j);
-    //         }
-
-    //         vec.append(another_vec);
-    //         i *= 2;
-    //     }
-
-    //     while vec.len() < n {
-    //         vec.push(i);
-    //     }
-
-    //     vec
-    // }
 }
