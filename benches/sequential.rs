@@ -15,96 +15,99 @@ use pvec::PVec;
 
 use super::*;
 
-// fn index_sequentially(criterion: &mut Criterion) {
-//     let mut group = criterion.benchmark_group("index_sequentially");
-//     group.plot_config(PlotConfiguration::default().summary_scale(AxisScale::Logarithmic));
+fn index_sequentially(_: &mut Criterion) {
+    let mut criterion = Criterion::default().sample_size(10).with_plots();
 
-//     macro_rules! bench_balanced {
-//         ($name:ident, $p:ident, $vec:ident, $op:ident) => {
-//             group.bench_with_input(BenchmarkId::new($name, $p), $p, |b, n| {
-//                 b.iter_batched(
-//                     || {
-//                         let mut vec = $vec::new();
+    let mut group = criterion.benchmark_group("index_sequentially");
+    group.plot_config(PlotConfiguration::default().summary_scale(AxisScale::Logarithmic));
 
-//                         for i in 0..*n {
-//                             vec.$op(i * 2);
-//                         }
+    macro_rules! bench_balanced {
+        ($name:ident, $p:ident, $vec:ident, $op:ident) => {
+            group.bench_with_input(BenchmarkId::new($name, $p), $p, |b, n| {
+                b.iter_batched(
+                    || {
+                        let mut vec = $vec::new();
 
-//                         vec
-//                     },
-//                     |data| {
-//                         for i in 0..*n {
-//                             black_box(data[i]);
-//                         }
+                        for i in 0..*n {
+                            vec.$op(i * 2);
+                        }
 
-//                         data
-//                     },
-//                     BatchSize::SmallInput,
-//                 )
-//             });
-//         };
-//     }
+                        vec
+                    },
+                    |data| {
+                        for i in 0..*n {
+                            black_box(data[i]);
+                        }
 
-//     macro_rules! bench_unbalanced {
-//         ($name:ident, $p:ident, $vec:ident, $op:ident, $append:expr) => {
-//             group.bench_with_input(BenchmarkId::new($name, $p), $p, |b, n| {
-//                 b.iter_batched(
-//                     || {
-//                         let mut i = 1;
-//                         let mut vec = $vec::new();
+                        data
+                    },
+                    BatchSize::SmallInput,
+                )
+            });
+        };
+    }
 
-//                         while i < *n && (vec.len() + i) <= *n {
-//                             let mut another_vec = $vec::new();
+    // macro_rules! bench_unbalanced {
+    //     ($name:ident, $p:ident, $vec:ident, $op:ident, $append:expr) => {
+    //         group.bench_with_input(BenchmarkId::new($name, $p), $p, |b, n| {
+    //             b.iter_batched(
+    //                 || {
+    //                     let mut i = 1;
+    //                     let mut vec = $vec::new();
 
-//                             for j in 0..i {
-//                                 another_vec.$op(j);
-//                             }
+    //                     while i < *n && (vec.len() + i) <= *n {
+    //                         let mut another_vec = $vec::new();
 
-//                             $append(&mut vec, another_vec);
-//                             i *= 2;
-//                         }
+    //                         for j in 0..i {
+    //                             another_vec.$op(j);
+    //                         }
 
-//                         while vec.len() < *n {
-//                             vec.$op(i);
-//                         }
+    //                         $append(&mut vec, another_vec);
+    //                         i *= 2;
+    //                     }
 
-//                         vec
-//                     },
-//                     |data| {
-//                         for i in 0..*n {
-//                             black_box(data[i]);
-//                         }
-//                     },
-//                     BatchSize::SmallInput,
-//                 )
-//             });
-//         };
-//     }
+    //                     while vec.len() < *n {
+    //                         vec.$op(i);
+    //                     }
 
-//     let params = vec![
-//         10, 20, 40, 60, 80, 100, 200, 400, 600, 800, 1000, 2000, 4000, 6000, 8000, 10000, 20000,
-//         40000, 60000, 80000, 100000, 200000, 400000, 600000, 800000, 1000000,
-//     ];
+    //                     vec
+    //                 },
+    //                 |data| {
+    //                     for i in 0..*n {
+    //                         black_box(data[i]);
+    //                     }
+    //                 },
+    //                 BatchSize::SmallInput,
+    //             )
+    //         });
+    //     };
+    // }
 
-//     let append_ivec = |vec: &mut IVec<usize>, data| vec.append(data);
-//     let append_pvec = |vec: &mut PVec<usize>, mut data| vec.append(&mut data);
-//     let append_rrbvec = |vec: &mut RrbVec<usize>, mut data| vec.append(&mut data);
+    let params = vec![
+        20, 40, 60, 80, 100, 200, 400, 600, 800, 1000, 2000, 4000, 6000, 8000, 10000,
+        20000,
+        // 40000, 60000, 80000, 100000, 200000, 400000, 600000, 800000, 1000000,
+    ];
 
-//     for p in params.iter() {
-//         bench_balanced!(STD_VEC, p, Vec, push);
+    // let append_ivec = |vec: &mut IVec<usize>, data| vec.append(data);
+    // let append_pvec = |vec: &mut PVec<usize>, mut data| vec.append(&mut data);
+    // let append_rrbvec = |vec: &mut RrbVec<usize>, mut data| vec.append(&mut data);
 
-//         bench_balanced!(IM_RS_VECTOR_BALANCED, p, IVec, push_back);
-//         bench_unbalanced!(IM_RS_VECTOR_UNBALANCED, p, IVec, push_back, append_ivec);
+    for p in params.iter() {
+        bench_balanced!(STD_VEC, p, Vec, push);
 
-//         bench_balanced!(RBVEC_BALANCED, p, RbVec, push);
-//         bench_unbalanced!(RRBVEC_UNBALANCED, p, RrbVec, push, append_rrbvec);
+        bench_balanced!(IM_RS_VECTOR_BALANCED, p, IVec, push_back);
+        // bench_unbalanced!(IM_RS_VECTOR_UNBALANCED, p, IVec, push_back, append_ivec);
 
-//         bench_balanced!(PVEC_BALANCED, p, PVec, push);
-//         bench_unbalanced!(PVEC_UNBALANCED, p, PVec, push, append_pvec);
-//     }
+        bench_balanced!(RBVEC_BALANCED, p, RbVec, push);
+        // bench_unbalanced!(RRBVEC_UNBALANCED, p, RrbVec, push, append_rrbvec);
 
-//     group.finish();
-// }
+        bench_balanced!(PVEC_BALANCED, p, PVec, push);
+        // bench_unbalanced!(PVEC_UNBALANCED, p, PVec, push, append_pvec);
+    }
+
+    group.finish();
+}
 
 // fn index_randomly(criterion: &mut Criterion) {
 //     let mut group = criterion.benchmark_group("index_randomly");
@@ -406,9 +409,9 @@ fn push(_: &mut Criterion) {
     }
 
     let params = vec![
-        10, 20, 40, 60, 80, 100, 200, 400, 600, 800, 1000, 2000, 4000, 6000, 8000, 10000,
-        20000,
-        /* 40000, 60000, 80000, 100000, 200000, 400000, 600000, 800000, 1000000, */
+        20, 40, 60, 80, 100, 200, 400, 600, 800, 1000, 2000, 4000,
+        6000,
+        /* 8000, 10000, 20000, 40000, 60000, 80000, 100000, 200000, 400000, 600000, 800000, 1000000, */
     ];
 
     for p in params.iter() {
@@ -435,12 +438,12 @@ fn push_clone(_: &mut Criterion) {
                     let mut vec_2 = vec_1.clone();
                     let mut vec_3 = vec_2.clone();
 
-                    for i in 0..*n {      
+                    for i in 0..*n {
                         vec_3 = vec_1;
                         vec_1 = vec_2;
 
                         vec_1.$op(i);
-                        vec_2 = vec_1.clone();                                                
+                        vec_2 = vec_1.clone();
                     }
 
                     (vec_1, vec_2, vec_3)
@@ -450,7 +453,7 @@ fn push_clone(_: &mut Criterion) {
     }
 
     let params = vec![
-        10, 20, 40, 60, 80, 100, 200, 400, 600, 800, 1000, 2000, 4000, 6000, 8000, 10000, 20000,
+        20, 40, 60, 80, 100, 200, 400, 600, 800, 1000, 2000, 4000, 6000, 8000, 10000, 20000,
     ];
 
     for p in params.iter() {
@@ -1256,137 +1259,133 @@ fn push_clone(_: &mut Criterion) {
 //     group.finish();
 // }
 
-// fn append(criterion: &mut Criterion) {
-//     macro_rules! create_input {
-//         ($n:ident, $vec:ident, $op:ident) => {
-//             || {
-//                 let mut input = Vec::new();
-//                 let mut input_len = 0;
-//                 let mut i = 1;
+fn append(_: &mut Criterion) {
+    let mut criterion = Criterion::default().sample_size(10).with_plots();
 
-//                 let mut _another_vec_cloned = $vec::new();
-//                 while i < *$n && (input_len + i) <= *$n {
-//                     let mut another_vec = $vec::new();
+    macro_rules! create_input {
+        ($n:ident, $vec:ident, $op:ident) => {
+            || {
+                let mut input = Vec::new();
+                let mut input_len = 0;
+                let mut i = 1;
 
-//                     for j in 0..(i - 1) {
-//                         another_vec.$op(j);
-//                     }
+                while i < *$n && (input_len + i) <= *$n {
+                    let mut vec = $vec::new();
 
-//                     _another_vec_cloned = another_vec.clone();
-//                     another_vec.$op(i - 1);
+                    for j in 0..i {
+                        vec.$op(j);
+                    }
 
-//                     input_len += another_vec.len();
-//                     input.push(another_vec);
+                    input_len += vec.len();
+                    input.push(vec.clone());
 
-//                     i *= 2;
-//                 }
+                    i *= 2;
+                }
 
-//                 let mut another_vec = $vec::new();
-//                 let mut j = 0;
+                let mut vec = $vec::new();
+                let mut j = 0;
 
-//                 while input_len < (*$n - 1) {
-//                     another_vec.$op(j);
-//                     input_len += 1;
-//                     j += 1;
-//                 }
+                while input_len < *$n {
+                    vec.$op(j);
 
-//                 _another_vec_cloned = another_vec.clone();
-//                 another_vec.$op(*$n - 1);
+                    input_len += 1;
+                    j += 1;
+                }
 
-//                 input.push(another_vec);
-//                 input
-//             }
-//         };
-//     }
+                input.push(vec.clone());
+                input
+            }
+        };
+    }
 
-//     let params = vec![
-//         10, 20, 40, 60, 80, 100, 200, 400, 600, 800, 1000, 2000, 4000, 6000, 8000, 10000, 20000,
-//         40000, 60000, 80000, 100000, 200000, 400000, 600000, 800000, 1000000,
-//     ];
+    let params = vec![
+        10, 20, 40, 60, 80, 100, 200, 400, 600, 800, 1000, 2000, 4000, 6000, 8000, 10000, 20000,
+        40000, 60000, 80000, 100000, 200000, 400000, 600000, 800000, 1000000,
+    ];
 
-//     let mut group = criterion.benchmark_group("append");
-//     group.plot_config(PlotConfiguration::default().summary_scale(AxisScale::Logarithmic));
+    let mut group = criterion.benchmark_group("append");
+    group.plot_config(PlotConfiguration::default().summary_scale(AxisScale::Logarithmic));
 
-//     for p in params.iter() {
-//         group.bench_with_input(BenchmarkId::new(STD_VEC, p), p, |b, n| {
-//             b.iter_batched(
-//                 create_input!(n, Vec, push),
-//                 |mut data| {
-//                     let mut vec_two = Vec::new();
+    for p in params.iter() {
+        group.bench_with_input(BenchmarkId::new(STD_VEC, p), p, |b, n| {
+            b.iter_batched(
+                create_input!(n, Vec, push),
+                |mut data| {
+                    let mut vec_two = Vec::new();
 
-//                     for mut input in data.iter_mut() {
-//                         vec_two.append(&mut input);
-//                     }
+                    for mut input in data.iter_mut() {
+                        vec_two.append(&mut input);
+                    }
 
-//                     vec_two
-//                 },
-//                 BatchSize::SmallInput,
-//             )
-//         });
-//         group.bench_with_input(BenchmarkId::new(IM_RS_VECTOR_UNBALANCED, p), p, |b, n| {
-//             b.iter_batched(
-//                 create_input!(n, IVec, push_back),
-//                 |data| {
-//                     let mut vec_two = IVec::new();
+                    vec_two
+                },
+                BatchSize::SmallInput,
+            )
+        });
+        group.bench_with_input(BenchmarkId::new(IM_RS_VECTOR_UNBALANCED, p), p, |b, n| {
+            b.iter_batched(
+                create_input!(n, IVec, push_back),
+                |data| {
+                    let mut vec_two = IVec::new();
 
-//                     for input in data.into_iter() {
-//                         vec_two.append(input);
-//                     }
+                    for input in data.into_iter() {
+                        vec_two.append(input);
+                    }
 
-//                     vec_two
-//                 },
-//                 BatchSize::SmallInput,
-//             )
-//         });
-//         group.bench_with_input(BenchmarkId::new(RRBVEC_UNBALANCED, p), p, |b, n| {
-//             b.iter_batched(
-//                 create_input!(n, RrbVec, push),
-//                 |mut data| {
-//                     let mut vec_two = RrbVec::new();
+                    vec_two
+                },
+                BatchSize::SmallInput,
+            )
+        });
+        group.bench_with_input(BenchmarkId::new(RRBVEC_UNBALANCED, p), p, |b, n| {
+            b.iter_batched(
+                create_input!(n, RrbVec, push),
+                |mut data| {
+                    let mut vec_two = RrbVec::new();
 
-//                     for mut input in data.iter_mut() {
-//                         vec_two.append(&mut input);
-//                     }
+                    for mut input in data.iter_mut() {
+                        vec_two.append(&mut input);
+                    }
 
-//                     vec_two
-//                 },
-//                 BatchSize::SmallInput,
-//             )
-//         });
-//         group.bench_with_input(BenchmarkId::new(RBVEC_BALANCED, p), p, |b, n| {
-//             b.iter_batched(
-//                 create_input!(n, RbVec, push),
-//                 |mut data| {
-//                     let mut vec_two = RbVec::new();
+                    vec_two
+                },
+                BatchSize::SmallInput,
+            )
+        });
+        group.bench_with_input(BenchmarkId::new(RBVEC_BALANCED, p), p, |b, n| {
+            b.iter_batched(
+                create_input!(n, RbVec, push),
+                |mut data| {
+                    let mut vec_two = RbVec::new();
 
-//                     for mut input in data.iter_mut() {
-//                         vec_two.append(&mut input);
-//                     }
+                    for mut input in data.iter_mut() {
+                        vec_two.append(&mut input);
+                    }
 
-//                     vec_two
-//                 },
-//                 BatchSize::SmallInput,
-//             )
-//         });
-//         group.bench_with_input(BenchmarkId::new(PVEC_UNBALANCED, p), p, |b, n| {
-//             b.iter_batched(
-//                 create_input!(n, PVec, push),
-//                 |mut data| {
-//                     let mut vec_two = PVec::new();
+                    vec_two
+                },
+                BatchSize::SmallInput,
+            )
+        });
+        group.bench_with_input(BenchmarkId::new(PVEC_UNBALANCED, p), p, |b, n| {
+            b.iter_batched(
+                create_input!(n, PVec, push),
+                |mut data| {
+                    let mut vec_two = PVec::new();
 
-//                     for mut input in data.iter_mut() {
-//                         vec_two.append(&mut input);
-//                     }
+                    for mut input in data.iter_mut() {
+                        vec_two.append(&mut input);
+                    }
 
-//                     vec_two
-//                 },
-//                 BatchSize::SmallInput,
-//             )
-//         });
-//     }
+                    vec_two
+                },
+                BatchSize::SmallInput,
+            )
+        });
+    }
 
-//     group.finish();
-// }
+    group.finish();
+}
 
 // fn split_off(criterion: &mut Criterion) {
 //     macro_rules! make_bench {
@@ -1433,6 +1432,63 @@ fn push_clone(_: &mut Criterion) {
 //     group.finish();
 // }
 
+fn spill(_: &mut Criterion) {
+    let mut criterion = Criterion::default().sample_size(10).with_plots();
+
+    let mut group = criterion.benchmark_group("spill");
+    group.plot_config(PlotConfiguration::default().summary_scale(AxisScale::Logarithmic));
+
+    let params = vec![
+        128, 512, 768, 1024, 2048, 4096, 10000, 20000, 30000, 40000, 60000,
+    ];
+
+    for p in params.iter() {
+        group.bench_with_input(BenchmarkId::new("spill", p), p, |b, n| {
+            b.iter_batched(
+                || {
+                    let mut vec = Vec::new();
+
+                    for i in 0..*n {
+                        vec.push(i * 2);
+                    }
+
+                    vec
+                },
+                |mut vec| {
+                    let rrbvec = RrbVec::from(&vec);
+                    (rrbvec, vec)
+                },
+                BatchSize::SmallInput,
+            )
+        });
+
+        group.bench_with_input(BenchmarkId::new("drain", p), p, |b, n| {
+            b.iter_batched(
+                || {
+                    let mut vec = Vec::new();
+
+                    for i in 0..*n {
+                        vec.push(i * 2);
+                    }
+
+                    vec
+                },
+                |mut vec| {
+                    let mut rrbvec = RrbVec::new();
+                    for i in vec.drain(..) {
+                        rrbvec.push(i);
+                    }
+
+                    (rrbvec, vec)
+                },
+                BatchSize::SmallInput,
+            )
+        });
+    }
+
+    group.finish();
+}
+
 criterion_group!(
     benches,
     // index_sequentially,
@@ -1443,12 +1499,12 @@ criterion_group!(
     // update_randomly,
     // update_clone,
     // update_clone_randomly,
-    push,
+    // push,
     // push_unbalanced,
     // push_clone,
     // push_clone_unbalanced,
     // pop,
     // pop_clone,
-    // append,
-    // split_off
+    append,
+    // split_off,
 );

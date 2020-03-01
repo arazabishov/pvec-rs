@@ -16,7 +16,6 @@ const BITS_PER_LEVEL: usize = 5;
 const BITS_PER_LEVEL: usize = 2;
 
 #[macro_export]
-#[cfg(not(feature = "small_branch"))]
 macro_rules! new_branch {
     () => {
         [
