@@ -71,9 +71,9 @@ fn words_map_seq(criterion: &mut Criterion) {
 
     for p in params.iter() {
         bench!(STD_VEC, p, Vec);
-        bench!(PVEC_UNBALANCED, p, PVec);
-        bench!(RBVEC_BALANCED, p, RbVec);
-        bench!(RRBVEC_UNBALANCED, p, RrbVec);
+        bench!(PVEC_RRBVEC_RELAXED, p, PVec);
+        bench!(RBVEC, p, RbVec);
+        bench!(RRBVEC, p, RrbVec);
     }
 
     group.finish();
@@ -123,9 +123,9 @@ fn words_map_par(criterion: &mut Criterion, num_threads: usize) {
 
     for p in params.iter() {
         bench!(STD_VEC, p, Vec);
-        bench!(PVEC_UNBALANCED, p, PVec);
-        bench!(RBVEC_BALANCED, p, RbVec);
-        bench!(RRBVEC_UNBALANCED, p, RrbVec);
+        bench!(PVEC_RRBVEC_RELAXED, p, PVec);
+        bench!(RBVEC, p, RbVec);
+        bench!(RRBVEC, p, RrbVec);
     }
 
     group.finish();
@@ -177,9 +177,9 @@ fn words_filter_seq(criterion: &mut Criterion) {
 
     for p in params.iter() {
         bench!(STD_VEC, p, Vec);
-        bench!(PVEC_UNBALANCED, p, PVec);
-        bench!(RBVEC_BALANCED, p, RbVec);
-        bench!(RRBVEC_UNBALANCED, p, RrbVec);
+        bench!(PVEC_RRBVEC_RELAXED, p, PVec);
+        bench!(RBVEC, p, RbVec);
+        bench!(RRBVEC, p, RrbVec);
     }
 
     group.finish();
@@ -230,9 +230,9 @@ fn words_filter_par(criterion: &mut Criterion, num_threads: usize) {
 
     for p in params.iter() {
         bench!(STD_VEC, p, Vec);
-        bench!(PVEC_UNBALANCED, p, PVec);
-        bench!(RBVEC_BALANCED, p, RbVec);
-        bench!(RRBVEC_UNBALANCED, p, RrbVec);
+        bench!(PVEC_RRBVEC_RELAXED, p, PVec);
+        bench!(RBVEC, p, RbVec);
+        bench!(RRBVEC, p, RrbVec);
     }
 
     group.finish();

@@ -27,12 +27,16 @@ mod words;
 mod fold;
 
 const STD_VEC: &str = "std-vec";
+
 const IM_RS_VECTOR_BALANCED: &str = "im-rs-vector-balanced";
-const IM_RS_VECTOR_UNBALANCED: &str = "im-rs-vector-unbalanced";
-const RBVEC_BALANCED: &str = "rbvec-balanced";
-const RRBVEC_UNBALANCED: &str = "rrbvec-unbalanced";
-const PVEC_BALANCED: &str = "pvec-balanced";
-const PVEC_UNBALANCED: &str = "pvec-unbalanced";
+const IM_RS_VECTOR_RELAXED: &str = "im-rs-vector-relaxed";
+
+const PVEC_RRBVEC_BALANCED: &str = "pvec-rrbvec-balanced";
+const PVEC_RRBVEC_RELAXED: &str = "pvec-rrbvec-relaxed";
+const PVEC_STD: &str = "pvec-std";
+
+const RRBVEC: &str = "rrbvec";
+const RBVEC: &str = "rbvec";
 
 #[cfg(all(feature = "arc", feature = "rayon-iter"))]
 criterion_main!(

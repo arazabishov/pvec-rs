@@ -83,9 +83,9 @@ fn vector_addition_seq(criterion: &mut Criterion) {
 
     for p in params.iter() {
         bench!(STD_VEC, p, stdvec, Vec);
-        bench!(PVEC_UNBALANCED, p, pvec, PVec);
-        bench!(RBVEC_BALANCED, p, rbvec, RbVec);
-        bench!(RRBVEC_UNBALANCED, p, rrbvec, RrbVec);
+        bench!(PVEC_RRBVEC_RELAXED, p, pvec, PVec);
+        bench!(RBVEC, p, rbvec, RbVec);
+        bench!(RRBVEC, p, rrbvec, RrbVec);
     }
 
     group.finish();
@@ -135,9 +135,9 @@ fn vector_addition_par(criterion: &mut Criterion, num_threads: usize) {
 
     for p in params.iter() {
         bench!(STD_VEC, p, stdvec, Vec);
-        bench!(PVEC_UNBALANCED, p, pvec, PVec);
-        bench!(RBVEC_BALANCED, p, rbvec, RbVec);
-        bench!(RRBVEC_UNBALANCED, p, rrbvec, RrbVec);
+        bench!(PVEC_RRBVEC_RELAXED, p, pvec, PVec);
+        bench!(RBVEC, p, rbvec, RbVec);
+        bench!(RRBVEC, p, rrbvec, RrbVec);
     }
 
     group.finish();
