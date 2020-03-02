@@ -26,7 +26,7 @@ macro_rules! vec_balanced {
             let mut vec = $vec::new();
 
             for i in 0..*$n {
-                vec.$push(i * 2);
+                vec.$push(i);
             }
 
             vec
@@ -349,7 +349,7 @@ fn push_relaxed(criterion: &mut Criterion) {
         ($n:ident, $push:ident) => {
             |mut vec| {
                 for i in 0..*$n {
-                    vec.$push(i * 2);
+                    vec.$push(i);
                 }
 
                 vec
@@ -945,9 +945,9 @@ fn append(criterion: &mut Criterion) {
     macro_rules! create_input_cloned {
         ($n:ident, $vec:ident, $push:ident) => {
             || {
-                let create_input_fn = create_input!($n, $vec, $push);
+                let create_input = create_input!($n, $vec, $push);
 
-                let mut input = create_input_fn();
+                let mut input = create_input();
                 let mut input_cloned = Vec::new();
 
                 for vec in input.iter_mut() {
@@ -1026,8 +1026,6 @@ fn append(criterion: &mut Criterion) {
     group.finish();
 }
 
-// TODO: PVec is based on std & rrbvec. Hence, saying that it is based on RbVec
-// is wrong. Would it be correct to refer to it as balanced RrbVec instead? I agree, that would make more sense
 fn split_off(criterion: &mut Criterion) {
     macro_rules! bench {
         () => {
