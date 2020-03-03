@@ -9,7 +9,13 @@ use std::ops;
 
 pub mod iter;
 
-use crate::core::{RrbVec, BRANCH_FACTOR};
+use crate::core::RrbVec;
+
+#[cfg(not(feature = "small_branch"))]
+const BRANCH_FACTOR: usize = 32;
+
+#[cfg(feature = "small_branch")]
+const BRANCH_FACTOR: usize = 4;
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 enum Representation<T> {
