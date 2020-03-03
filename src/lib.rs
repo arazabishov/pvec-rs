@@ -187,7 +187,7 @@ impl<T: Clone + Debug> ops::IndexMut<usize> for PVec<T> {
 #[cfg(test)]
 #[macro_use]
 mod test {
-    use super::{PVec, Representation, RrbVec};
+    use super::PVec;
 
     #[test]
     fn interleaving_append_split_off_operations() {
@@ -213,89 +213,5 @@ mod test {
         for i in 0..value {
             assert_eq!(vec_one.get(i).cloned(), Some(i));
         }
-    }
-
-    #[test]
-    fn sizes() {
-        let pvec_size = std::mem::size_of::<PVec<u8>>();
-        let rrbvec_size = std::mem::size_of::<RrbVec<u8>>();
-        let flavor_size = std::mem::size_of::<Representation<u8>>();
-        let vec_size = std::mem::size_of::<Vec<u8>>();
-
-        println!("Size of PVec<u8>={}", pvec_size);
-        println!("Size of RrbVec<u8>={}", rrbvec_size);
-        println!("Size of Flavor<u8>={}", flavor_size);
-        println!("Size of Vec<u8>={}", vec_size);
-    }
-
-    #[test]
-    fn push_clone() {
-        let mut vec_1 = PVec::new();
-        let mut vec_2 = vec_1.clone();
-        let mut vec_3 = vec_2.clone();
-
-        // if you have replaced contents of the original vector
-        // by doing some unsafe manipulations, you wouldn't
-        // have had this problem
-
-        for i in 0..132 {
-            vec_3 = vec_1; // <-- vec_1 reference lives here
-            vec_1 = vec_2; // <-- vec_2 reference lives here
-
-            vec_1.push(i);
-            vec_2 = vec_1.clone();
-        }
-
-        println!("Size of vec_1={}", vec_1.len());
-        println!("Size of vec_2={}", vec_2.len());
-        println!("Size of vec_3={}", vec_3.len());
-    }
-
-    #[test]
-    fn internal_state() {
-        let mut input = create_input(16000);
-        let mut vec = PVec::new();
-
-        for mut input in input.iter_mut() {
-            println!(
-                "input is flat={} && is len is={}",
-                input.0.is_flat(),
-                input.len()
-            );
-            vec.append(&mut input);
-            println!("vec is flat={}", vec.0.is_flat());
-        }
-    }
-
-    fn create_input(n: usize) -> Vec<PVec<usize>> {
-        let mut input = Vec::new();
-        let mut input_len = 0;
-        let mut i = 1;
-
-        while i < n && (input_len + i) <= n {
-            let mut vec = PVec::new();
-
-            for j in 0..i {
-                vec.push(j);
-            }
-
-            input_len += vec.len();
-            input.push(vec.clone());
-
-            i *= 2;
-        }
-
-        let mut vec = PVec::new();
-        let mut j = 0;
-
-        while input_len < n {
-            vec.push(j);
-
-            input_len += 1;
-            j += 1;
-        }
-
-        input.push(vec.clone());
-        input
     }
 }
