@@ -1,3 +1,4 @@
+use criterion::BatchSize::SmallInput;
 use criterion::*;
 
 use pvec::core::RbVec;
@@ -42,23 +43,29 @@ fn is_palindrome(word: &str) -> bool {
 }
 
 fn words_map_seq(criterion: &mut Criterion) {
+    macro_rules! bench {
+        ($vec:ident) => {
+            |words| {
+                words
+                    .into_iter()
+                    .map(|it| (it, is_palindrome(&it)))
+                    .collect::<$vec<(&str, bool)>>()
+            }
+        };
+    }
+
     let mut group = criterion.benchmark_group(format!("words_map_with_thread_num_1"));
     group.plot_config(PlotConfiguration::default().summary_scale(AxisScale::Logarithmic));
 
     let file = fs::read_to_string("benches/words/words.txt").expect("Oops, something went wrong");
     let lines = file.lines();
 
-    macro_rules! bench {
+    macro_rules! make_bench {
         ($name:ident, $p:ident, $vec:ident) => {
             group.bench_with_input(BenchmarkId::new($name, $p), $p, |b, n| {
                 b.iter_batched(
                     || lines.clone().take(*n).collect::<$vec<&str>>(),
-                    |words| {
-                        words
-                            .into_iter()
-                            .map(|it| (it, is_palindrome(&it)))
-                            .collect::<$vec<(&str, bool)>>()
-                    },
+                    bench!($vec),
                     BatchSize::SmallInput,
                 );
             });
@@ -70,16 +77,45 @@ fn words_map_seq(criterion: &mut Criterion) {
     ];
 
     for p in params.iter() {
-        bench!(STD_VEC, p, Vec);
-        bench!(PVEC_UNBALANCED, p, PVec);
-        bench!(RBVEC_BALANCED, p, RbVec);
-        bench!(RRBVEC_UNBALANCED, p, RrbVec);
+        make_bench!(STD_VEC, p, Vec);
+        make_bench!(RBVEC, p, RbVec);
+        make_bench!(RRBVEC, p, RrbVec);
+
+        make_bench!(PVEC_STD, p, PVec);
+        group.bench_with_input(BenchmarkId::new(PVEC_RRBVEC_RELAXED, p), p, |b, n| {
+            b.iter_batched(
+                || {
+                    let vec = lines.clone().take(*n).collect::<PVec<&str>>();
+                    vec.clone()
+                },
+                bench!(PVec),
+                BatchSize::SmallInput,
+            );
+        });
     }
 
     group.finish();
 }
 
 fn words_map_par(criterion: &mut Criterion, num_threads: usize) {
+    macro_rules! bench {
+        ($vec:ident) => {
+            |words| {
+                words
+                    .into_par_iter()
+                    .map(|it| (it, is_palindrome(&it)))
+                    .fold($vec::new, |mut vec, x| {
+                        vec.push(x);
+                        vec
+                    })
+                    .reduce($vec::new, |mut vec_1, mut vec_2| {
+                        vec_1.append(&mut vec_2);
+                        vec_1
+                    })
+            }
+        };
+    }
+
     let mut group = criterion.benchmark_group(format!("words_map_with_thread_num_{}", num_threads));
     group.plot_config(PlotConfiguration::default().summary_scale(AxisScale::Logarithmic));
 
@@ -91,26 +127,14 @@ fn words_map_par(criterion: &mut Criterion, num_threads: usize) {
     let file = fs::read_to_string("benches/words/words.txt").expect("Oops, something went wrong");
     let lines = file.lines();
 
-    macro_rules! bench {
+    macro_rules! make_bench {
         ($name:ident, $p:ident, $vec:ident) => {
             group.bench_with_input(BenchmarkId::new($name, $p), $p, |b, n| {
                 pool.install(|| {
                     b.iter_batched(
                         || lines.clone().take(*n).collect::<$vec<&str>>(),
-                        |words| {
-                            words
-                                .into_par_iter()
-                                .map(|it| (it, is_palindrome(&it)))
-                                .fold($vec::new, |mut vec, x| {
-                                    vec.push(x);
-                                    vec
-                                })
-                                .reduce($vec::new, |mut vec1, mut vec2| {
-                                    vec1.append(&mut vec2);
-                                    vec1
-                                })
-                        },
-                        BatchSize::SmallInput,
+                        bench!($vec),
+                        SmallInput,
                     );
                 });
             });
@@ -122,10 +146,23 @@ fn words_map_par(criterion: &mut Criterion, num_threads: usize) {
     ];
 
     for p in params.iter() {
-        bench!(STD_VEC, p, Vec);
-        bench!(PVEC_UNBALANCED, p, PVec);
-        bench!(RBVEC_BALANCED, p, RbVec);
-        bench!(RRBVEC_UNBALANCED, p, RrbVec);
+        make_bench!(STD_VEC, p, Vec);
+        make_bench!(RBVEC, p, RbVec);
+        make_bench!(RRBVEC, p, RrbVec);
+
+        make_bench!(PVEC_STD, p, PVec);
+        group.bench_with_input(BenchmarkId::new(PVEC_RRBVEC_RELAXED, p), p, |b, n| {
+            pool.install(|| {
+                b.iter_batched(
+                    || {
+                        let vec = lines.clone().take(*n).collect::<PVec<&str>>();
+                        vec.clone()
+                    },
+                    bench!(PVec),
+                    SmallInput,
+                );
+            });
+        });
     }
 
     group.finish();
@@ -145,6 +182,10 @@ fn words_map_4(criterion: &mut Criterion) {
 
 fn words_map_8(criterion: &mut Criterion) {
     words_map_par(criterion, 8);
+}
+
+fn words_map_16(criterion: &mut Criterion) {
+    words_map_par(criterion, 16);
 }
 
 fn words_filter_seq(criterion: &mut Criterion) {
@@ -177,9 +218,9 @@ fn words_filter_seq(criterion: &mut Criterion) {
 
     for p in params.iter() {
         bench!(STD_VEC, p, Vec);
-        bench!(PVEC_UNBALANCED, p, PVec);
-        bench!(RBVEC_BALANCED, p, RbVec);
-        bench!(RRBVEC_UNBALANCED, p, RrbVec);
+        bench!(PVEC_STD, p, PVec);
+        bench!(RBVEC, p, RbVec);
+        bench!(RRBVEC, p, RrbVec);
     }
 
     group.finish();
@@ -212,9 +253,9 @@ fn words_filter_par(criterion: &mut Criterion, num_threads: usize) {
                                     vec.push(x);
                                     vec
                                 })
-                                .reduce($vec::new, |mut vec1, mut vec2| {
-                                    vec1.append(&mut vec2);
-                                    vec1
+                                .reduce($vec::new, |mut vec_1, mut vec_2| {
+                                    vec_1.append(&mut vec_2);
+                                    vec_1
                                 })
                         },
                         BatchSize::SmallInput,
@@ -230,9 +271,9 @@ fn words_filter_par(criterion: &mut Criterion, num_threads: usize) {
 
     for p in params.iter() {
         bench!(STD_VEC, p, Vec);
-        bench!(PVEC_UNBALANCED, p, PVec);
-        bench!(RBVEC_BALANCED, p, RbVec);
-        bench!(RRBVEC_UNBALANCED, p, RrbVec);
+        bench!(PVEC_STD, p, PVec);
+        bench!(RBVEC, p, RbVec);
+        bench!(RRBVEC, p, RrbVec);
     }
 
     group.finish();
@@ -258,15 +299,22 @@ fn words_filter_16(criterion: &mut Criterion) {
     words_filter_par(criterion, 16);
 }
 
+fn create_criterion() -> Criterion {
+    Criterion::default().configure_from_args().sample_size(10)
+}
+
 criterion_group!(
-    benches,
-    words_map_1,
-    words_map_2,
-    words_map_4,
-    words_map_8,
-    words_filter_1,
-    words_filter_2,
-    words_filter_4,
-    words_filter_8,
-    words_filter_16,
+    name = benches;
+    config = create_criterion();
+    targets = 
+        words_map_1,
+        words_map_2,
+        words_map_4,
+        words_map_8,
+        words_map_16,
+        words_filter_1,
+        words_filter_2,
+        words_filter_4,
+        words_filter_8,
+        words_filter_16,
 );

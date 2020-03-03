@@ -23,6 +23,60 @@ mod rrbtree;
 #[cfg(feature = "serde-serializer")]
 pub mod serializer;
 
+#[cfg(not(feature = "small_branch"))]
+macro_rules! clone_arr {
+    ($source:expr) => {{
+        let s = $source;
+        [
+            Some(s[0x00].clone()),
+            Some(s[0x01].clone()),
+            Some(s[0x02].clone()),
+            Some(s[0x03].clone()),
+            Some(s[0x04].clone()),
+            Some(s[0x05].clone()),
+            Some(s[0x06].clone()),
+            Some(s[0x07].clone()),
+            Some(s[0x08].clone()),
+            Some(s[0x09].clone()),
+            Some(s[0x0A].clone()),
+            Some(s[0x0B].clone()),
+            Some(s[0x0C].clone()),
+            Some(s[0x0D].clone()),
+            Some(s[0x0E].clone()),
+            Some(s[0x0F].clone()),
+            Some(s[0x10].clone()),
+            Some(s[0x11].clone()),
+            Some(s[0x12].clone()),
+            Some(s[0x13].clone()),
+            Some(s[0x14].clone()),
+            Some(s[0x15].clone()),
+            Some(s[0x16].clone()),
+            Some(s[0x17].clone()),
+            Some(s[0x18].clone()),
+            Some(s[0x19].clone()),
+            Some(s[0x1A].clone()),
+            Some(s[0x1B].clone()),
+            Some(s[0x1C].clone()),
+            Some(s[0x1D].clone()),
+            Some(s[0x1E].clone()),
+            Some(s[0x1F].clone()),
+        ]
+    }};
+}
+
+#[cfg(feature = "small_branch")]
+macro_rules! clone_arr {
+    ($source:expr) => {{
+        let s = $source;
+        [
+            Some(s[0x00].clone()),
+            Some(s[0x01].clone()),
+            Some(s[0x02].clone()),
+            Some(s[0x03].clone()),
+        ]
+    }};
+}
+
 #[derive(Clone, Debug, Ord, PartialOrd, Eq, PartialEq)]
 pub struct RbVec<T> {
     tree: RrbTree<T>,
@@ -387,6 +441,32 @@ impl<T: Clone + Debug> RrbVec<T> {
         }
 
         self.push_tail();
+    }
+}
+
+impl<T: Clone + Debug> From<&Vec<T>> for RrbVec<T> {
+    #[inline(always)]
+    fn from(vec: &Vec<T>) -> RrbVec<T> {
+        let mut tree = RrbTree::new();
+
+        let mut chunks = vec.chunks_exact(BRANCH_FACTOR);
+        for chunk in chunks.by_ref() {
+            tree.push(clone_arr!(chunk), chunk.len());
+        }
+
+        let mut tail = new_branch!();
+        let mut tail_len = 0;
+
+        for item in chunks.remainder() {
+            tail[tail_len] = Some(item.clone());
+            tail_len += 1;
+        }
+
+        RrbVec {
+            tree,
+            tail,
+            tail_len,
+        }
     }
 }
 
