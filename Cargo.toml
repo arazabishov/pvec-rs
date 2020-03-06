@@ -27,6 +27,9 @@ rayon-iter = ["pvec-core/rayon-iter", "rayon"]
 arc = ["pvec-core/arc", "pvec-utils/arc",]
 small_branch = ["pvec-core/small_branch"]
 
+[lib]
+bench = false
+
 [[bench]]
 name = "lib"
 harness = false

@@ -280,22 +280,16 @@ pub fn filter_fold_16(criterion: &mut Criterion) {
     filter_fold_par(criterion, 16);
 }
 
-fn create_criterion() -> Criterion {
-    Criterion::default().configure_from_args().sample_size(10)
-}
-
 criterion_group!(
-    name = benches;
-    config = create_criterion();
-    targets = 
-        map_fold_1,
-        map_fold_2,
-        map_fold_4,
-        map_fold_8,
-        map_fold_16,
-        filter_fold_1,
-        filter_fold_2,
-        filter_fold_4,
-        filter_fold_8,
-        filter_fold_16,
+    benches,
+    map_fold_1,
+    map_fold_2,
+    map_fold_4,
+    map_fold_8,
+    map_fold_16,
+    filter_fold_1,
+    filter_fold_2,
+    filter_fold_4,
+    filter_fold_8,
+    filter_fold_16,
 );

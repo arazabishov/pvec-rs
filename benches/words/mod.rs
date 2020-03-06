@@ -299,22 +299,16 @@ fn words_filter_16(criterion: &mut Criterion) {
     words_filter_par(criterion, 16);
 }
 
-fn create_criterion() -> Criterion {
-    Criterion::default().configure_from_args().sample_size(10)
-}
-
 criterion_group!(
-    name = benches;
-    config = create_criterion();
-    targets = 
-        words_map_1,
-        words_map_2,
-        words_map_4,
-        words_map_8,
-        words_map_16,
-        words_filter_1,
-        words_filter_2,
-        words_filter_4,
-        words_filter_8,
-        words_filter_16,
+    benches,
+    words_map_1,
+    words_map_2,
+    words_map_4,
+    words_map_8,
+    words_map_16,
+    words_filter_1,
+    words_filter_2,
+    words_filter_4,
+    words_filter_8,
+    words_filter_16,
 );

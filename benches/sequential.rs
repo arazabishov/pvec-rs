@@ -282,9 +282,7 @@ fn push(criterion: &mut Criterion) {
     macro_rules! bench {
         ($p:ident, $vec:ident, $push:ident, $name:ident) => {
             group.bench_with_input(BenchmarkId::new($name, $p), $p, |b, n| {
-                b.iter(|| {
-                    vec_balanced!(n, $vec, $push);
-                })
+                b.iter(vec_balanced!(n, $vec, $push))
             });
         };
     }
@@ -1068,27 +1066,21 @@ fn split_off(criterion: &mut Criterion) {
     group.finish();
 }
 
-fn create_criterion() -> Criterion {
-    Criterion::default().configure_from_args().sample_size(10)
-}
-
 criterion_group!(
-    name = benches;
-    config = create_criterion();
-    targets = 
-        index_sequentially, 
-        index_randomly, 
-        iterator_next, 
-        push, 
-        push_clone, 
-        push_relaxed, 
-        push_clone_relaxed,
-        update, 
-        update_randomly, 
-        update_clone, 
-        update_clone_randomly, 
-        pop, 
-        pop_clone, 
-        append, 
-        split_off
+    benches,
+    index_sequentially,
+    index_randomly,
+    iterator_next,
+    push,
+    push_clone,
+    push_relaxed,
+    push_clone_relaxed,
+    update,
+    update_randomly,
+    update_clone,
+    update_clone_randomly,
+    pop,
+    pop_clone,
+    append,
+    split_off
 );
