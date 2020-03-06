@@ -178,17 +178,11 @@ fn vector_addition_16(criterion: &mut Criterion) {
     vector_addition_par(criterion, 16);
 }
 
-fn create_criterion() -> Criterion {
-    Criterion::default().configure_from_args().sample_size(10)
-}
-
 criterion_group!(
-    name = benches;
-    config = create_criterion();
-    targets = 
-        vector_addition_1,
-        vector_addition_2,
-        vector_addition_4,
-        vector_addition_8,
-        vector_addition_16,
+    benches,
+    vector_addition_1,
+    vector_addition_2,
+    vector_addition_4,
+    vector_addition_8,
+    vector_addition_16,
 );
