@@ -1,7 +1,9 @@
-name: Build and test pvec-rs
-
-on: [pull_request]
-
+name: build
+on:
+  push:
+    branches:
+    - master
+  pull_request:
 jobs:
   build:
     runs-on: macos-latest
