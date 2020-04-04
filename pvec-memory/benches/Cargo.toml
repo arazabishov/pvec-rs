@@ -1,0 +1,9 @@
+[package]
+name = "benches"
+version = "0.1.0"
+authors = ["Araz Abishov <araz@abishov.com>"]
+edition = "2018"
+
+[dependencies]
+pvec = { path = "../../" }
+im-rc = "14.0.0"
