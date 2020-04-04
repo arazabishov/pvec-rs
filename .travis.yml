@@ -11,3 +11,4 @@ script:
   - cargo test --all
   - cargo test --all --features "small_branch"
   - cargo test --benches --features=arc,rayon-iter
+  - cd pvec-memory && sh bench.sh
