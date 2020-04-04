@@ -168,38 +168,45 @@ fn append_benches(vec: &str, n: usize) {
     }
 }
 
-fn get_arguments() -> (String, String, usize) {
-    // The first argument points to the executable
-    // path. Hence, we ignore it.
-    let mut args_iter = env::args().skip(1);
+fn get_arguments() -> Result<(String, String, usize), &'static str> {
+    let args = env::args();
 
-    // Here we make a strong assumption about present
-    // arguments. They're always expected to be provided
-    // as this program is only expected to be used from
-    // another program - benchmark runner.
-    let bench = args_iter.next().unwrap();
-    let vec = args_iter.next().unwrap();
-    let n = args_iter
-        .next()
-        .map(|it| it.parse::<usize>())
-        .unwrap()
-        .expect("n has to be an unsigned integer");
+    if args.len() < 4 {
+        Err("Not enough arguments provided.")
+    } else {
+        // The first argument points to the executable
+        // path. Hence, we ignore it.
+        let mut args_iter = env::args().skip(1);
 
-    (bench, vec, n)
+        // Here we make a strong assumption about present
+        // arguments. They're always expected to be provided
+        // as this program is only expected to be used from
+        // another program - benchmark runner.
+        let bench = args_iter.next().unwrap();
+        let vec = args_iter.next().unwrap();
+        let n = args_iter
+            .next()
+            .map(|it| it.parse::<usize>())
+            .unwrap()
+            .expect("n has to be an unsigned integer");
+
+        Ok((bench, vec, n))
+    }
 }
 
-// TODO: calculate the baseline of the process
-// memory consumption: 843776 bytes.
 fn main() {
-    let (bench_arg, vec_arg, n) = get_arguments();
+    match get_arguments() {
+        Ok((bench_arg, vec_arg, n)) => {
+            let bench = bench_arg.as_str();
+            let vec = vec_arg.as_str();
 
-    let bench = bench_arg.as_str();
-    let vec = vec_arg.as_str();
-
-    match bench {
-        "push" => push_benches(vec, n),
-        "append" => append_benches(vec, n),
-        "update_clone" => update_benches(vec, n),
-        &_ => {}
-    };
+            match bench {
+                "push" => push_benches(vec, n),
+                "append" => append_benches(vec, n),
+                "update_clone" => update_benches(vec, n),
+                &_ => {}
+            };
+        }
+        Err(e) => println!("{}", e),
+    }
 }

@@ -38,14 +38,21 @@ impl BenchRunner {
         }
     }
 
-    fn run(&self, bench: &str, vec: &str, n: &usize) -> usize {
+    fn execute(&self, bench: Option<&str>, vec: Option<&str>, n: Option<&usize>) -> usize {
         let mut command = Command::new("/usr/bin/time");
-        command
-            .arg("-l")
-            .arg(self.path.clone())
-            .arg(bench)
-            .arg(vec)
-            .arg(n.to_string());
+        command.arg("-l").arg(self.path.clone());
+
+        if let Some(bench) = bench {
+            command.arg(bench);
+        }
+
+        if let Some(vec) = vec {
+            command.arg(vec);
+        }
+
+        if let Some(n) = n {
+            command.arg(n.to_string());
+        }
 
         // The output of the benches process is piped into /dev/null
         // to simplify parsing of the 'time' command output
@@ -67,8 +74,8 @@ impl BenchRunner {
             .split_whitespace()
             .collect::<Vec<&str>>();
 
-        // The first token is the actual size, the we take and
-        // parse to a number type.
+        // The first token is the actual size, then we take 
+        // it and parse to a number type.
         let maximum_resident_set_size = maximum_resident_set_size_tokens
             .first()
             .unwrap()
@@ -76,6 +83,16 @@ impl BenchRunner {
             .unwrap();
 
         maximum_resident_set_size
+    }
+
+    // Runs the benchmark process without any arguments
+    // to measure the memory footprint of the process.
+    fn baseline(&self) -> usize {
+        self.execute(None, None, None)
+    }
+
+    fn run(&self, bench: &str, vec: &str, n: &usize) -> usize {
+        self.execute(Some(bench), Some(vec), Some(n))
     }
 }
 
@@ -87,6 +104,12 @@ fn execute() -> Result<(), Box<dyn Error>> {
 
     let report_path = exe_path.clone().join("report");
     let bench_runner = BenchRunner::new(exe_path.clone());
+
+    // Baseline is the memory footprint of the process
+    // without running any benchmarks. Its value is subtracted
+    // from the result of a benchmark to get a sense of
+    // how much memory vector consumes
+    let baseline = bench_runner.baseline();
 
     let sizes: Vec<usize> = vec![
         20, 40, 60, 80, 100, 200, 400, 600, 800, 1_000, 2_000, 4_000, 6_000, 8_000, 10_000, 20_000,
@@ -145,11 +168,13 @@ fn execute() -> Result<(), Box<dyn Error>> {
 
             for n in bench.sizes.iter() {
                 let maximum_resident_set_size = bench_runner.run(&bench.name, vec, n);
+                let maximum_resident_set_size_diff = maximum_resident_set_size - baseline;
 
                 let n_str: &str = &n.to_string();
-                let maximum_resident_set_size_str = &maximum_resident_set_size.to_string();
+                let maximum_resident_set_size_diff_str =
+                    &maximum_resident_set_size_diff.to_string();
 
-                wtr.write_record(&[n_str, maximum_resident_set_size_str])?;
+                wtr.write_record(&[n_str, maximum_resident_set_size_diff_str])?;
             }
 
             wtr.flush()?;
