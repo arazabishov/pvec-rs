@@ -30,6 +30,5 @@ jobs:
           command: test
           args: --benches --features=arc,rayon-iter
       - name: Run memory benches as tests
-        run: |
-          sh bench.sh
+        run: sh bench.sh
         working-directory: pvec-memory

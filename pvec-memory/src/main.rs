@@ -74,7 +74,7 @@ impl BenchRunner {
             .split_whitespace()
             .collect::<Vec<&str>>();
 
-        // The first token is the actual size, then we take 
+        // The first token is the actual size, then we take
         // it and parse to a number type.
         let maximum_resident_set_size = maximum_resident_set_size_tokens
             .first()
