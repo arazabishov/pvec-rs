@@ -21,57 +21,6 @@ macro_rules! generate_vec {
     };
 }
 
-fn vector_addition_seq(criterion: &mut Criterion) {
-    macro_rules! bench {
-        ($new_vec:expr) => {
-            |(vec_one, vec_two)| {
-                vec_one
-                    .into_iter()
-                    .zip(vec_two)
-                    .map(|(e_1, e_2)| e_1 + e_2)
-                    .fold($new_vec(), |mut vec_1, x| {
-                        vec_1.push(x);
-                        vec_1
-                    })
-            }
-        };
-    }
-
-    let mut group = criterion.benchmark_group("vector_addition_with_thread_num_1");
-    group.plot_config(PlotConfiguration::default().summary_scale(AxisScale::Logarithmic));
-
-    macro_rules! make_bench {
-        ($name:ident, $p:ident, $new_vec:expr) => {
-            group.bench_with_input(BenchmarkId::new($name, $p), $p, |b, n| {
-                let generate_vec = generate_vec!($new_vec);
-
-                b.iter_batched(
-                    || (generate_vec(*n), generate_vec(*n)),
-                    bench!($new_vec),
-                    SmallInput,
-                );
-            });
-        };
-    }
-
-    let params = vec![
-        20, 40, 60, 80, 100, 200, 400, 600, 800, 1000, 2000, 4000, 6000, 8000, 10000, 20000, 40000,
-    ];
-
-    for p in params.iter() {
-        make_bench!(STD_VEC, p, || Vec::new());
-        make_bench!(RBVEC, p, || RbVec::new());
-        make_bench!(RRBVEC, p, || RrbVec::new());
-        make_bench!(PVEC_STD, p, || PVec::new());
-
-        // TODO: verify that RRBVEC is relaxed here.
-        make_bench!(PVEC_RRBVEC_RELAXED, p, || PVec::new_with_tree());
-    }
-
-    group.finish();
-}
-
-// TODO: consider running single thread tests here too!
 fn vector_addition_par(criterion: &mut Criterion, num_threads: usize) {
     macro_rules! bench {
         ($new_vec:expr) => {
@@ -127,8 +76,6 @@ fn vector_addition_par(criterion: &mut Criterion, num_threads: usize) {
         make_bench!(RBVEC, p, || RbVec::new());
         make_bench!(RRBVEC, p, || RrbVec::new());
         make_bench!(PVEC_STD, p, || PVec::new());
-
-        // TODO: check that the tree is actually relaxed
         make_bench!(PVEC_RRBVEC_RELAXED, p, || PVec::new_with_tree());
     }
 
@@ -136,7 +83,7 @@ fn vector_addition_par(criterion: &mut Criterion, num_threads: usize) {
 }
 
 fn vector_addition_1(criterion: &mut Criterion) {
-    vector_addition_seq(criterion);
+    vector_addition_par(criterion, 1);
 }
 
 fn vector_addition_2(criterion: &mut Criterion) {
