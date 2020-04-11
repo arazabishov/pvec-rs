@@ -315,6 +315,7 @@ fn push(criterion: &mut Criterion) {
         bench!(p, || IVec::new(), push_back, IM_RS_VECTOR_BALANCED);
         bench!(p, || RbVec::new(), push, RBVEC);
         bench!(p, || PVec::new(), push, PVEC_STD);
+        bench!(p, || PVec::new_with_tree(), push, PVEC_RRBVEC_BALANCED);
     }
 
     group.finish();
