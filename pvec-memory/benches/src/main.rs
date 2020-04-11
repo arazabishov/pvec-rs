@@ -41,7 +41,7 @@ fn push_benches(vec: &str, n: usize) {
     let push_std_vec = push!(|| Vec::new(), push);
     let push_rbvec = push!(|| RbVec::new(), push);
     let push_pvec_std = push!(|| PVec::new(), push);
-    let push_pvec_rrbvec = push!(|| PVec::new().clone(), push);
+    let push_pvec_rrbvec = push!(|| PVec::new_with_tree(), push);
 
     match vec {
         IM_RS_VECTOR_BALANCED => push_ivec(n),
@@ -78,7 +78,7 @@ fn update_benches(vec: &str, n: usize) {
     }
 
     let update_clone_ivec = update_clone!(|| IVec::new(), push_back);
-    let update_clone_pvec_rrbvec = update_clone!(|| PVec::new().clone(), push);
+    let update_clone_pvec_rrbvec = update_clone!(|| PVec::new_with_tree(), push);
     let update_clone_pvec_std = update_clone!(|| PVec::new(), push);
     let update_clone_std_vec = update_clone!(|| Vec::new(), push);
     let update_clone_rrbvec = update_clone!(|| RbVec::new(), push);
@@ -151,7 +151,7 @@ fn append_benches(vec: &str, n: usize) {
     }
 
     let append_std_vec = append!(|| Vec::new(), push, append::vec);
-    let append_pvec_rrbvec_relaxed = append!(|| PVec::new().clone(), push, append::pvec);
+    let append_pvec_rrbvec_relaxed = append!(|| PVec::new_with_tree(), push, append::pvec);
     let append_pvec_std = append!(|| PVec::new(), push, append::pvec);
     let append_rrbvec = append!(|| RrbVec::new(), push, append::rrbvec);
     let append_rbvec = append!(|| RbVec::new(), push, append::rbvec);
