@@ -36,11 +36,7 @@ const RRBVEC: &str = "rrbvec";
 const RBVEC: &str = "rbvec";
 
 #[cfg(all(feature = "arc", feature = "rayon-iter"))]
-criterion_main!(
-    sequential::benches,
-    vecaddition::benches,
-    words::benches,    
-);
+criterion_main!(sequential::benches, vecaddition::benches, words::benches,);
 
 #[cfg(not(all(feature = "arc", feature = "rayon-iter")))]
 criterion_main!(sequential::benches);
