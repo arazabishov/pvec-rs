@@ -2,7 +2,6 @@
 
 echo "Compiling benchmarks in the release mode."
 
-
 pushd "benches"
 eval "cargo build --release"
 
