@@ -21,9 +21,9 @@ fn rnd() -> XorShiftRng {
 }
 
 macro_rules! vec_balanced {
-    ($n:ident, $vec:ident, $push:ident) => {
+    ($n:ident, $new_vec:expr, $push:ident) => {
         || {
-            let mut vec = $vec::new();
+            let mut vec = $new_vec();
 
             for i in 0..*$n {
                 vec.$push(i);
@@ -34,25 +34,14 @@ macro_rules! vec_balanced {
     };
 }
 
-macro_rules! vec_balanced_cloned {
-    ($n:ident, $vec:ident, $push:ident) => {
-        || {
-            let vec_balanced = vec_balanced!($n, $vec, $push);
-            let vec = vec_balanced();
-
-            vec.clone()
-        }
-    };
-}
-
 macro_rules! vec_relaxed {
-    ($n:ident, $vec:ident, $push:ident, $append:path) => {
+    ($n:ident, $new_vec:expr, $push:ident, $append:path) => {
         || {
             let mut i = 1;
-            let mut vec = $vec::new();
+            let mut vec = $new_vec();
 
             while i < *$n && (vec.len() + i) <= *$n {
-                let mut another_vec = $vec::new();
+                let mut another_vec = $new_vec();
 
                 for j in 0..i {
                     another_vec.$push(j);
@@ -82,12 +71,8 @@ mod append {
         vec.append(&mut data);
     }
 
-    pub fn pvec(vec: &mut PVec<usize>, data: PVec<usize>) {
-        // clone() is invoked to ensure that PVec switches its internal
-        // representation to RbVec. This piece of code is used only
-        // in the setup code and it will not be measured.
-        let mut data_clone = data.clone();
-        vec.append(&mut data_clone);
+    pub fn pvec(vec: &mut PVec<usize>, mut data: PVec<usize>) {
+        vec.append(&mut data);
     }
 }
 
@@ -108,17 +93,21 @@ fn index_sequentially(criterion: &mut Criterion) {
     group.plot_config(PlotConfiguration::default().summary_scale(AxisScale::Logarithmic));
 
     macro_rules! bench_balanced {
-        ($name:ident, $p:ident, $vec:ident, $push:ident) => {
+        ($name:ident, $p:ident, $new_vec:expr, $push:ident) => {
             group.bench_with_input(BenchmarkId::new($name, $p), $p, |b, n| {
-                b.iter_batched(vec_balanced!(n, $vec, $push), bench!(n), SmallInput)
+                b.iter_batched(vec_balanced!(n, $new_vec, $push), bench!(n), SmallInput)
             });
         };
     }
 
     macro_rules! bench_relaxed {
-        ($name:ident, $p:ident, $vec:ident, $push:ident, $append:path) => {
+        ($name:ident, $p:ident, $new_vec:expr, $push:ident, $append:path) => {
             group.bench_with_input(BenchmarkId::new($name, $p), $p, |b, n| {
-                b.iter_batched(vec_relaxed!(n, $vec, $push, $append), bench!(n), SmallInput)
+                b.iter_batched(
+                    vec_relaxed!(n, $new_vec, $push, $append),
+                    bench!(n),
+                    SmallInput,
+                )
             });
         };
     }
@@ -129,20 +118,29 @@ fn index_sequentially(criterion: &mut Criterion) {
     ];
 
     for p in params.iter() {
-        bench_balanced!(STD_VEC, p, Vec, push);
+        bench_balanced!(STD_VEC, p, || Vec::new(), push);
 
-        bench_balanced!(IM_RS_VECTOR_BALANCED, p, IVec, push_back);
-        bench_relaxed!(IM_RS_VECTOR_RELAXED, p, IVec, push_back, append::ivec);
+        bench_balanced!(IM_RS_VECTOR_BALANCED, p, || IVec::new(), push_back);
+        bench_relaxed!(
+            IM_RS_VECTOR_RELAXED,
+            p,
+            || IVec::new(),
+            push_back,
+            append::ivec
+        );
 
-        bench_balanced!(RBVEC, p, RbVec, push);
-        bench_relaxed!(RRBVEC, p, RrbVec, push, append::rrbvec);
+        bench_balanced!(RBVEC, p, || RbVec::new(), push);
+        bench_relaxed!(RRBVEC, p, || RrbVec::new(), push, append::rrbvec);
 
-        bench_balanced!(PVEC_STD, p, PVec, push);
-        bench_relaxed!(PVEC_RRBVEC_RELAXED, p, PVec, push, append::pvec);
-
-        group.bench_with_input(BenchmarkId::new(PVEC_RRBVEC_BALANCED, p), p, |b, n| {
-            b.iter_batched(vec_balanced_cloned!(n, PVec, push), bench!(n), SmallInput)
-        });
+        bench_balanced!(PVEC_STD, p, || PVec::new(), push);
+        bench_balanced!(PVEC_RRBVEC_BALANCED, p, || PVec::new_with_tree(), push);
+        bench_relaxed!(
+            PVEC_RRBVEC_RELAXED,
+            p,
+            || PVec::new_with_tree(),
+            push,
+            append::pvec
+        );
     }
 
     group.finish();
@@ -166,22 +164,26 @@ fn index_randomly(criterion: &mut Criterion) {
     group.plot_config(PlotConfiguration::default().summary_scale(AxisScale::Logarithmic));
 
     macro_rules! bench_balanced {
-        ($name:ident, $p:ident, $vec:ident, $push:ident) => {
+        ($name:ident, $p:ident, $new_vec:expr, $push:ident) => {
             group.bench_with_input(BenchmarkId::new($name, $p), $p, |b, n| {
                 let mut rnd = rnd();
 
-                b.iter_batched(vec_balanced!(n, $vec, $push), bench!(n, rnd), SmallInput)
+                b.iter_batched(
+                    vec_balanced!(n, $new_vec, $push),
+                    bench!(n, rnd),
+                    SmallInput,
+                )
             });
         };
     }
 
     macro_rules! bench_relaxed {
-        ($name:ident, $p:ident, $vec:ident, $push:ident, $append:path) => {
+        ($name:ident, $p:ident, $new_vec:expr, $push:ident, $append:path) => {
             group.bench_with_input(BenchmarkId::new($name, $p), $p, |b, n| {
                 let mut rnd = rnd();
 
                 b.iter_batched(
-                    vec_relaxed!(n, $vec, $push, $append),
+                    vec_relaxed!(n, $new_vec, $push, $append),
                     bench!(n, rnd),
                     SmallInput,
                 )
@@ -195,26 +197,29 @@ fn index_randomly(criterion: &mut Criterion) {
     ];
 
     for p in params.iter() {
-        bench_balanced!(STD_VEC, p, Vec, push);
+        bench_balanced!(STD_VEC, p, || Vec::new(), push);
 
-        bench_balanced!(IM_RS_VECTOR_BALANCED, p, IVec, push_back);
-        bench_relaxed!(IM_RS_VECTOR_RELAXED, p, IVec, push_back, append::ivec);
+        bench_balanced!(IM_RS_VECTOR_BALANCED, p, || IVec::new(), push_back);
+        bench_relaxed!(
+            IM_RS_VECTOR_RELAXED,
+            p,
+            || IVec::new(),
+            push_back,
+            append::ivec
+        );
 
-        bench_balanced!(RBVEC, p, RbVec, push);
-        bench_relaxed!(RRBVEC, p, RrbVec, push, append::rrbvec);
+        bench_balanced!(RBVEC, p, || RbVec::new(), push);
+        bench_relaxed!(RRBVEC, p, || RrbVec::new(), push, append::rrbvec);
 
-        bench_balanced!(PVEC_STD, p, PVec, push);
-        bench_relaxed!(PVEC_RRBVEC_RELAXED, p, PVec, push, append::pvec);
-
-        group.bench_with_input(BenchmarkId::new(PVEC_RRBVEC_BALANCED, p), p, |b, n| {
-            let mut rnd = rnd();
-
-            b.iter_batched(
-                vec_balanced_cloned!(n, PVec, push),
-                bench!(n, rnd),
-                SmallInput,
-            )
-        });
+        bench_balanced!(PVEC_STD, p, || PVec::new(), push);
+        bench_balanced!(PVEC_RRBVEC_BALANCED, p, || PVec::new_with_tree(), push);
+        bench_relaxed!(
+            PVEC_RRBVEC_RELAXED,
+            p,
+            || PVec::new_with_tree(),
+            push,
+            append::pvec
+        );
     }
 
     group.finish();
@@ -235,17 +240,21 @@ fn iterator_next(criterion: &mut Criterion) {
     group.plot_config(PlotConfiguration::default().summary_scale(AxisScale::Logarithmic));
 
     macro_rules! bench_balanced {
-        ($name:ident, $p:ident, $vec:ident, $push:ident) => {
+        ($name:ident, $p:ident, $new_vec:expr, $push:ident) => {
             group.bench_with_input(BenchmarkId::new($name, $p), $p, |b, n| {
-                b.iter_batched(vec_balanced!(n, $vec, $push), bench!(), SmallInput)
+                b.iter_batched(vec_balanced!(n, $new_vec, $push), bench!(), SmallInput)
             });
         };
     }
 
     macro_rules! bench_relaxed {
-        ($name:ident, $p:ident, $vec:ident, $push:ident, $append:path) => {
+        ($name:ident, $p:ident, $new_vec:expr, $push:ident, $append:path) => {
             group.bench_with_input(BenchmarkId::new($name, $p), $p, |b, n| {
-                b.iter_batched(vec_relaxed!(n, $vec, $push, $append), bench!(), SmallInput)
+                b.iter_batched(
+                    vec_relaxed!(n, $new_vec, $push, $append),
+                    bench!(),
+                    SmallInput,
+                )
             });
         };
     }
@@ -256,20 +265,29 @@ fn iterator_next(criterion: &mut Criterion) {
     ];
 
     for p in params.iter() {
-        bench_balanced!(STD_VEC, p, Vec, push);
+        bench_balanced!(STD_VEC, p, || Vec::new(), push);
 
-        bench_balanced!(IM_RS_VECTOR_BALANCED, p, IVec, push_back);
-        bench_relaxed!(IM_RS_VECTOR_RELAXED, p, IVec, push_back, append::ivec);
+        bench_balanced!(IM_RS_VECTOR_BALANCED, p, || IVec::new(), push_back);
+        bench_relaxed!(
+            IM_RS_VECTOR_RELAXED,
+            p,
+            || IVec::new(),
+            push_back,
+            append::ivec
+        );
 
-        bench_balanced!(RBVEC, p, RbVec, push);
-        bench_relaxed!(RRBVEC, p, RrbVec, push, append::rrbvec);
+        bench_balanced!(RBVEC, p, || RbVec::new(), push);
+        bench_relaxed!(RRBVEC, p, || RrbVec::new(), push, append::rrbvec);
 
-        bench_balanced!(PVEC_STD, p, PVec, push);
-        bench_relaxed!(PVEC_RRBVEC_RELAXED, p, PVec, push, append::pvec);
-
-        group.bench_with_input(BenchmarkId::new(PVEC_RRBVEC_BALANCED, p), p, |b, n| {
-            b.iter_batched(vec_balanced_cloned!(n, PVec, push), bench!(), SmallInput)
-        });
+        bench_balanced!(PVEC_STD, p, || PVec::new(), push);
+        bench_balanced!(PVEC_RRBVEC_BALANCED, p, || PVec::new_with_tree(), push);
+        bench_relaxed!(
+            PVEC_RRBVEC_RELAXED,
+            p,
+            || PVec::new_with_tree(),
+            push,
+            append::pvec
+        );
     }
 
     group.finish();
@@ -280,9 +298,9 @@ fn push(criterion: &mut Criterion) {
     group.plot_config(PlotConfiguration::default().summary_scale(AxisScale::Logarithmic));
 
     macro_rules! bench {
-        ($p:ident, $vec:ident, $push:ident, $name:ident) => {
+        ($p:ident, $new_vec:expr, $push:ident, $name:ident) => {
             group.bench_with_input(BenchmarkId::new($name, $p), $p, |b, n| {
-                b.iter(vec_balanced!(n, $vec, $push))
+                b.iter(vec_balanced!(n, $new_vec, $push))
             });
         };
     }
@@ -293,10 +311,10 @@ fn push(criterion: &mut Criterion) {
     ];
 
     for p in params.iter() {
-        bench!(p, Vec, push, STD_VEC);
-        bench!(p, IVec, push_back, IM_RS_VECTOR_BALANCED);
-        bench!(p, RbVec, push, RBVEC);
-        bench!(p, PVec, push, PVEC_STD);
+        bench!(p, || Vec::new(), push, STD_VEC);
+        bench!(p, || IVec::new(), push_back, IM_RS_VECTOR_BALANCED);
+        bench!(p, || RbVec::new(), push, RBVEC);
+        bench!(p, || PVec::new(), push, PVEC_STD);
     }
 
     group.finish();
@@ -307,10 +325,10 @@ fn push_clone(criterion: &mut Criterion) {
     group.plot_config(PlotConfiguration::default().summary_scale(AxisScale::Logarithmic));
 
     macro_rules! bench {
-        ($p:ident, $vec:ident, $push:ident, $name:ident) => {
+        ($p:ident, $new_vec:expr, $push:ident, $name:ident) => {
             group.bench_with_input(BenchmarkId::new($name, $p), $p, |b, n| {
                 b.iter(|| {
-                    let mut vec_1 = $vec::new();
+                    let mut vec_1 = $new_vec();
                     let mut vec_2 = vec_1.clone();
                     let mut vec_3 = vec_2.clone();
 
@@ -333,10 +351,10 @@ fn push_clone(criterion: &mut Criterion) {
     ];
 
     for p in params.iter() {
-        bench!(p, Vec, push, STD_VEC);
-        bench!(p, IVec, push_back, IM_RS_VECTOR_BALANCED);
-        bench!(p, RbVec, push, RBVEC);
-        bench!(p, PVec, push, PVEC_RRBVEC_BALANCED);
+        bench!(p, || Vec::new(), push, STD_VEC);
+        bench!(p, || IVec::new(), push_back, IM_RS_VECTOR_BALANCED);
+        bench!(p, || RbVec::new(), push, RBVEC);
+        bench!(p, || PVec::new_with_tree(), push, PVEC_RRBVEC_BALANCED);
     }
 
     group.finish();
@@ -359,18 +377,22 @@ fn push_relaxed(criterion: &mut Criterion) {
     group.plot_config(PlotConfiguration::default().summary_scale(AxisScale::Logarithmic));
 
     macro_rules! bench_balanced {
-        ($name:ident, $p:ident, $vec:ident, $push:ident) => {
+        ($name:ident, $p:ident, $new_vec:expr, $push:ident) => {
             group.bench_with_input(BenchmarkId::new($name, $p), $p, |b, n| {
-                b.iter_batched(vec_balanced!(n, $vec, $push), bench!(n, $push), SmallInput)
+                b.iter_batched(
+                    vec_balanced!(n, $new_vec, $push),
+                    bench!(n, $push),
+                    SmallInput,
+                )
             });
         };
     }
 
     macro_rules! bench_relaxed {
-        ($name:ident, $p:ident, $vec:ident, $push:ident, $append:path) => {
+        ($name:ident, $p:ident, $new_vec:expr, $push:ident, $append:path) => {
             group.bench_with_input(BenchmarkId::new($name, $p), $p, |b, n| {
                 b.iter_batched(
-                    vec_relaxed!(n, $vec, $push, $append),
+                    vec_relaxed!(n, $new_vec, $push, $append),
                     bench!(n, $push),
                     SmallInput,
                 )
@@ -384,24 +406,29 @@ fn push_relaxed(criterion: &mut Criterion) {
     ];
 
     for p in params.iter() {
-        bench_balanced!(STD_VEC, p, Vec, push);
+        bench_balanced!(STD_VEC, p, || Vec::new(), push);
 
-        bench_balanced!(IM_RS_VECTOR_BALANCED, p, IVec, push_back);
-        bench_relaxed!(IM_RS_VECTOR_RELAXED, p, IVec, push_back, append::ivec);
+        bench_balanced!(IM_RS_VECTOR_BALANCED, p, || IVec::new(), push_back);
+        bench_relaxed!(
+            IM_RS_VECTOR_RELAXED,
+            p,
+            || IVec::new(),
+            push_back,
+            append::ivec
+        );
 
-        bench_balanced!(RBVEC, p, RbVec, push);
-        bench_relaxed!(RRBVEC, p, RrbVec, push, append::rrbvec);
+        bench_balanced!(RBVEC, p, || RbVec::new(), push);
+        bench_relaxed!(RRBVEC, p, || RrbVec::new(), push, append::rrbvec);
 
-        bench_balanced!(PVEC_STD, p, PVec, push);
-        bench_relaxed!(PVEC_RRBVEC_RELAXED, p, PVec, push, append::pvec);
-
-        group.bench_with_input(BenchmarkId::new(PVEC_RRBVEC_BALANCED, p), p, |b, n| {
-            b.iter_batched(
-                vec_balanced_cloned!(n, PVec, push),
-                bench!(n, push),
-                SmallInput,
-            )
-        });
+        bench_balanced!(PVEC_STD, p, || PVec::new(), push);
+        bench_balanced!(PVEC_RRBVEC_BALANCED, p, || PVec::new_with_tree(), push);
+        bench_relaxed!(
+            PVEC_RRBVEC_RELAXED,
+            p,
+            || PVec::new_with_tree(),
+            push,
+            append::pvec
+        );
     }
 
     group.finish();
@@ -432,18 +459,22 @@ fn push_clone_relaxed(criterion: &mut Criterion) {
     group.plot_config(PlotConfiguration::default().summary_scale(AxisScale::Logarithmic));
 
     macro_rules! bench_balanced {
-        ($name:ident, $p:ident, $vec:ident, $push:ident) => {
+        ($name:ident, $p:ident, $new_vec:expr, $push:ident) => {
             group.bench_with_input(BenchmarkId::new($name, $p), $p, |b, n| {
-                b.iter_batched(vec_balanced!(n, $vec, $push), bench!(n, $push), SmallInput)
+                b.iter_batched(
+                    vec_balanced!(n, $new_vec, $push),
+                    bench!(n, $push),
+                    SmallInput,
+                )
             });
         };
     }
 
     macro_rules! bench_relaxed {
-        ($name:ident, $p:ident, $vec:ident, $push:ident, $append:path) => {
+        ($name:ident, $p:ident, $new_vec:expr, $push:ident, $append:path) => {
             group.bench_with_input(BenchmarkId::new($name, $p), $p, |b, n| {
                 b.iter_batched(
-                    vec_relaxed!(n, $vec, $push, $append),
+                    vec_relaxed!(n, $new_vec, $push, $append),
                     bench!(n, $push),
                     SmallInput,
                 )
@@ -456,24 +487,29 @@ fn push_clone_relaxed(criterion: &mut Criterion) {
     ];
 
     for p in params.iter() {
-        bench_balanced!(STD_VEC, p, Vec, push);
+        bench_balanced!(STD_VEC, p, || Vec::new(), push);
 
-        bench_balanced!(IM_RS_VECTOR_BALANCED, p, IVec, push_back);
-        bench_relaxed!(IM_RS_VECTOR_RELAXED, p, IVec, push_back, append::ivec);
+        bench_balanced!(IM_RS_VECTOR_BALANCED, p, || IVec::new(), push_back);
+        bench_relaxed!(
+            IM_RS_VECTOR_RELAXED,
+            p,
+            || IVec::new(),
+            push_back,
+            append::ivec
+        );
 
-        bench_balanced!(RBVEC, p, RbVec, push);
-        bench_relaxed!(RRBVEC, p, RrbVec, push, append::rrbvec);
+        bench_balanced!(RBVEC, p, || RbVec::new(), push);
+        bench_relaxed!(RRBVEC, p, || RrbVec::new(), push, append::rrbvec);
 
-        bench_balanced!(PVEC_STD, p, PVec, push);
-        bench_relaxed!(PVEC_RRBVEC_RELAXED, p, PVec, push, append::pvec);
-
-        group.bench_with_input(BenchmarkId::new(PVEC_RRBVEC_BALANCED, p), p, |b, n| {
-            b.iter_batched(
-                vec_balanced_cloned!(n, PVec, push),
-                bench!(n, push),
-                SmallInput,
-            )
-        });
+        bench_balanced!(PVEC_STD, p, || PVec::new(), push);
+        bench_balanced!(PVEC_RRBVEC_BALANCED, p, || PVec::new_with_tree(), push);
+        bench_relaxed!(
+            PVEC_RRBVEC_RELAXED,
+            p,
+            || PVec::new_with_tree(),
+            push,
+            append::pvec
+        );
     }
 
     group.finish();
@@ -496,17 +532,21 @@ fn update(criterion: &mut Criterion) {
     group.plot_config(PlotConfiguration::default().summary_scale(AxisScale::Logarithmic));
 
     macro_rules! bench_balanced {
-        ($name:ident, $p:ident, $vec:ident, $push:ident) => {
+        ($name:ident, $p:ident, $new_vec:expr, $push:ident) => {
             group.bench_with_input(BenchmarkId::new($name, $p), $p, |b, n| {
-                b.iter_batched(vec_balanced!(n, $vec, $push), bench!(n), SmallInput)
+                b.iter_batched(vec_balanced!(n, $new_vec, $push), bench!(n), SmallInput)
             });
         };
     }
 
     macro_rules! bench_relaxed {
-        ($name:ident, $p:ident, $vec:ident, $push:ident, $append:path) => {
+        ($name:ident, $p:ident, $new_vec:expr, $push:ident, $append:path) => {
             group.bench_with_input(BenchmarkId::new($name, $p), $p, |b, n| {
-                b.iter_batched(vec_relaxed!(n, $vec, $push, $append), bench!(n), SmallInput)
+                b.iter_batched(
+                    vec_relaxed!(n, $new_vec, $push, $append),
+                    bench!(n),
+                    SmallInput,
+                )
             });
         };
     }
@@ -517,20 +557,29 @@ fn update(criterion: &mut Criterion) {
     ];
 
     for p in params.iter() {
-        bench_balanced!(STD_VEC, p, Vec, push);
+        bench_balanced!(STD_VEC, p, || Vec::new(), push);
 
-        bench_balanced!(IM_RS_VECTOR_BALANCED, p, IVec, push_back);
-        bench_relaxed!(IM_RS_VECTOR_RELAXED, p, IVec, push_back, append::ivec);
+        bench_balanced!(IM_RS_VECTOR_BALANCED, p, || IVec::new(), push_back);
+        bench_relaxed!(
+            IM_RS_VECTOR_RELAXED,
+            p,
+            || IVec::new(),
+            push_back,
+            append::ivec
+        );
 
-        bench_balanced!(RBVEC, p, RbVec, push);
-        bench_relaxed!(RRBVEC, p, RrbVec, push, append::rrbvec);
+        bench_balanced!(RBVEC, p, || RbVec::new(), push);
+        bench_relaxed!(RRBVEC, p, || RrbVec::new(), push, append::rrbvec);
 
-        bench_balanced!(PVEC_STD, p, PVec, push);
-        bench_relaxed!(PVEC_RRBVEC_RELAXED, p, PVec, push, append::pvec);
-
-        group.bench_with_input(BenchmarkId::new(PVEC_RRBVEC_BALANCED, p), p, |b, n| {
-            b.iter_batched(vec_balanced_cloned!(n, PVec, push), bench!(n), SmallInput)
-        });
+        bench_balanced!(PVEC_STD, p, || PVec::new(), push);
+        bench_balanced!(PVEC_RRBVEC_BALANCED, p, || PVec::new_with_tree(), push);
+        bench_relaxed!(
+            PVEC_RRBVEC_RELAXED,
+            p,
+            || PVec::new_with_tree(),
+            push,
+            append::pvec
+        );
     }
 
     group.finish();
@@ -554,22 +603,26 @@ fn update_randomly(criterion: &mut Criterion) {
     group.plot_config(PlotConfiguration::default().summary_scale(AxisScale::Logarithmic));
 
     macro_rules! bench_balanced {
-        ($name:ident, $p:ident, $vec:ident, $push:ident) => {
+        ($name:ident, $p:ident, $new_vec:expr, $push:ident) => {
             group.bench_with_input(BenchmarkId::new($name, $p), $p, |b, n| {
                 let mut rnd = rnd();
 
-                b.iter_batched(vec_balanced!(n, $vec, $push), bench!(n, rnd), SmallInput)
+                b.iter_batched(
+                    vec_balanced!(n, $new_vec, $push),
+                    bench!(n, rnd),
+                    SmallInput,
+                )
             });
         };
     }
 
     macro_rules! bench_relaxed {
-        ($name:ident, $p:ident, $vec:ident, $push:ident, $append:path) => {
+        ($name:ident, $p:ident, $new_vec:expr, $push:ident, $append:path) => {
             group.bench_with_input(BenchmarkId::new($name, $p), $p, |b, n| {
                 let mut rnd = rnd();
 
                 b.iter_batched(
-                    vec_relaxed!(n, $vec, $push, $append),
+                    vec_relaxed!(n, $new_vec, $push, $append),
                     bench!(n, rnd),
                     SmallInput,
                 )
@@ -583,26 +636,29 @@ fn update_randomly(criterion: &mut Criterion) {
     ];
 
     for p in params.iter() {
-        bench_balanced!(STD_VEC, p, Vec, push);
+        bench_balanced!(STD_VEC, p, || Vec::new(), push);
 
-        bench_balanced!(IM_RS_VECTOR_BALANCED, p, IVec, push_back);
-        bench_relaxed!(IM_RS_VECTOR_RELAXED, p, IVec, push_back, append::ivec);
+        bench_balanced!(IM_RS_VECTOR_BALANCED, p, || IVec::new(), push_back);
+        bench_relaxed!(
+            IM_RS_VECTOR_RELAXED,
+            p,
+            || IVec::new(),
+            push_back,
+            append::ivec
+        );
 
-        bench_balanced!(RBVEC, p, RbVec, push);
-        bench_relaxed!(RRBVEC, p, RrbVec, push, append::rrbvec);
+        bench_balanced!(RBVEC, p, || RbVec::new(), push);
+        bench_relaxed!(RRBVEC, p, || RrbVec::new(), push, append::rrbvec);
 
-        bench_balanced!(PVEC_STD, p, PVec, push);
-        bench_relaxed!(PVEC_RRBVEC_RELAXED, p, PVec, push, append::pvec);
-
-        group.bench_with_input(BenchmarkId::new(PVEC_RRBVEC_BALANCED, p), p, |b, n| {
-            let mut rnd = rnd();
-
-            b.iter_batched(
-                vec_balanced_cloned!(n, PVec, push),
-                bench!(n, rnd),
-                SmallInput,
-            )
-        });
+        bench_balanced!(PVEC_STD, p, || PVec::new(), push);
+        bench_balanced!(PVEC_RRBVEC_BALANCED, p, || PVec::new_with_tree(), push);
+        bench_relaxed!(
+            PVEC_RRBVEC_RELAXED,
+            p,
+            || PVec::new_with_tree(),
+            push,
+            append::pvec
+        );
     }
 
     group.finish();
@@ -633,17 +689,21 @@ fn update_clone(criterion: &mut Criterion) {
     group.plot_config(PlotConfiguration::default().summary_scale(AxisScale::Logarithmic));
 
     macro_rules! bench_balanced {
-        ($name:ident, $p:ident, $vec:ident, $push:ident) => {
+        ($name:ident, $p:ident, $new_vec:expr, $push:ident) => {
             group.bench_with_input(BenchmarkId::new($name, $p), $p, |b, n| {
-                b.iter_batched(vec_balanced!(n, $vec, $push), bench!(n), SmallInput)
+                b.iter_batched(vec_balanced!(n, $new_vec, $push), bench!(n), SmallInput)
             });
         };
     }
 
     macro_rules! bench_relaxed {
-        ($name:ident, $p:ident, $vec:ident, $push:ident, $append:path) => {
+        ($name:ident, $p:ident, $new_vec:expr, $push:ident, $append:path) => {
             group.bench_with_input(BenchmarkId::new($name, $p), $p, |b, n| {
-                b.iter_batched(vec_relaxed!(n, $vec, $push, $append), bench!(n), SmallInput)
+                b.iter_batched(
+                    vec_relaxed!(n, $new_vec, $push, $append),
+                    bench!(n),
+                    SmallInput,
+                )
             });
         };
     }
@@ -653,20 +713,29 @@ fn update_clone(criterion: &mut Criterion) {
     ];
 
     for p in params.iter() {
-        bench_balanced!(STD_VEC, p, Vec, push);
+        bench_balanced!(STD_VEC, p, || Vec::new(), push);
 
-        bench_balanced!(IM_RS_VECTOR_BALANCED, p, IVec, push_back);
-        bench_relaxed!(IM_RS_VECTOR_RELAXED, p, IVec, push_back, append::ivec);
+        bench_balanced!(IM_RS_VECTOR_BALANCED, p, || IVec::new(), push_back);
+        bench_relaxed!(
+            IM_RS_VECTOR_RELAXED,
+            p,
+            || IVec::new(),
+            push_back,
+            append::ivec
+        );
 
-        bench_balanced!(RBVEC, p, RbVec, push);
-        bench_relaxed!(RRBVEC, p, RrbVec, push, append::rrbvec);
+        bench_balanced!(RBVEC, p, || RbVec::new(), push);
+        bench_relaxed!(RRBVEC, p, || RrbVec::new(), push, append::rrbvec);
 
-        bench_balanced!(PVEC_STD, p, PVec, push);
-        bench_relaxed!(PVEC_RRBVEC_RELAXED, p, PVec, push, append::pvec);
-
-        group.bench_with_input(BenchmarkId::new(PVEC_RRBVEC_BALANCED, p), p, |b, n| {
-            b.iter_batched(vec_balanced_cloned!(n, PVec, push), bench!(n), SmallInput)
-        });
+        bench_balanced!(PVEC_STD, p, || PVec::new(), push);
+        bench_balanced!(PVEC_RRBVEC_BALANCED, p, || PVec::new_with_tree(), push);
+        bench_relaxed!(
+            PVEC_RRBVEC_RELAXED,
+            p,
+            || PVec::new_with_tree(),
+            push,
+            append::pvec
+        );
     }
 
     group.finish();
@@ -699,22 +768,26 @@ fn update_clone_randomly(criterion: &mut Criterion) {
     group.plot_config(PlotConfiguration::default().summary_scale(AxisScale::Logarithmic));
 
     macro_rules! bench_balanced {
-        ($name:ident, $p:ident, $vec:ident, $push:ident) => {
+        ($name:ident, $p:ident, $new_vec:expr, $push:ident) => {
             group.bench_with_input(BenchmarkId::new($name, $p), $p, |b, n| {
                 let mut rnd = rnd();
 
-                b.iter_batched(vec_balanced!(n, $vec, $push), bench!(n, rnd), SmallInput)
+                b.iter_batched(
+                    vec_balanced!(n, $new_vec, $push),
+                    bench!(n, rnd),
+                    SmallInput,
+                )
             });
         };
     }
 
     macro_rules! bench_relaxed {
-        ($name:ident, $p:ident, $vec:ident, $push:ident, $append:path) => {
+        ($name:ident, $p:ident, $new_vec:expr, $push:ident, $append:path) => {
             group.bench_with_input(BenchmarkId::new($name, $p), $p, |b, n| {
                 let mut rnd = rnd();
 
                 b.iter_batched(
-                    vec_relaxed!(n, $vec, $push, $append),
+                    vec_relaxed!(n, $new_vec, $push, $append),
                     bench!(n, rnd),
                     SmallInput,
                 )
@@ -727,26 +800,29 @@ fn update_clone_randomly(criterion: &mut Criterion) {
     ];
 
     for p in params.iter() {
-        bench_balanced!(STD_VEC, p, Vec, push);
+        bench_balanced!(STD_VEC, p, || Vec::new(), push);
 
-        bench_balanced!(IM_RS_VECTOR_BALANCED, p, IVec, push_back);
-        bench_relaxed!(IM_RS_VECTOR_RELAXED, p, IVec, push_back, append::ivec);
+        bench_balanced!(IM_RS_VECTOR_BALANCED, p, || IVec::new(), push_back);
+        bench_relaxed!(
+            IM_RS_VECTOR_RELAXED,
+            p,
+            || IVec::new(),
+            push_back,
+            append::ivec
+        );
 
-        bench_balanced!(RBVEC, p, RbVec, push);
-        bench_relaxed!(RRBVEC, p, RrbVec, push, append::rrbvec);
+        bench_balanced!(RBVEC, p, || RbVec::new(), push);
+        bench_relaxed!(RRBVEC, p, || RrbVec::new(), push, append::rrbvec);
 
-        bench_balanced!(PVEC_STD, p, PVec, push);
-        bench_relaxed!(PVEC_RRBVEC_RELAXED, p, PVec, push, append::pvec);
-
-        group.bench_with_input(BenchmarkId::new(PVEC_RRBVEC_BALANCED, p), p, |b, n| {
-            let mut rnd = rnd();
-
-            b.iter_batched(
-                vec_balanced_cloned!(n, PVec, push),
-                bench!(n, rnd),
-                SmallInput,
-            )
-        });
+        bench_balanced!(PVEC_STD, p, || PVec::new(), push);
+        bench_balanced!(PVEC_RRBVEC_BALANCED, p, || PVec::new_with_tree(), push);
+        bench_relaxed!(
+            PVEC_RRBVEC_RELAXED,
+            p,
+            || PVec::new_with_tree(),
+            push,
+            append::pvec
+        );
     }
 
     group.finish();
@@ -769,18 +845,22 @@ fn pop(criterion: &mut Criterion) {
     group.plot_config(PlotConfiguration::default().summary_scale(AxisScale::Logarithmic));
 
     macro_rules! bench_balanced {
-        ($name:ident, $p:ident, $vec:ident, $push:ident, $pop:ident) => {
+        ($name:ident, $p:ident, $new_vec:expr, $push:ident, $pop:ident) => {
             group.bench_with_input(BenchmarkId::new($name, $p), $p, |b, n| {
-                b.iter_batched(vec_balanced!(n, $vec, $push), bench!(n, $pop), SmallInput)
+                b.iter_batched(
+                    vec_balanced!(n, $new_vec, $push),
+                    bench!(n, $pop),
+                    SmallInput,
+                )
             });
         };
     }
 
     macro_rules! bench_relaxed {
-        ($name:ident, $p:ident, $vec:ident, $push:ident, $pop:ident, $append:path) => {
+        ($name:ident, $p:ident, $new_vec:expr, $push:ident, $pop:ident, $append:path) => {
             group.bench_with_input(BenchmarkId::new($name, $p), $p, |b, n| {
                 b.iter_batched(
-                    vec_relaxed!(n, $vec, $push, $append),
+                    vec_relaxed!(n, $new_vec, $push, $append),
                     bench!(n, $pop),
                     SmallInput,
                 )
@@ -794,31 +874,37 @@ fn pop(criterion: &mut Criterion) {
     ];
 
     for p in params.iter() {
-        bench_balanced!(STD_VEC, p, Vec, push, pop);
+        bench_balanced!(STD_VEC, p, || Vec::new(), push, pop);
 
-        bench_balanced!(IM_RS_VECTOR_BALANCED, p, IVec, push_back, pop_back);
+        bench_balanced!(
+            IM_RS_VECTOR_BALANCED,
+            p,
+            || IVec::new(),
+            push_back,
+            pop_back
+        );
         bench_relaxed!(
             IM_RS_VECTOR_RELAXED,
             p,
-            IVec,
+            || IVec::new(),
             push_back,
             pop_back,
             append::ivec
         );
 
-        bench_balanced!(RBVEC, p, RbVec, push, pop);
-        bench_relaxed!(RRBVEC, p, RrbVec, push, pop, append::rrbvec);
+        bench_balanced!(RBVEC, p, || RbVec::new(), push, pop);
+        bench_relaxed!(RRBVEC, p, || RrbVec::new(), push, pop, append::rrbvec);
 
-        bench_balanced!(PVEC_STD, p, PVec, push, pop);
-        bench_relaxed!(PVEC_RRBVEC_RELAXED, p, PVec, push, pop, append::pvec);
-
-        group.bench_with_input(BenchmarkId::new(PVEC_RRBVEC_BALANCED, p), p, |b, n| {
-            b.iter_batched(
-                vec_balanced_cloned!(n, PVec, push),
-                bench!(n, pop),
-                SmallInput,
-            )
-        });
+        bench_balanced!(PVEC_STD, p, || PVec::new(), push, pop);
+        bench_balanced!(PVEC_RRBVEC_BALANCED, p, || PVec::new_with_tree(), push, pop);
+        bench_relaxed!(
+            PVEC_RRBVEC_RELAXED,
+            p,
+            || PVec::new_with_tree(),
+            push,
+            pop,
+            append::pvec
+        );
     }
 
     group.finish();
@@ -849,18 +935,22 @@ fn pop_clone(criterion: &mut Criterion) {
     group.plot_config(PlotConfiguration::default().summary_scale(AxisScale::Logarithmic));
 
     macro_rules! bench_balanced {
-        ($name:ident, $p:ident, $vec:ident, $push:ident, $pop:ident) => {
+        ($name:ident, $p:ident, $new_vec:expr, $push:ident, $pop:ident) => {
             group.bench_with_input(BenchmarkId::new($name, $p), $p, |b, n| {
-                b.iter_batched(vec_balanced!(n, $vec, $push), bench!(n, $pop), SmallInput)
+                b.iter_batched(
+                    vec_balanced!(n, $new_vec, $push),
+                    bench!(n, $pop),
+                    SmallInput,
+                )
             });
         };
     }
 
     macro_rules! bench_relaxed {
-        ($name:ident, $p:ident, $vec:ident, $push:ident, $pop:ident, $append:path) => {
+        ($name:ident, $p:ident, $new_vec:expr, $push:ident, $pop:ident, $append:path) => {
             group.bench_with_input(BenchmarkId::new($name, $p), $p, |b, n| {
                 b.iter_batched(
-                    vec_relaxed!(n, $vec, $push, $append),
+                    vec_relaxed!(n, $new_vec, $push, $append),
                     bench!(n, $pop),
                     SmallInput,
                 )
@@ -873,31 +963,37 @@ fn pop_clone(criterion: &mut Criterion) {
     ];
 
     for p in params.iter() {
-        bench_balanced!(STD_VEC, p, Vec, push, pop);
+        bench_balanced!(STD_VEC, p, || Vec::new(), push, pop);
 
-        bench_balanced!(IM_RS_VECTOR_BALANCED, p, IVec, push_back, pop_back);
+        bench_balanced!(
+            IM_RS_VECTOR_BALANCED,
+            p,
+            || IVec::new(),
+            push_back,
+            pop_back
+        );
         bench_relaxed!(
             IM_RS_VECTOR_RELAXED,
             p,
-            IVec,
+            || IVec::new(),
             push_back,
             pop_back,
             append::ivec
         );
 
-        bench_balanced!(RBVEC, p, RbVec, push, pop);
-        bench_relaxed!(RRBVEC, p, RrbVec, push, pop, append::rrbvec);
+        bench_balanced!(RBVEC, p, || RbVec::new(), push, pop);
+        bench_relaxed!(RRBVEC, p, || RrbVec::new(), push, pop, append::rrbvec);
 
-        bench_balanced!(PVEC_STD, p, PVec, push, pop);
-        bench_relaxed!(PVEC_RRBVEC_RELAXED, p, PVec, push, pop, append::pvec);
-
-        group.bench_with_input(BenchmarkId::new(PVEC_RRBVEC_BALANCED, p), p, |b, n| {
-            b.iter_batched(
-                vec_balanced_cloned!(n, PVec, push),
-                bench!(n, pop),
-                SmallInput,
-            )
-        });
+        bench_balanced!(PVEC_STD, p, || PVec::new(), push, pop);
+        bench_balanced!(PVEC_RRBVEC_BALANCED, p, || PVec::new_with_tree(), push, pop);
+        bench_relaxed!(
+            PVEC_RRBVEC_RELAXED,
+            p,
+            || PVec::new_with_tree(),
+            push,
+            pop,
+            append::pvec
+        );
     }
 
     group.finish();
@@ -905,14 +1001,14 @@ fn pop_clone(criterion: &mut Criterion) {
 
 fn append(criterion: &mut Criterion) {
     macro_rules! create_input {
-        ($n:ident, $vec:ident, $push:ident) => {
+        ($n:ident, $new_vec:expr, $push:ident) => {
             || {
                 let mut input = Vec::new();
                 let mut input_len = 0;
                 let mut i = 1;
 
                 while i < *$n && (input_len + i) <= *$n {
-                    let mut vec = $vec::new();
+                    let mut vec = $new_vec();
 
                     for j in 0..i {
                         vec.$push(j);
@@ -924,7 +1020,7 @@ fn append(criterion: &mut Criterion) {
                     i *= 2;
                 }
 
-                let mut vec = $vec::new();
+                let mut vec = $new_vec();
                 let mut j = 0;
 
                 while input_len < *$n {
@@ -940,28 +1036,10 @@ fn append(criterion: &mut Criterion) {
         };
     }
 
-    macro_rules! create_input_cloned {
-        ($n:ident, $vec:ident, $push:ident) => {
-            || {
-                let create_input = create_input!($n, $vec, $push);
-
-                let mut input = create_input();
-                let mut input_cloned = Vec::new();
-
-                for vec in input.iter_mut() {
-                    // force transition to RrbVec by cloning the vector
-                    input_cloned.push(vec.clone());
-                }
-
-                input_cloned
-            }
-        };
-    }
-
     macro_rules! bench {
-        ($n:ident, $vec:ident) => {
+        ($n:ident, $new_vec:expr) => {
             |data| {
-                let mut vec = $vec::new();
+                let mut vec = $new_vec();
 
                 for mut input in data.into_iter() {
                     vec.append(&mut input);
@@ -982,11 +1060,15 @@ fn append(criterion: &mut Criterion) {
 
     for p in params.iter() {
         group.bench_with_input(BenchmarkId::new(STD_VEC, p), p, |b, n| {
-            b.iter_batched(create_input!(n, Vec, push), bench!(n, Vec), SmallInput)
+            b.iter_batched(
+                create_input!(n, || Vec::new(), push),
+                bench!(n, || Vec::new()),
+                SmallInput,
+            )
         });
         group.bench_with_input(BenchmarkId::new(IM_RS_VECTOR_RELAXED, p), p, |b, n| {
             b.iter_batched(
-                create_input!(n, IVec, push_back),
+                create_input!(n, || IVec::new(), push_back),
                 |data| {
                     let mut vec_two = IVec::new();
 
@@ -1001,21 +1083,29 @@ fn append(criterion: &mut Criterion) {
         });
         group.bench_with_input(BenchmarkId::new(RRBVEC, p), p, |b, n| {
             b.iter_batched(
-                create_input!(n, RrbVec, push),
-                bench!(n, RrbVec),
+                create_input!(n, || RrbVec::new(), push),
+                bench!(n, || RrbVec::new()),
                 SmallInput,
             )
         });
         group.bench_with_input(BenchmarkId::new(RBVEC, p), p, |b, n| {
-            b.iter_batched(create_input!(n, RbVec, push), bench!(n, RbVec), SmallInput)
+            b.iter_batched(
+                create_input!(n, || RbVec::new(), push),
+                bench!(n, || RbVec::new()),
+                SmallInput,
+            )
         });
         group.bench_with_input(BenchmarkId::new(PVEC_STD, p), p, |b, n| {
-            b.iter_batched(create_input!(n, PVec, push), bench!(n, PVec), SmallInput)
+            b.iter_batched(
+                create_input!(n, || PVec::new(), push),
+                bench!(n, || PVec::new()),
+                SmallInput,
+            )
         });
         group.bench_with_input(BenchmarkId::new(PVEC_RRBVEC_RELAXED, p), p, |b, n| {
             b.iter_batched(
-                create_input_cloned!(n, PVec, push),
-                bench!(n, PVec),
+                create_input!(n, || PVec::new_with_tree(), push),
+                bench!(n, || PVec::new_with_tree()),
                 SmallInput,
             )
         });
@@ -1038,9 +1128,9 @@ fn split_off(criterion: &mut Criterion) {
     }
 
     macro_rules! make_bench {
-        ($group:ident, $p:ident, $vec:ident, $push:ident, $name:ident) => {
+        ($group:ident, $p:ident, $new_vec:expr, $push:ident, $name:ident) => {
             $group.bench_with_input(BenchmarkId::new($name, $p), $p, |b, n| {
-                b.iter_batched(vec_balanced!(n, $vec, $push), bench!(), SmallInput)
+                b.iter_batched(vec_balanced!(n, $new_vec, $push), bench!(), SmallInput)
             });
         };
     }
@@ -1052,15 +1142,18 @@ fn split_off(criterion: &mut Criterion) {
         128, 512, 768, 1024, 2048, 4096, 10000, 20000, 30000, 40000, 60000, 80000, 100000, 200000,
     ];
     for p in params.iter() {
-        make_bench!(group, p, Vec, push, STD_VEC);
-        make_bench!(group, p, RbVec, push, RBVEC);
-        make_bench!(group, p, RrbVec, push, RRBVEC);
-        make_bench!(group, p, IVec, push_back, IM_RS_VECTOR_RELAXED);
-        make_bench!(group, p, PVec, push, PVEC_STD);
-
-        group.bench_with_input(BenchmarkId::new(PVEC_RRBVEC_RELAXED, p), p, |b, n| {
-            b.iter_batched(vec_balanced_cloned!(n, PVec, push), bench!(), SmallInput)
-        });
+        make_bench!(group, p, || Vec::new(), push, STD_VEC);
+        make_bench!(group, p, || RbVec::new(), push, RBVEC);
+        make_bench!(group, p, || RrbVec::new(), push, RRBVEC);
+        make_bench!(group, p, || IVec::new(), push_back, IM_RS_VECTOR_RELAXED);
+        make_bench!(group, p, || PVec::new(), push, PVEC_STD);
+        make_bench!(
+            group,
+            p,
+            || PVec::new_with_tree(),
+            push,
+            PVEC_RRBVEC_RELAXED
+        );
     }
 
     group.finish();

@@ -70,6 +70,10 @@ impl<T: Clone + Debug> PVec<T> {
         PVec(Representation::Flat(Vec::with_capacity(BRANCH_FACTOR)))
     }
 
+    pub fn new_with_tree() -> Self {
+        PVec(Representation::Tree(RrbVec::new()))
+    }
+
     pub fn push(&mut self, item: T) {
         match self.0 {
             Representation::Flat(ref mut vec) => vec.push(item),

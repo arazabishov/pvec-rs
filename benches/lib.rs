@@ -23,9 +23,6 @@ mod vecaddition;
 #[cfg(all(feature = "arc", feature = "rayon-iter"))]
 mod words;
 
-#[cfg(all(feature = "arc", feature = "rayon-iter"))]
-mod fold;
-
 const STD_VEC: &str = "std-vec";
 
 const IM_RS_VECTOR_BALANCED: &str = "im-rs-vector-balanced";
@@ -39,12 +36,7 @@ const RRBVEC: &str = "rrbvec";
 const RBVEC: &str = "rbvec";
 
 #[cfg(all(feature = "arc", feature = "rayon-iter"))]
-criterion_main!(
-    sequential::benches,
-    vecaddition::benches,
-    words::benches,
-    fold::benches,
-);
+criterion_main!(sequential::benches, vecaddition::benches, words::benches,);
 
 #[cfg(not(all(feature = "arc", feature = "rayon-iter")))]
 criterion_main!(sequential::benches);
