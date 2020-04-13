@@ -60,18 +60,23 @@ fn update_benches(vec: &str, n: usize) {
         ($init:expr, $push:ident) => {
             |n| {
                 let mut vec = $init();
+
                 for i in 0..n {
                     vec.$push(i);
                 }
 
+                let cln = vec.clone();
                 let mut bag = Vec::with_capacity(n);
-                for i in 0..n {
-                    let mut cln = vec.clone();
-                    *cln.get_mut(i).unwrap() += 1;
 
-                    bag.push(cln);
+                for i in 0..n {
+                    let mut tmp = cln.clone();
+                    (*tmp.get_mut(i).unwrap()) += 1;
+
+                    bag.push(tmp);
                 }
 
+                drop(vec);
+                drop(cln);
                 drop(bag);
             }
         };
