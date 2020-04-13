@@ -172,11 +172,8 @@ fn execute() -> Result<(), Box<dyn Error>> {
 
             for n in bench.sizes.iter() {
                 let maximum_resident_set_size = bench_runner.run(&bench.name, vec, n);
-                let mut maximum_resident_set_size_diff = 0;
-
-                if maximum_resident_set_size > baseline {
-                    maximum_resident_set_size_diff = maximum_resident_set_size - baseline;
-                }
+                let maximum_resident_set_size_diff =
+                    maximum_resident_set_size.checked_sub(baseline).unwrap_or(0);
 
                 let n_str: &str = &n.to_string();
                 let maximum_resident_set_size_diff_str =
