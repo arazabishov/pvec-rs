@@ -111,11 +111,6 @@ fn execute() -> Result<(), Box<dyn Error>> {
     // how much memory vector consumes
     let baseline = bench_runner.baseline();
 
-    let sizes: Vec<usize> = vec![
-        20, 40, 60, 80, 100, 200, 400, 600, 800, 1_000, 2_000, 4_000, 6_000, 8_000, 10_000, 20_000,
-        40_000, 60_000,
-    ];
-
     let update_clone = Bench {
         name: "update_clone",
         types: vec![
@@ -125,7 +120,10 @@ fn execute() -> Result<(), Box<dyn Error>> {
             PVEC_RRBVEC_BALANCED,
             IM_RS_VECTOR_BALANCED,
         ],
-        sizes: sizes.clone(),
+        sizes: vec![
+            20, 40, 60, 80, 100, 200, 400, 600, 800, 1_000, 2_000, 4_000, 6_000, 8_000, 10_000,
+            20_000, 40_000, 60_000,
+        ],
     };
 
     let push = Bench {
@@ -137,7 +135,10 @@ fn execute() -> Result<(), Box<dyn Error>> {
             PVEC_RRBVEC_BALANCED,
             IM_RS_VECTOR_BALANCED,
         ],
-        sizes: sizes.clone(),
+        sizes: vec![
+            20, 40, 60, 80, 100, 200, 400, 600, 800, 1_000, 2_000, 4_000, 6_000, 8_000, 10_000,
+            20_000, 40_000, 60_000, 80_000, 100_000, 200_000, 400_000, 600_000, 800_000, 1_000_000,
+        ],
     };
 
     let append = Bench {
@@ -150,7 +151,10 @@ fn execute() -> Result<(), Box<dyn Error>> {
             PVEC_RRBVEC_RELAXED,
             IM_RS_VECTOR_RELAXED,
         ],
-        sizes: sizes.clone(),
+        sizes: vec![
+            20, 40, 60, 80, 100, 200, 400, 600, 800, 1_000, 2_000, 4_000, 6_000, 8_000, 10_000,
+            20_000, 40_000, 60_000, 80_000, 100_000, 200_000, 400_000, 600_000, 800_000, 1_000_000,
+        ],
     };
 
     let benchmarks = vec![update_clone, push, append];
@@ -168,7 +172,11 @@ fn execute() -> Result<(), Box<dyn Error>> {
 
             for n in bench.sizes.iter() {
                 let maximum_resident_set_size = bench_runner.run(&bench.name, vec, n);
-                let maximum_resident_set_size_diff = maximum_resident_set_size - baseline;
+                let mut maximum_resident_set_size_diff = 0;
+
+                if maximum_resident_set_size > baseline {
+                    maximum_resident_set_size_diff = maximum_resident_set_size - baseline;
+                }
 
                 let n_str: &str = &n.to_string();
                 let maximum_resident_set_size_diff_str =
