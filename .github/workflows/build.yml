@@ -35,7 +35,7 @@ jobs:
         name: Running benchmarks as tests
         with:
           command: test
-          args: --benches --features=arc,rayon-iter
+          args: --benches
       - name: Running memory benchmarks as tests
         run: sh bench.sh
         working-directory: pvec-memory
