@@ -1,7 +1,7 @@
 use super::RbVec;
 use super::RrbVec;
-use crate::rrbtree::iter::RrbTreeIter;
-use crate::rrbtree::BRANCH_FACTOR;
+use crate::core::rrbtree::iter::RrbTreeIter;
+use crate::core::rrbtree::BRANCH_FACTOR;
 use std::fmt::Debug;
 use std::iter::FromIterator;
 
