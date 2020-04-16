@@ -1,8 +1,8 @@
 extern crate serde;
 
+use super::SharedPtr;
 use super::BRANCH_FACTOR;
 use super::{Branch, Leaf, Node, RelaxedBranch, RrbTree};
-use super::SharedPtr;
 
 use self::serde::ser::{Serialize, SerializeSeq, SerializeStruct, Serializer};
 
