@@ -1,9 +1,8 @@
 extern crate serde;
-extern crate serde_json;
 
 use super::BRANCH_FACTOR;
 use super::{Branch, Leaf, Node, RelaxedBranch, RrbTree};
-use pvec_utils::sharedptr::SharedPtr;
+use super::SharedPtr;
 
 use self::serde::ser::{Serialize, SerializeSeq, SerializeStruct, Serializer};
 

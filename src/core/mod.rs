@@ -1,7 +1,3 @@
-#[macro_use]
-#[cfg(feature = "serde-serializer")]
-extern crate serde_json;
-
 #[cfg(all(feature = "arc", feature = "rayon-iter"))]
 extern crate rayon;
 

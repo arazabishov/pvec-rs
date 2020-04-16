@@ -1,6 +1,10 @@
 #[cfg(all(feature = "arc", feature = "rayon-iter"))]
 extern crate rayon;
 
+#[macro_use]
+#[cfg(feature = "serde-serializer")]
+extern crate serde_json;
+
 use std::fmt::Debug;
 use std::ops;
 

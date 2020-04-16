@@ -1,4 +1,4 @@
-import * as wasm from "pvec-vis";
+import * as wasm from "web-vis";
 import * as d3 from "d3";
 
 var margin = { top: 100, right: 10, bottom: 240, left: 10 };
