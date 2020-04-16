@@ -1,8 +1,9 @@
 [package]
-name = "pvec-memory"
+name = "benches-mem"
 version = "0.1.0"
 authors = ["Araz Abishov <araz@abishov.com>"]
 edition = "2018"
+publish = false
 
 [dependencies]
 csv = "1.1.3"

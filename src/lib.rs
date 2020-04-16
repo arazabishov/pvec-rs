@@ -1,12 +1,14 @@
-pub extern crate pvec_core as core;
-extern crate pvec_utils as utils;
-
 #[cfg(all(feature = "arc", feature = "rayon-iter"))]
 extern crate rayon;
+
+#[macro_use]
+#[cfg(feature = "serde-serializer")]
+extern crate serde_json;
 
 use std::fmt::Debug;
 use std::ops;
 
+pub mod core;
 pub mod iter;
 
 use crate::core::RrbVec;

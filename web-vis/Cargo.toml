@@ -1,8 +1,9 @@
 [package]
-name = "pvec-vis"
+name = "web-vis"
 version = "0.1.0"
 authors = ["arazabishov"]
 edition = "2018"
+publish = false
 
 [lib]
 crate-type = ["cdylib", "rlib"]

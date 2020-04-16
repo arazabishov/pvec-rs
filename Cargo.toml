@@ -1,23 +1,30 @@
-[workspace]
-members = [
-    "pvec-core",
-    "pvec-utils",
-    "pvec-vis",
-    "pvec-memory",
-    "pvec-memory/benches"
-]
-
 [package]
 name = "pvec"
 version = "0.2.0"
 authors = ["Araz Abishov <araz@abishov.com>"]
-autobenches = false
+description = "RRB-Tree based persistent vector implementation."
 edition = "2018"
+license = "MIT"
+repository = "https://github.com/ArazAbishov/pvec-rs"
+documentation = "https://docs.rs/pvec/"
+readme = "README.md"
+keywords = ["persistent", "data-structures", "collections"]
+categories = ["data-structures"]
+exclude = ["/.github/*", "/benches/*"]
+autobenches = false
+
+[workspace]
+members = [
+    "web-vis",
+    "benches-mem",
+    "benches-mem/benches"
+]
 
 [dependencies]
+serde = { version = "1.0.73", features = ["rc"], optional = true}
+serde_json = { version = "1.0.26", optional = true }
+serde_derive = { version = "1.0.73", optional = true }
 rayon = { version = "1.1.0", optional = true }
-pvec-utils = { path = "pvec-utils" }
-pvec-core = { path = "pvec-core" }
 
 [dev-dependencies]
 im-rc = "14.0.0"
@@ -28,10 +35,10 @@ rand = "0.6"
 num = "0.2.0"
 
 [features]
-serde-serializer = ["pvec-core/serde-serializer"]
-rayon-iter = ["pvec-core/rayon-iter", "rayon"]
-arc = ["pvec-core/arc", "pvec-utils/arc",]
-small_branch = ["pvec-core/small_branch"]
+serde-serializer = ["serde", "serde_json", "serde_derive"]
+rayon-iter = ["rayon"]
+small_branch = []
+arc = []
 
 [lib]
 bench = false

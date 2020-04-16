@@ -1,8 +1,3 @@
-#[macro_use]
-#[cfg(feature = "serde-serializer")]
-extern crate serde_json;
-
-extern crate pvec_utils as utils;
 #[cfg(all(feature = "arc", feature = "rayon-iter"))]
 extern crate rayon;
 
@@ -16,6 +11,7 @@ use std::mem;
 use std::ops;
 
 pub mod iter;
+mod sharedptr;
 
 #[macro_use]
 mod rrbtree;
