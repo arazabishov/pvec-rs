@@ -10,7 +10,7 @@ documentation = "https://docs.rs/pvec/"
 readme = "README.md"
 keywords = ["persistent", "data-structures", "collections"]
 categories = ["data-structures"]
-exclude = ["/.github/*", "/benches/*"]
+exclude = ["/.github/*", "/benches/words/words.txt"]
 autobenches = false
 
 [workspace]
