@@ -16,8 +16,8 @@ autobenches = false
 [workspace]
 members = [
     "pvec-vis",
-    "pvec-memory",
-    "pvec-memory/benches"
+    "benches-mem",
+    "benches-mem/benches"
 ]
 
 [dependencies]
