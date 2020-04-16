@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -eo pipefail
+
 echo "Compiling benchmarks in the release mode."
 
 pushd "benches"
