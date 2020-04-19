@@ -1,6 +1,6 @@
 # pvec-rs
 
-[![GitHub Workflow Status](https://img.shields.io/github/workflow/status/ArazAbishov/pvec-rs/build)](https://github.com/ArazAbishov/pvec-rs/actions)
+[![GitHub Workflow Status](https://github.com/ArazAbishov/pvec-rs/workflows/build/badge.svg)](https://github.com/ArazAbishov/pvec-rs/actions)
 [![Crates.io](https://img.shields.io/crates/v/pvec)](https://crates.io/crates/pvec)
 [![API](https://docs.rs/pvec/badge.svg?version=0.2.0)](https://docs.rs/pvec/0.2.0/pvec/)
 
