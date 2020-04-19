@@ -19,7 +19,7 @@ extern crate pvec;
 
 use pvec::PVec;
 
-pub fn example_pvec(size: usize) {
+fn example_pvec(size: usize) {
     let mut vec = PVec::new();
     // ^ backed by the standard vector internally
 
