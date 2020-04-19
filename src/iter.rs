@@ -8,10 +8,10 @@ use super::Representation;
 
 use std::fmt::Debug;
 
-#[cfg(all(test, not(feature = "small_branch")))]
+#[cfg(all(test, not(feature = "small-branch")))]
 pub const BRANCH_FACTOR: usize = 32;
 
-#[cfg(all(test, feature = "small_branch"))]
+#[cfg(all(test, feature = "small-branch"))]
 pub const BRANCH_FACTOR: usize = 4;
 
 use crate::core::iter::RrbVecIter;

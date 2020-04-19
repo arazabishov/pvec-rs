@@ -37,7 +37,7 @@ num = "0.2.0"
 [features]
 serde-serializer = ["serde", "serde_json", "serde_derive"]
 rayon-iter = ["rayon"]
-small_branch = []
+small-branch = []
 arc = []
 
 [lib]

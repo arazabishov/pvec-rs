@@ -30,7 +30,7 @@ jobs:
         name: Running unit tests for the small branching factor
         with:
           command: test
-          args: --all --features "small_branch"
+          args: --all --features "small-branch"
       - uses: actions-rs/cargo@v1
         name: Running benchmarks as tests
         with:

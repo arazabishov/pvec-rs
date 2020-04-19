@@ -21,7 +21,7 @@ mod rrbtree;
 #[cfg(feature = "serde-serializer")]
 pub mod serializer;
 
-#[cfg(not(feature = "small_branch"))]
+#[cfg(not(feature = "small-branch"))]
 macro_rules! clone_arr {
     ($source:expr) => {{
         let s = $source;
@@ -62,7 +62,7 @@ macro_rules! clone_arr {
     }};
 }
 
-#[cfg(feature = "small_branch")]
+#[cfg(feature = "small-branch")]
 macro_rules! clone_arr {
     ($source:expr) => {{
         let s = $source;

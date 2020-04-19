@@ -3,19 +3,19 @@ use std::cmp;
 use std::fmt::Debug;
 use std::mem;
 
-#[cfg(not(feature = "small_branch"))]
+#[cfg(not(feature = "small-branch"))]
 pub const BRANCH_FACTOR: usize = 32;
 
-#[cfg(feature = "small_branch")]
+#[cfg(feature = "small-branch")]
 pub const BRANCH_FACTOR: usize = 4;
 
-#[cfg(not(feature = "small_branch"))]
+#[cfg(not(feature = "small-branch"))]
 const BITS_PER_LEVEL: usize = 5;
 
-#[cfg(feature = "small_branch")]
+#[cfg(feature = "small-branch")]
 const BITS_PER_LEVEL: usize = 2;
 
-#[cfg(not(feature = "small_branch"))]
+#[cfg(not(feature = "small-branch"))]
 macro_rules! new_branch {
     () => {
         [
@@ -26,7 +26,7 @@ macro_rules! new_branch {
     };
 }
 
-#[cfg(feature = "small_branch")]
+#[cfg(feature = "small-branch")]
 macro_rules! new_branch {
     () => {
         [None, None, None, None]
