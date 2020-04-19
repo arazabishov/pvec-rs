@@ -1,3 +1,40 @@
+//! Persistent vectors with efficient clone, append and split
+//! operations with idiomatic Rust interface.
+//!
+//! # Provided vector types
+//! There are three public vector types available at pvec-rs:
+//! * [RbVec](crate::core::RbVec): based on RbTree with naive
+//! append and split operations. This type is not recommended
+//! for use, as it is here solely for comparison in benchmarks.
+//! * [RrbVec](crate::core::RrbVec): based on RrbTree that
+//! enables efficient append and split operations.
+//! * [PVec](crate::PVec): a persistent vector that starts out
+//! as the standard [vec](std::vec::Vec), and transitions to
+//! [RrbVec](crate::core::RrbVec) on the first clone. The cost
+//! of its operations is identical to the representation
+//! it is backed by.
+//!
+//! All vector types in the list expose exactly the same set of
+//! operations with identical API. The difference is only in the
+//! cost of operations.
+//! 
+//! # Features
+//! [RbVec](crate::core::RbVec) and [RrbVec](crate::core::RrbVec)
+//! both use [Rc](https://doc.rust-lang.org/std/rc/struct.Rc.html)
+//! for garbage collection. The library provides an option to
+//! compile all vectors using [Arc](https://doc.rust-lang.org/std/sync/struct.Arc.html)
+//! if needed, especially when passing instances between threads. To compile the 
+//! library with [Arc](https://doc.rust-lang.org/std/sync/struct.Arc.html), use
+//! the `arc` feature flag.
+//!
+//! All types implement [Rayon's IntoParallelIterator trait](https://docs.rs/rayon/1.3.0/rayon/iter/trait.IntoParallelIterator.html),
+//! that enables the conversion into a parallel iterator. As dependency on
+//! Rayon is optional, you will need to explicitly request the parallel
+//! iterator implementation by passing both the `arc` and `rayon-iter`
+//! feature flags.
+
+#![warn(missing_docs)]
+
 #[cfg(all(feature = "arc", feature = "rayon-iter"))]
 extern crate rayon;
 

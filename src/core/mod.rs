@@ -1,3 +1,5 @@
+//! A module that exposes persistent vector types based on [RrbTree][rrbtree module]
+
 #[cfg(all(feature = "arc", feature = "rayon-iter"))]
 extern crate rayon;
 
@@ -73,6 +75,7 @@ macro_rules! clone_arr {
     }};
 }
 
+///
 #[derive(Clone, Debug, Ord, PartialOrd, Eq, PartialEq)]
 pub struct RbVec<T> {
     tree: RrbTree<T>,
