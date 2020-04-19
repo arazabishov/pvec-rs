@@ -2,13 +2,13 @@
 
 [![GitHub Workflow Status](https://github.com/ArazAbishov/pvec-rs/workflows/build/badge.svg)](https://github.com/ArazAbishov/pvec-rs/actions)
 [![Crates.io](https://img.shields.io/crates/v/pvec)](https://crates.io/crates/pvec)
-[![API](https://docs.rs/pvec/badge.svg?version=0.2.0)](https://docs.rs/pvec/0.2.0/pvec/)
+[![API](https://docs.rs/pvec/badge.svg?version=0.2.1)](https://docs.rs/pvec/0.2.1/pvec/)
 
 A persistent vector implementation based on RRB-Tree for Rust, inspired by the blog post of Niko Matsakis - [In Rust, ordinary vectors are values](http://smallcultfollowing.com/babysteps/blog/2018/02/01/in-rust-ordinary-vectors-are-values/). This project offers a general-purpose, persistent vector with good performance across all operations, including efficient clone, concatenation, and splitting.
 
 One of the vector types - **PVec**, explores an idea of starting out as the standard vector and spills to the tree representation only when cloned to offer the best possible performance. The API of methods provided by pvec-rs is identical to the standard vector, reducing the friction of using the library. Another notable feature is the out of the box support for [Rayon](https://github.com/rayon-rs/rayon).
 
-The performance evaluation of the library is provided in the [technical report](https://abishov.com/thesis). PVec is available on [crates.io](https://crates.io/crates/pvec), and API documentation is available on [docs.rs](https://docs.rs/pvec/0.2.0/pvec/).
+The performance evaluation of the library is provided in the [technical report](https://abishov.com/thesis). PVec is available on [crates.io](https://crates.io/crates/pvec), and API documentation is available on [docs.rs](https://docs.rs/pvec/0.2.1/pvec/).
 
 ## Example
 
