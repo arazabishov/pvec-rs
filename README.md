@@ -50,7 +50,7 @@ Runtime benchmarks are subdivided into sequential and parallel groups. The frame
 cargo bench
 
 # running parallel benches
-cargo bench --features=arc,rayon-iter
+cargo bench --features=arc,rayon_iter
 ```
 
 The report can be found at `target/criterion/report/index.html`. To avoid running benchmarks for hours, pass the `--sample-size=10` option to reduce the sample count.

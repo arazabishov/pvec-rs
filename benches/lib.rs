@@ -10,17 +10,17 @@ extern crate pvec;
 extern crate rand;
 extern crate rand_xorshift;
 
-#[cfg(all(feature = "arc", feature = "rayon-iter"))]
+#[cfg(all(feature = "arc", feature = "rayon_iter"))]
 extern crate rayon;
 
 use criterion::*;
 
 mod sequential;
 
-#[cfg(all(feature = "arc", feature = "rayon-iter"))]
+#[cfg(all(feature = "arc", feature = "rayon_iter"))]
 mod vecaddition;
 
-#[cfg(all(feature = "arc", feature = "rayon-iter"))]
+#[cfg(all(feature = "arc", feature = "rayon_iter"))]
 mod words;
 
 const STD_VEC: &str = "std-vec";
@@ -35,8 +35,8 @@ const PVEC_STD: &str = "pvec-std";
 const RRBVEC: &str = "rrbvec";
 const RBVEC: &str = "rbvec";
 
-#[cfg(all(feature = "arc", feature = "rayon-iter"))]
+#[cfg(all(feature = "arc", feature = "rayon_iter"))]
 criterion_main!(sequential::benches, vecaddition::benches, words::benches,);
 
-#[cfg(not(all(feature = "arc", feature = "rayon-iter")))]
+#[cfg(not(all(feature = "arc", feature = "rayon_iter")))]
 criterion_main!(sequential::benches);

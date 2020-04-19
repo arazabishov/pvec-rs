@@ -1,17 +1,17 @@
 //! A module providing implementation of the standard
 //! [Iterator](https://doc.rust-lang.org/std/iter/trait.Iterator.html),
 //! as well as [Rayon's ParallelIterator](https://docs.rs/rayon/1.3.0/rayon/iter/trait.ParallelIterator.html)
-//! if the `rayon-iter` feature flag is specified.
+//! if the `rayon_iter` feature flag is specified.
 
 use super::PVec;
 use super::Representation;
 
 use std::fmt::Debug;
 
-#[cfg(all(test, not(feature = "small-branch")))]
+#[cfg(all(test, not(feature = "small_branch")))]
 pub const BRANCH_FACTOR: usize = 32;
 
-#[cfg(all(test, feature = "small-branch"))]
+#[cfg(all(test, feature = "small_branch"))]
 pub const BRANCH_FACTOR: usize = 4;
 
 use crate::core::iter::RrbVecIter;
@@ -19,10 +19,10 @@ use crate::core::RrbVec;
 use std::iter::FromIterator;
 use std::vec::IntoIter as VecIter;
 
-#[cfg(all(feature = "arc", feature = "rayon-iter"))]
+#[cfg(all(feature = "arc", feature = "rayon_iter"))]
 use rayon::iter::plumbing::{bridge, Consumer, Producer, ProducerCallback, UnindexedConsumer};
 
-#[cfg(all(feature = "arc", feature = "rayon-iter"))]
+#[cfg(all(feature = "arc", feature = "rayon_iter"))]
 use rayon::prelude::{
     FromParallelIterator, IndexedParallelIterator, IntoParallelIterator, ParallelIterator,
 };
@@ -116,12 +116,12 @@ impl<T: Clone + Debug> IntoIterator for PVec<T> {
 /// This struct is used to implement the
 /// [parallel iterator](https://docs.rs/rayon/1.3.0/rayon/iter/trait.ParallelIterator.html)
 #[derive(Debug, Clone)]
-#[cfg(all(feature = "arc", feature = "rayon-iter"))]
+#[cfg(all(feature = "arc", feature = "rayon_iter"))]
 pub struct PVecParIter<T: Send + Sync + Debug + Clone> {
     vec: PVec<T>,
 }
 
-#[cfg(all(feature = "arc", feature = "rayon-iter"))]
+#[cfg(all(feature = "arc", feature = "rayon_iter"))]
 impl<T: Send + Sync + Debug + Clone> IntoParallelIterator for PVec<T> {
     type Item = T;
     type Iter = PVecParIter<T>;
@@ -131,7 +131,7 @@ impl<T: Send + Sync + Debug + Clone> IntoParallelIterator for PVec<T> {
     }
 }
 
-#[cfg(all(feature = "arc", feature = "rayon-iter"))]
+#[cfg(all(feature = "arc", feature = "rayon_iter"))]
 impl<T: Send + Sync + Debug + Clone> ParallelIterator for PVecParIter<T> {
     type Item = T;
 
@@ -147,7 +147,7 @@ impl<T: Send + Sync + Debug + Clone> ParallelIterator for PVecParIter<T> {
     }
 }
 
-#[cfg(all(feature = "arc", feature = "rayon-iter"))]
+#[cfg(all(feature = "arc", feature = "rayon_iter"))]
 impl<T: Send + Sync + Debug + Clone> IndexedParallelIterator for PVecParIter<T> {
     fn drive<C>(self, consumer: C) -> C::Result
     where
@@ -168,12 +168,12 @@ impl<T: Send + Sync + Debug + Clone> IndexedParallelIterator for PVecParIter<T> 
     }
 }
 
-#[cfg(all(feature = "arc", feature = "rayon-iter"))]
+#[cfg(all(feature = "arc", feature = "rayon_iter"))]
 struct VecProducer<T: Send + Sync + Debug + Clone> {
     vec: PVec<T>,
 }
 
-#[cfg(all(feature = "arc", feature = "rayon-iter"))]
+#[cfg(all(feature = "arc", feature = "rayon_iter"))]
 impl<T: Send + Sync + Debug + Clone> Producer for VecProducer<T> {
     type Item = T;
     type IntoIter = PVecIter<T>;
@@ -192,7 +192,7 @@ impl<T: Send + Sync + Debug + Clone> Producer for VecProducer<T> {
     }
 }
 
-#[cfg(all(feature = "arc", feature = "rayon-iter"))]
+#[cfg(all(feature = "arc", feature = "rayon_iter"))]
 impl<T: Clone + Debug + Send + Sync> FromParallelIterator<T> for PVec<T>
 where
     T: Send,

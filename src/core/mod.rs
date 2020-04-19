@@ -1,9 +1,9 @@
 //! A module providing persistent vector types based on RrbTree.
 
-#[cfg(all(feature = "arc", feature = "rayon-iter"))]
+#[cfg(all(feature = "arc", feature = "rayon_iter"))]
 extern crate rayon;
 
-#[cfg(feature = "serde-serializer")]
+#[cfg(feature = "serde_serializer")]
 extern crate serde;
 
 use rrbtree::RrbTree;
@@ -18,10 +18,10 @@ mod sharedptr;
 #[macro_use]
 mod rrbtree;
 
-#[cfg(feature = "serde-serializer")]
+#[cfg(feature = "serde_serializer")]
 pub mod serializer;
 
-#[cfg(not(feature = "small-branch"))]
+#[cfg(not(feature = "small_branch"))]
 macro_rules! clone_arr {
     ($source:expr) => {{
         let s = $source;
@@ -62,7 +62,7 @@ macro_rules! clone_arr {
     }};
 }
 
-#[cfg(feature = "small-branch")]
+#[cfg(feature = "small_branch")]
 macro_rules! clone_arr {
     ($source:expr) => {{
         let s = $source;

@@ -3,19 +3,19 @@ use std::cmp;
 use std::fmt::Debug;
 use std::mem;
 
-#[cfg(not(feature = "small-branch"))]
+#[cfg(not(feature = "small_branch"))]
 pub const BRANCH_FACTOR: usize = 32;
 
-#[cfg(feature = "small-branch")]
+#[cfg(feature = "small_branch")]
 pub const BRANCH_FACTOR: usize = 4;
 
-#[cfg(not(feature = "small-branch"))]
+#[cfg(not(feature = "small_branch"))]
 const BITS_PER_LEVEL: usize = 5;
 
-#[cfg(feature = "small-branch")]
+#[cfg(feature = "small_branch")]
 const BITS_PER_LEVEL: usize = 2;
 
-#[cfg(not(feature = "small-branch"))]
+#[cfg(not(feature = "small_branch"))]
 macro_rules! new_branch {
     () => {
         [
@@ -26,7 +26,7 @@ macro_rules! new_branch {
     };
 }
 
-#[cfg(feature = "small-branch")]
+#[cfg(feature = "small_branch")]
 macro_rules! new_branch {
     () => {
         [None, None, None, None]
@@ -1374,7 +1374,7 @@ impl<T: Clone + Debug> RrbTree<T> {
 
 pub mod iter;
 
-#[cfg(feature = "serde-serializer")]
+#[cfg(feature = "serde_serializer")]
 mod serializer;
 
 #[cfg(test)]

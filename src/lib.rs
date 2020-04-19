@@ -30,22 +30,22 @@
 //! All types implement [Rayon's IntoParallelIterator trait](https://docs.rs/rayon/1.3.0/rayon/iter/trait.IntoParallelIterator.html),
 //! that enables the conversion into a parallel iterator. As dependency on
 //! Rayon is optional, you will need to explicitly request the parallel
-//! iterator implementation by passing both the `arc` and `rayon-iter`
+//! iterator implementation by passing both the `arc` and `rayon_iter`
 //! feature flags.
 //!
 //! By default, the tree-based vectors have nodes that are 32 elements wide. The
 //! maximum number of child nodes is also referred to as the branching factor.
-//! This value can be changed to 4 if necessary, by specifying the `small-branch`
+//! This value can be changed to 4 if necessary, by specifying the `small_branch`
 //! feature flag. Though, the default value of 32 is recommended
 //! for optimal performance.
 
 #![warn(missing_docs)]
 
-#[cfg(all(feature = "arc", feature = "rayon-iter"))]
+#[cfg(all(feature = "arc", feature = "rayon_iter"))]
 extern crate rayon;
 
 #[macro_use]
-#[cfg(feature = "serde-serializer")]
+#[cfg(feature = "serde_serializer")]
 extern crate serde_json;
 
 use std::fmt::Debug;
@@ -56,10 +56,10 @@ pub mod iter;
 
 use crate::core::RrbVec;
 
-#[cfg(not(feature = "small-branch"))]
+#[cfg(not(feature = "small_branch"))]
 const BRANCH_FACTOR: usize = 32;
 
-#[cfg(feature = "small-branch")]
+#[cfg(feature = "small_branch")]
 const BRANCH_FACTOR: usize = 4;
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
