@@ -17,13 +17,13 @@
 //! All vector types in the list expose exactly the same set of
 //! operations with identical API. The difference is only in the
 //! cost of operations.
-//! 
+//!
 //! # Features
 //! [RbVec](crate::core::RbVec) and [RrbVec](crate::core::RrbVec)
 //! both use [Rc](https://doc.rust-lang.org/std/rc/struct.Rc.html)
 //! for garbage collection. The library provides an option to
 //! compile all vectors using [Arc](https://doc.rust-lang.org/std/sync/struct.Arc.html)
-//! if needed, especially when passing instances between threads. To compile the 
+//! if needed, especially when passing instances between threads. To compile the
 //! library with [Arc](https://doc.rust-lang.org/std/sync/struct.Arc.html), use
 //! the `arc` feature flag.
 //!
@@ -32,6 +32,9 @@
 //! Rayon is optional, you will need to explicitly request the parallel
 //! iterator implementation by passing both the `arc` and `rayon-iter`
 //! feature flags.
+//!
+//! TODO: branching factor configuration flags
+//! TODO: runnable examples
 
 #![warn(missing_docs)]
 
@@ -101,18 +104,26 @@ impl<T: Clone + Debug> Representation<T> {
     }
 }
 
+/// A persistent vector that is backed by the flat
+/// representation - the standard vector, or the
+/// tree-based vector when cloned.
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct PVec<T>(Representation<T>);
 
 impl<T: Clone + Debug> PVec<T> {
+    /// Constructs a new, empty vector backed by the
+    /// standard vector internally.     
     pub fn new() -> Self {
         PVec(Representation::Flat(Vec::with_capacity(BRANCH_FACTOR)))
     }
 
+    /// Constructs a new, empty vector backed by the
+    /// [RrbVec](crate::core::RrbVec).
     pub fn new_with_tree() -> Self {
         PVec(Representation::Tree(RrbVec::new()))
     }
 
+    /// Adds an element to the back of a collection.
     pub fn push(&mut self, item: T) {
         match self.0 {
             Representation::Flat(ref mut vec) => vec.push(item),
@@ -120,6 +131,8 @@ impl<T: Clone + Debug> PVec<T> {
         }
     }
 
+    /// Removes the last element from a vector and
+    /// returns it, or None if it is empty.
     pub fn pop(&mut self) -> Option<T> {
         match self.0 {
             Representation::Flat(ref mut vec) => vec.pop(),
@@ -127,6 +140,8 @@ impl<T: Clone + Debug> PVec<T> {
         }
     }
 
+    /// Returns a reference to an element at the given
+    /// position or None if out of bounds.
     pub fn get(&self, index: usize) -> Option<&T> {
         match self.0 {
             Representation::Flat(ref vec) => vec.get(index),
@@ -134,6 +149,8 @@ impl<T: Clone + Debug> PVec<T> {
         }
     }
 
+    /// Returns a mutable reference to an element at the given
+    /// position or None if out of bounds.
     pub fn get_mut(&mut self, index: usize) -> Option<&mut T> {
         match self.0 {
             Representation::Flat(ref mut vec) => vec.get_mut(index),
@@ -141,6 +158,7 @@ impl<T: Clone + Debug> PVec<T> {
         }
     }
 
+    /// Returns the number of elements in the vector.
     pub fn len(&self) -> usize {
         match self.0 {
             Representation::Flat(ref vec) => vec.len(),
@@ -148,10 +166,15 @@ impl<T: Clone + Debug> PVec<T> {
         }
     }
 
+    /// Returns true if the vector has a length of 0.
     pub fn is_empty(&self) -> bool {
         self.len() == 0
     }
 
+    /// Moves all the elements of `that` into `Self` by concatenating
+    /// the underlying tree structures, leaving `other` empty.
+    /// Note, if either of vectors is tree-based, the resulting
+    /// vector will end-up being tree-based as well.
     pub fn append(&mut self, that: &mut PVec<T>) {
         let this = &mut self.0;
         let that = &mut that.0;
@@ -174,6 +197,11 @@ impl<T: Clone + Debug> PVec<T> {
         }
     }
 
+    /// Splits the collection into two at the given index.
+    ///
+    /// Returns a vector containing the elements in the range [at, len).
+    /// After the call, the original vector will be left
+    /// containing the elements [0, at).
     pub fn split_off(&mut self, mid: usize) -> Self {
         let representation = match self.0 {
             Representation::Flat(ref mut vec) => Representation::Flat(vec.split_off(mid)),

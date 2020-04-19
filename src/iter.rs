@@ -1,3 +1,8 @@
+//! A module providing implementation of the standard
+//! [Iterator](https://doc.rust-lang.org/std/iter/trait.Iterator.html),
+//! as well as [Rayon's ParallelIterator](https://docs.rs/rayon/1.3.0/rayon/iter/trait.ParallelIterator.html)
+//! if the `rayon-iter` feature flag is specified.
+
 use super::PVec;
 use super::Representation;
 
@@ -22,6 +27,10 @@ use rayon::prelude::{
     FromParallelIterator, IndexedParallelIterator, IntoParallelIterator, ParallelIterator,
 };
 
+/// This struct owns another, actual iterator
+/// either of the standard vector or RrbVec and is
+/// used to implement [Iterator](https://doc.rust-lang.org/std/iter/trait.Iterator.html)
+/// trait.
 #[derive(Debug, Clone)]
 pub struct PVecIter<T> {
     iter_vec: Option<VecIter<T>>,
@@ -104,6 +113,8 @@ impl<T: Clone + Debug> IntoIterator for PVec<T> {
     }
 }
 
+/// This struct is used to implement the
+/// [parallel iterator](https://docs.rs/rayon/1.3.0/rayon/iter/trait.ParallelIterator.html)
 #[derive(Debug, Clone)]
 #[cfg(all(feature = "arc", feature = "rayon-iter"))]
 pub struct PVecParIter<T: Send + Sync + Debug + Clone> {

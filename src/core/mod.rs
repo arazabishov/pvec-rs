@@ -1,4 +1,4 @@
-//! A module that exposes persistent vector types based on [RrbTree][rrbtree module]
+//! A module providing persistent vector types based on RrbTree.
 
 #[cfg(all(feature = "arc", feature = "rayon-iter"))]
 extern crate rayon;
@@ -75,7 +75,7 @@ macro_rules! clone_arr {
     }};
 }
 
-///
+/// A persistent vector based on the balanced RbTree.
 #[derive(Clone, Debug, Ord, PartialOrd, Eq, PartialEq)]
 pub struct RbVec<T> {
     tree: RrbTree<T>,
@@ -83,6 +83,7 @@ pub struct RbVec<T> {
     tail_len: usize,
 }
 
+/// A persistent vector based on the relaxed RrbTree.
 #[derive(Clone, Debug, Ord, PartialOrd, Eq, PartialEq)]
 pub struct RrbVec<T> {
     tree: RrbTree<T>,
@@ -99,6 +100,9 @@ macro_rules! impl_vec {
         }
 
         impl<T: Clone + Debug> $vec<T> {
+            /// Constructs a new, empty vector.
+            /// The vector allocates a buffer equal to
+            /// the selected branching factor size.
             pub fn new() -> Self {
                 $vec {
                     tree: RrbTree::new(),
@@ -107,6 +111,7 @@ macro_rules! impl_vec {
                 }
             }
 
+            /// Adds an element to the back of a collection.
             pub fn push(&mut self, item: T) {
                 self.tail[self.tail_len] = Some(item);
                 self.tail_len += 1;
@@ -124,6 +129,8 @@ macro_rules! impl_vec {
                 }
             }
 
+            /// Removes the last element from a vector and
+            /// returns it, or None if it is empty.
             pub fn pop(&mut self) -> Option<T> {
                 if self.is_empty() {
                     return None;
@@ -142,6 +149,8 @@ macro_rules! impl_vec {
                 item
             }
 
+            /// Returns a reference to an element at the given
+            /// position or None if out of bounds.
             pub fn get(&self, index: usize) -> Option<&T> {
                 if self.tree.len() > index {
                     self.tree.get(index)
@@ -150,6 +159,8 @@ macro_rules! impl_vec {
                 }
             }
 
+            /// Returns a mutable reference to an element at the given
+            /// position or None if out of bounds.
             pub fn get_mut(&mut self, index: usize) -> Option<&mut T> {
                 if self.tree.len() > index {
                     self.tree.get_mut(index)
@@ -158,10 +169,12 @@ macro_rules! impl_vec {
                 }
             }
 
+            /// Returns the number of elements in the vector.
             pub fn len(&self) -> usize {
                 self.tree.len() + self.tail_len
             }
 
+            /// Returns true if the vector has a length of 0.
             pub fn is_empty(&self) -> bool {
                 self.len() == 0
             }
@@ -199,6 +212,11 @@ impl_vec!(RbVec);
 impl_vec!(RrbVec);
 
 impl<T: Clone + Debug> RbVec<T> {
+    /// Splits the collection into two at the given index.
+    ///
+    /// Returns a newly allocated vector containing the elements
+    /// in the range [at, len). After the call, the original vector
+    /// will be left containing the elements [0, at).
     pub fn split_off(&mut self, mid: usize) -> Self {
         if mid == 0 {
             mem::replace(self, Self::new())
@@ -262,6 +280,8 @@ impl<T: Clone + Debug> RbVec<T> {
         }
     }
 
+    /// Moves all the elements of `that` into
+    /// `Self`, leaving `other` empty.
     pub fn append(&mut self, that: &mut RbVec<T>) {
         let that_is_empty = that.is_empty();
 
@@ -290,6 +310,11 @@ impl<T: Clone + Debug> RbVec<T> {
 }
 
 impl<T: Clone + Debug> RrbVec<T> {
+    /// Splits the collection into two at the given index.
+    ///
+    /// Returns a vector containing the elements in the range [at, len).
+    /// After the call, the original vector will be left
+    /// containing the elements [0, at).
     pub fn split_off(&mut self, mid: usize) -> Self {
         if mid == 0 {
             mem::replace(self, RrbVec::new())
@@ -376,6 +401,8 @@ impl<T: Clone + Debug> RrbVec<T> {
         }
     }
 
+    /// Moves all the elements of `that` into `Self` by concatenating
+    /// the underlying tree structures, leaving `other` empty.
     pub fn append(&mut self, that: &mut RrbVec<T>) {
         if self.is_empty() {
             self.tail = mem::replace(&mut that.tail, new_branch!());

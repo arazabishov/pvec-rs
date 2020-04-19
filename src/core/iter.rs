@@ -1,3 +1,8 @@
+//! A module providing implementation of the standard
+//! [Iterator](https://doc.rust-lang.org/std/iter/trait.Iterator.html),
+//! as well as [Rayon's ParallelIterator](https://docs.rs/rayon/1.3.0/rayon/iter/trait.ParallelIterator.html)
+//! if the `rayon-iter` feature flag is specified.
+
 use super::RbVec;
 use super::RrbVec;
 use crate::core::rrbtree::iter::RrbTreeIter;
@@ -15,6 +20,11 @@ use rayon::prelude::{
 
 macro_rules! impl_iter {
     ($vec:ident, $iter:ident) => {
+        /// This struct keeps state necessary to implement Iterator
+        /// for the tree-based vector. It takes the ownership of the vector
+        /// contents. The iterator implementation consumes the contents of
+        /// the RrbTree by chunks, this way reducing the number of the
+        /// tree traversals.        
         #[derive(Debug, Clone)]
         pub struct $iter<T> {
             tree_iter: RrbTreeIter<T>,
