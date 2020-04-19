@@ -10,7 +10,7 @@ One of the vector types - **PVec**, explores an idea of starting out as the stan
 
 The performance evaluation of the library is provided in the [technical report](https://abishov.com/thesis). PVec is available on [crates.io](https://crates.io/crates/pvec), and API documentation is available on [docs.rs](https://docs.rs/pvec/0.2.0/pvec/).
 
-## Examples
+## Example
 
 A demonstration of using **PVec**:
 
@@ -53,7 +53,7 @@ cargo bench
 cargo bench --features=arc,rayon-iter
 ```
 
-To avoid running benchmarks for hours pass the `--sample-size=10` option to reduce the sample count.
+The report can be found at `target/criterion/report/index.html`. To avoid running benchmarks for hours, pass the `--sample-size=10` option to reduce the sample count.
 
 ### Memory
 
