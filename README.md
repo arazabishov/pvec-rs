@@ -12,6 +12,57 @@ The performance evaluation of the library is provided in the [technical report](
 
 ## Examples
 
+A demonstration of using **PVec**:
+
+```rust
+extern crate pvec;
+
+use pvec::PVec;
+
+pub fn example_pvec(size: usize) {
+    let mut vec = PVec::new();
+    // ^ backed by the standard vector internally
+
+    for i in 0..size {
+        vec.push(i);
+    }
+
+    let cln = vec.clone();
+    // ^ transitions to RrbVec internally,
+    // with consequent clones that cost O(1)
+
+    let res: PVec<usize> = vec.into_par_iter()
+        .map(|it| it + 1)
+        .collect();
+    // ^ processing vector in parallel and
+    // collecting results
+}
+```
+
+## Benchmarks
+
+### Runtime
+
+Runtime benchmarks are subdivided into sequential and parallel groups. The framework used to run benchmark is [criterion](https://github.com/bheisler/criterion.rs), which can generate an HTML report with charts if you have gnuplot pre-installed.
+
+```bash
+# running all sequential benches
+cargo bench
+
+# running parallel benches
+cargo bench --features=arc,rayon-iter
+```
+
+To avoid running benchmarks for hours pass the `--sample-size=10` option to reduce the sample count.
+
+### Memory
+
+Memory footprint is measured using a custom binary crate - **benches-mem**. This binary runs benchmarks from the **benches** crate through the [time](https://www.freebsd.org/cgi/man.cgi?query=time) util, capturing the peak memory usage of the process. The report is placed at `target/release/report`. Note, these benchmarks can be executed only on macOS at the moment, as `time` behaves differently on mac and linux.
+
+```bash
+cd benches-mem && sh bench.sh
+```
+
 ## License
 
 ```
