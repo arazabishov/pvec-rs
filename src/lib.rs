@@ -33,8 +33,11 @@
 //! iterator implementation by passing both the `arc` and `rayon-iter`
 //! feature flags.
 //!
-//! TODO: branching factor configuration flags
-//! TODO: runnable examples
+//! By default, the tree-based vectors have nodes that are 32 elements wide. The
+//! maximum number of child nodes is also referred to as the branching factor.
+//! This value can be changed to 4 if necessary, by specifying the `small-branch`
+//! feature flag. Though, the default value of 32 is recommended
+//! for optimal performance.
 
 #![warn(missing_docs)]
 
