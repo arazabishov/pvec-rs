@@ -115,7 +115,7 @@ pub struct PVec<T>(Representation<T>);
 
 impl<T: Clone + Debug> PVec<T> {
     /// Constructs a new, empty vector backed by the
-    /// standard vector internally.     
+    /// standard vector internally.
     pub fn new() -> Self {
         PVec(Representation::Flat(Vec::with_capacity(BRANCH_FACTOR)))
     }
@@ -255,37 +255,5 @@ impl<T: Clone + Debug> ops::IndexMut<usize> for PVec<T> {
                 index, len
             )
         })
-    }
-}
-
-#[cfg(test)]
-#[macro_use]
-mod test {
-    use super::PVec;
-
-    #[test]
-    fn interleaving_append_split_off_operations() {
-        let mut vec_one = PVec::new();
-        let mut value = 0;
-
-        for size in 1..(32 * 8 + 32) {
-            let mut vec_two = PVec::new();
-            for _ in 0..size {
-                vec_two.push(value);
-                value += 1;
-            }
-
-            vec_one.append(&mut vec_two);
-
-            let mid = vec_one.len() / 2;
-            let mut right = vec_one.split_off(mid);
-
-            vec_one.append(&mut right);
-            value = vec_one.len();
-        }
-
-        for i in 0..value {
-            assert_eq!(vec_one.get(i).cloned(), Some(i));
-        }
     }
 }
