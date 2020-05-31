@@ -1,0 +1,11 @@
+group,function,value,throughput_num,throughput_type,sample_measured_value,unit,iteration_count
+append,im-rs-vector-relaxed,400000,,,6982087.0,ns,16
+append,im-rs-vector-relaxed,400000,,,14978717.0,ns,32
+append,im-rs-vector-relaxed,400000,,,22591129.0,ns,48
+append,im-rs-vector-relaxed,400000,,,32632552.0,ns,64
+append,im-rs-vector-relaxed,400000,,,41208463.0,ns,80
+append,im-rs-vector-relaxed,400000,,,50470966.0,ns,96
+append,im-rs-vector-relaxed,400000,,,60388262.0,ns,112
+append,im-rs-vector-relaxed,400000,,,70749745.0,ns,128
+append,im-rs-vector-relaxed,400000,,,81028353.0,ns,144
+append,im-rs-vector-relaxed,400000,,,89034535.0,ns,160

@@ -1,0 +1,11 @@
+group,function,value,throughput_num,throughput_type,sample_measured_value,unit,iteration_count
+vector_addition_with_thread_num_16,pvec-rrbvec-relaxed,10000,,,74789983.0,ns,64
+vector_addition_with_thread_num_16,pvec-rrbvec-relaxed,10000,,,147615834.0,ns,128
+vector_addition_with_thread_num_16,pvec-rrbvec-relaxed,10000,,,226845795.0,ns,192
+vector_addition_with_thread_num_16,pvec-rrbvec-relaxed,10000,,,296752087.0,ns,256
+vector_addition_with_thread_num_16,pvec-rrbvec-relaxed,10000,,,368860133.0,ns,320
+vector_addition_with_thread_num_16,pvec-rrbvec-relaxed,10000,,,436251490.0,ns,384
+vector_addition_with_thread_num_16,pvec-rrbvec-relaxed,10000,,,530793268.0,ns,448
+vector_addition_with_thread_num_16,pvec-rrbvec-relaxed,10000,,,593311348.0,ns,512
+vector_addition_with_thread_num_16,pvec-rrbvec-relaxed,10000,,,662765885.0,ns,576
+vector_addition_with_thread_num_16,pvec-rrbvec-relaxed,10000,,,751124588.0,ns,640

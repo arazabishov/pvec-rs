@@ -1,0 +1,11 @@
+group,function,value,throughput_num,throughput_type,sample_measured_value,unit,iteration_count
+push_relaxed,im-rs-vector-balanced,80000,,,35094937.0,ns,32
+push_relaxed,im-rs-vector-balanced,80000,,,70449171.0,ns,64
+push_relaxed,im-rs-vector-balanced,80000,,,105381716.0,ns,96
+push_relaxed,im-rs-vector-balanced,80000,,,142083433.0,ns,128
+push_relaxed,im-rs-vector-balanced,80000,,,175670630.0,ns,160
+push_relaxed,im-rs-vector-balanced,80000,,,210604478.0,ns,192
+push_relaxed,im-rs-vector-balanced,80000,,,247053618.0,ns,224
+push_relaxed,im-rs-vector-balanced,80000,,,281059320.0,ns,256
+push_relaxed,im-rs-vector-balanced,80000,,,317119356.0,ns,288
+push_relaxed,im-rs-vector-balanced,80000,,,351427415.0,ns,320

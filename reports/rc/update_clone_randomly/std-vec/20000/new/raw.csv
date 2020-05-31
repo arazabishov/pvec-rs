@@ -1,0 +1,11 @@
+group,function,value,throughput_num,throughput_type,sample_measured_value,unit,iteration_count
+update_clone_randomly,std-vec,20000,,,177834551.0,ns,2
+update_clone_randomly,std-vec,20000,,,352395267.0,ns,4
+update_clone_randomly,std-vec,20000,,,533360748.0,ns,6
+update_clone_randomly,std-vec,20000,,,699013351.0,ns,8
+update_clone_randomly,std-vec,20000,,,867839930.0,ns,10
+update_clone_randomly,std-vec,20000,,,1041709049.0,ns,12
+update_clone_randomly,std-vec,20000,,,1305042012.0,ns,14
+update_clone_randomly,std-vec,20000,,,1482290456.0,ns,16
+update_clone_randomly,std-vec,20000,,,1603845405.0,ns,18
+update_clone_randomly,std-vec,20000,,,1741624347.0,ns,20

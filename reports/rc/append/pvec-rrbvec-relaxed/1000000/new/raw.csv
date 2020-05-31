@@ -1,0 +1,11 @@
+group,function,value,throughput_num,throughput_type,sample_measured_value,unit,iteration_count
+append,pvec-rrbvec-relaxed,1000000,,,593322.0,ns,8
+append,pvec-rrbvec-relaxed,1000000,,,1304950.0,ns,16
+append,pvec-rrbvec-relaxed,1000000,,,2039719.0,ns,24
+append,pvec-rrbvec-relaxed,1000000,,,2704430.0,ns,32
+append,pvec-rrbvec-relaxed,1000000,,,3352341.0,ns,40
+append,pvec-rrbvec-relaxed,1000000,,,4094195.0,ns,48
+append,pvec-rrbvec-relaxed,1000000,,,4834869.0,ns,56
+append,pvec-rrbvec-relaxed,1000000,,,5776071.0,ns,64
+append,pvec-rrbvec-relaxed,1000000,,,6492894.0,ns,72
+append,pvec-rrbvec-relaxed,1000000,,,6974100.0,ns,80
