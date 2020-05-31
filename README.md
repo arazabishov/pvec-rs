@@ -55,7 +55,8 @@ cargo bench --features=arc,rayon_iter
 
 The report can be found at `target/criterion/report/index.html`. To avoid running benchmarks for hours, pass the `--sample-size=10` option to reduce the sample count.
 
-The latest run of benchmark results is available at [arc](reports/arc/report/index.html) and [rc](reports/rc/report/index.html).
+**Results**  
+Benchmarks were executed using `Arc` and `Rc` pointers results of which are available here: [arc](reports/arc/report/index.html) and [rc](reports/rc/report/index.html).
 
 ### Memory
 
