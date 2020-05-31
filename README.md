@@ -55,6 +55,8 @@ cargo bench --features=arc,rayon_iter
 
 The report can be found at `target/criterion/report/index.html`. To avoid running benchmarks for hours, pass the `--sample-size=10` option to reduce the sample count.
 
+The latest run of benchmark results is available at [arc](reports/arc/report/index.html) and [rc](reports/rc/report/index.html).
+
 ### Memory
 
 Memory footprint is measured using a custom binary crate - **benches-mem**. This binary runs benchmarks from the **benches** crate through the [time](https://www.freebsd.org/cgi/man.cgi?query=time) util, capturing the peak memory usage of the process. The report is placed at `target/release/report`. Note, these benchmarks can be executed only on macOS at the moment, as `time` behaves differently on mac and linux.

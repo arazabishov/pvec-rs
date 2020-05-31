@@ -1,0 +1,2948 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <title>push Summary - Criterion.rs</title>
+    <style type="text/css">
+        body {
+            font: 14px Helvetica Neue;
+            text-rendering: optimizelegibility;
+        }
+
+        .body {
+            width: 960px;
+            margin: auto;
+        }
+
+        a:link {
+            color: #1F78B4;
+            text-decoration: none;
+        }
+
+        h2 {
+            font-size: 36px;
+            font-weight: 300;
+        }
+
+        h3 {
+            font-size: 24px;
+            font-weight: 300;
+        }
+
+        #footer {
+            height: 40px;
+            background: #888;
+            color: white;
+            font-size: larger;
+            font-weight: 300;
+        }
+
+        #footer a {
+            color: white;
+            text-decoration: underline;
+        }
+
+        #footer p {
+            text-align: center
+        }
+    </style>
+</head>
+
+<body>
+    <div class="body">
+        <h2>push</h2>
+        <h3>Violin Plot</h3>
+        <a href="violin.svg">
+            <img src="violin.svg" alt="Violin Plot" />
+        </a>
+        <p>This chart shows the relationship between function/parameter and iteration time. The thickness of the shaded
+            region indicates the probability that a measurement of the given function/parameter would take a particular
+            length of time.</p>
+        <h3>Line Chart</h3>
+        <img src="lines.svg" alt="Line Chart" />
+        <p>This chart shows the mean measured time for each function as the input (or the size of the input) increases.</p>
+        <section class="plots">
+            <a href="../../push/im-rs-vector-balanced/20/report/index.html">
+                <h4>push/im-rs-vector-balanced/20</h4>
+            </a>
+            <table width="100%">
+                <tbody>
+                    <tr>
+                        <td>
+                            <a href="../../push/im-rs-vector-balanced/20/report/pdf.svg">
+                                <img src="../../push/im-rs-vector-balanced/20/report/pdf_small.svg" alt="PDF of Slope" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                        <td>
+                            <a href="../../push/im-rs-vector-balanced/20/report/regression.svg">
+                                <img src="../../push/im-rs-vector-balanced/20/report/regression_small.svg" alt="Regression" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+        <section class="plots">
+            <a href="../../push/im-rs-vector-balanced/40/report/index.html">
+                <h4>push/im-rs-vector-balanced/40</h4>
+            </a>
+            <table width="100%">
+                <tbody>
+                    <tr>
+                        <td>
+                            <a href="../../push/im-rs-vector-balanced/40/report/pdf.svg">
+                                <img src="../../push/im-rs-vector-balanced/40/report/pdf_small.svg" alt="PDF of Slope" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                        <td>
+                            <a href="../../push/im-rs-vector-balanced/40/report/regression.svg">
+                                <img src="../../push/im-rs-vector-balanced/40/report/regression_small.svg" alt="Regression" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+        <section class="plots">
+            <a href="../../push/im-rs-vector-balanced/60/report/index.html">
+                <h4>push/im-rs-vector-balanced/60</h4>
+            </a>
+            <table width="100%">
+                <tbody>
+                    <tr>
+                        <td>
+                            <a href="../../push/im-rs-vector-balanced/60/report/pdf.svg">
+                                <img src="../../push/im-rs-vector-balanced/60/report/pdf_small.svg" alt="PDF of Slope" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                        <td>
+                            <a href="../../push/im-rs-vector-balanced/60/report/regression.svg">
+                                <img src="../../push/im-rs-vector-balanced/60/report/regression_small.svg" alt="Regression" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+        <section class="plots">
+            <a href="../../push/im-rs-vector-balanced/80/report/index.html">
+                <h4>push/im-rs-vector-balanced/80</h4>
+            </a>
+            <table width="100%">
+                <tbody>
+                    <tr>
+                        <td>
+                            <a href="../../push/im-rs-vector-balanced/80/report/pdf.svg">
+                                <img src="../../push/im-rs-vector-balanced/80/report/pdf_small.svg" alt="PDF of Slope" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                        <td>
+                            <a href="../../push/im-rs-vector-balanced/80/report/regression.svg">
+                                <img src="../../push/im-rs-vector-balanced/80/report/regression_small.svg" alt="Regression" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+        <section class="plots">
+            <a href="../../push/im-rs-vector-balanced/100/report/index.html">
+                <h4>push/im-rs-vector-balanced/100</h4>
+            </a>
+            <table width="100%">
+                <tbody>
+                    <tr>
+                        <td>
+                            <a href="../../push/im-rs-vector-balanced/100/report/pdf.svg">
+                                <img src="../../push/im-rs-vector-balanced/100/report/pdf_small.svg" alt="PDF of Slope" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                        <td>
+                            <a href="../../push/im-rs-vector-balanced/100/report/regression.svg">
+                                <img src="../../push/im-rs-vector-balanced/100/report/regression_small.svg" alt="Regression" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+        <section class="plots">
+            <a href="../../push/im-rs-vector-balanced/200/report/index.html">
+                <h4>push/im-rs-vector-balanced/200</h4>
+            </a>
+            <table width="100%">
+                <tbody>
+                    <tr>
+                        <td>
+                            <a href="../../push/im-rs-vector-balanced/200/report/pdf.svg">
+                                <img src="../../push/im-rs-vector-balanced/200/report/pdf_small.svg" alt="PDF of Slope" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                        <td>
+                            <a href="../../push/im-rs-vector-balanced/200/report/regression.svg">
+                                <img src="../../push/im-rs-vector-balanced/200/report/regression_small.svg" alt="Regression" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+        <section class="plots">
+            <a href="../../push/im-rs-vector-balanced/400/report/index.html">
+                <h4>push/im-rs-vector-balanced/400</h4>
+            </a>
+            <table width="100%">
+                <tbody>
+                    <tr>
+                        <td>
+                            <a href="../../push/im-rs-vector-balanced/400/report/pdf.svg">
+                                <img src="../../push/im-rs-vector-balanced/400/report/pdf_small.svg" alt="PDF of Slope" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                        <td>
+                            <a href="../../push/im-rs-vector-balanced/400/report/regression.svg">
+                                <img src="../../push/im-rs-vector-balanced/400/report/regression_small.svg" alt="Regression" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+        <section class="plots">
+            <a href="../../push/im-rs-vector-balanced/600/report/index.html">
+                <h4>push/im-rs-vector-balanced/600</h4>
+            </a>
+            <table width="100%">
+                <tbody>
+                    <tr>
+                        <td>
+                            <a href="../../push/im-rs-vector-balanced/600/report/pdf.svg">
+                                <img src="../../push/im-rs-vector-balanced/600/report/pdf_small.svg" alt="PDF of Slope" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                        <td>
+                            <a href="../../push/im-rs-vector-balanced/600/report/regression.svg">
+                                <img src="../../push/im-rs-vector-balanced/600/report/regression_small.svg" alt="Regression" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+        <section class="plots">
+            <a href="../../push/im-rs-vector-balanced/800/report/index.html">
+                <h4>push/im-rs-vector-balanced/800</h4>
+            </a>
+            <table width="100%">
+                <tbody>
+                    <tr>
+                        <td>
+                            <a href="../../push/im-rs-vector-balanced/800/report/pdf.svg">
+                                <img src="../../push/im-rs-vector-balanced/800/report/pdf_small.svg" alt="PDF of Slope" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                        <td>
+                            <a href="../../push/im-rs-vector-balanced/800/report/regression.svg">
+                                <img src="../../push/im-rs-vector-balanced/800/report/regression_small.svg" alt="Regression" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+        <section class="plots">
+            <a href="../../push/im-rs-vector-balanced/1000/report/index.html">
+                <h4>push/im-rs-vector-balanced/1000</h4>
+            </a>
+            <table width="100%">
+                <tbody>
+                    <tr>
+                        <td>
+                            <a href="../../push/im-rs-vector-balanced/1000/report/pdf.svg">
+                                <img src="../../push/im-rs-vector-balanced/1000/report/pdf_small.svg" alt="PDF of Slope" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                        <td>
+                            <a href="../../push/im-rs-vector-balanced/1000/report/regression.svg">
+                                <img src="../../push/im-rs-vector-balanced/1000/report/regression_small.svg" alt="Regression" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+        <section class="plots">
+            <a href="../../push/im-rs-vector-balanced/2000/report/index.html">
+                <h4>push/im-rs-vector-balanced/2000</h4>
+            </a>
+            <table width="100%">
+                <tbody>
+                    <tr>
+                        <td>
+                            <a href="../../push/im-rs-vector-balanced/2000/report/pdf.svg">
+                                <img src="../../push/im-rs-vector-balanced/2000/report/pdf_small.svg" alt="PDF of Slope" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                        <td>
+                            <a href="../../push/im-rs-vector-balanced/2000/report/regression.svg">
+                                <img src="../../push/im-rs-vector-balanced/2000/report/regression_small.svg" alt="Regression" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+        <section class="plots">
+            <a href="../../push/im-rs-vector-balanced/4000/report/index.html">
+                <h4>push/im-rs-vector-balanced/4000</h4>
+            </a>
+            <table width="100%">
+                <tbody>
+                    <tr>
+                        <td>
+                            <a href="../../push/im-rs-vector-balanced/4000/report/pdf.svg">
+                                <img src="../../push/im-rs-vector-balanced/4000/report/pdf_small.svg" alt="PDF of Slope" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                        <td>
+                            <a href="../../push/im-rs-vector-balanced/4000/report/regression.svg">
+                                <img src="../../push/im-rs-vector-balanced/4000/report/regression_small.svg" alt="Regression" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+        <section class="plots">
+            <a href="../../push/im-rs-vector-balanced/6000/report/index.html">
+                <h4>push/im-rs-vector-balanced/6000</h4>
+            </a>
+            <table width="100%">
+                <tbody>
+                    <tr>
+                        <td>
+                            <a href="../../push/im-rs-vector-balanced/6000/report/pdf.svg">
+                                <img src="../../push/im-rs-vector-balanced/6000/report/pdf_small.svg" alt="PDF of Slope" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                        <td>
+                            <a href="../../push/im-rs-vector-balanced/6000/report/regression.svg">
+                                <img src="../../push/im-rs-vector-balanced/6000/report/regression_small.svg" alt="Regression" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+        <section class="plots">
+            <a href="../../push/im-rs-vector-balanced/8000/report/index.html">
+                <h4>push/im-rs-vector-balanced/8000</h4>
+            </a>
+            <table width="100%">
+                <tbody>
+                    <tr>
+                        <td>
+                            <a href="../../push/im-rs-vector-balanced/8000/report/pdf.svg">
+                                <img src="../../push/im-rs-vector-balanced/8000/report/pdf_small.svg" alt="PDF of Slope" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                        <td>
+                            <a href="../../push/im-rs-vector-balanced/8000/report/regression.svg">
+                                <img src="../../push/im-rs-vector-balanced/8000/report/regression_small.svg" alt="Regression" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+        <section class="plots">
+            <a href="../../push/im-rs-vector-balanced/10000/report/index.html">
+                <h4>push/im-rs-vector-balanced/10000</h4>
+            </a>
+            <table width="100%">
+                <tbody>
+                    <tr>
+                        <td>
+                            <a href="../../push/im-rs-vector-balanced/10000/report/pdf.svg">
+                                <img src="../../push/im-rs-vector-balanced/10000/report/pdf_small.svg" alt="PDF of Slope" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                        <td>
+                            <a href="../../push/im-rs-vector-balanced/10000/report/regression.svg">
+                                <img src="../../push/im-rs-vector-balanced/10000/report/regression_small.svg" alt="Regression" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+        <section class="plots">
+            <a href="../../push/im-rs-vector-balanced/20000/report/index.html">
+                <h4>push/im-rs-vector-balanced/20000</h4>
+            </a>
+            <table width="100%">
+                <tbody>
+                    <tr>
+                        <td>
+                            <a href="../../push/im-rs-vector-balanced/20000/report/pdf.svg">
+                                <img src="../../push/im-rs-vector-balanced/20000/report/pdf_small.svg" alt="PDF of Slope" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                        <td>
+                            <a href="../../push/im-rs-vector-balanced/20000/report/regression.svg">
+                                <img src="../../push/im-rs-vector-balanced/20000/report/regression_small.svg" alt="Regression" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+        <section class="plots">
+            <a href="../../push/im-rs-vector-balanced/40000/report/index.html">
+                <h4>push/im-rs-vector-balanced/40000</h4>
+            </a>
+            <table width="100%">
+                <tbody>
+                    <tr>
+                        <td>
+                            <a href="../../push/im-rs-vector-balanced/40000/report/pdf.svg">
+                                <img src="../../push/im-rs-vector-balanced/40000/report/pdf_small.svg" alt="PDF of Slope" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                        <td>
+                            <a href="../../push/im-rs-vector-balanced/40000/report/regression.svg">
+                                <img src="../../push/im-rs-vector-balanced/40000/report/regression_small.svg" alt="Regression" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+        <section class="plots">
+            <a href="../../push/im-rs-vector-balanced/60000/report/index.html">
+                <h4>push/im-rs-vector-balanced/60000</h4>
+            </a>
+            <table width="100%">
+                <tbody>
+                    <tr>
+                        <td>
+                            <a href="../../push/im-rs-vector-balanced/60000/report/pdf.svg">
+                                <img src="../../push/im-rs-vector-balanced/60000/report/pdf_small.svg" alt="PDF of Slope" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                        <td>
+                            <a href="../../push/im-rs-vector-balanced/60000/report/regression.svg">
+                                <img src="../../push/im-rs-vector-balanced/60000/report/regression_small.svg" alt="Regression" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+        <section class="plots">
+            <a href="../../push/im-rs-vector-balanced/80000/report/index.html">
+                <h4>push/im-rs-vector-balanced/80000</h4>
+            </a>
+            <table width="100%">
+                <tbody>
+                    <tr>
+                        <td>
+                            <a href="../../push/im-rs-vector-balanced/80000/report/pdf.svg">
+                                <img src="../../push/im-rs-vector-balanced/80000/report/pdf_small.svg" alt="PDF of Slope" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                        <td>
+                            <a href="../../push/im-rs-vector-balanced/80000/report/regression.svg">
+                                <img src="../../push/im-rs-vector-balanced/80000/report/regression_small.svg" alt="Regression" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+        <section class="plots">
+            <a href="../../push/im-rs-vector-balanced/100000/report/index.html">
+                <h4>push/im-rs-vector-balanced/100000</h4>
+            </a>
+            <table width="100%">
+                <tbody>
+                    <tr>
+                        <td>
+                            <a href="../../push/im-rs-vector-balanced/100000/report/pdf.svg">
+                                <img src="../../push/im-rs-vector-balanced/100000/report/pdf_small.svg" alt="PDF of Slope" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                        <td>
+                            <a href="../../push/im-rs-vector-balanced/100000/report/regression.svg">
+                                <img src="../../push/im-rs-vector-balanced/100000/report/regression_small.svg" alt="Regression" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+        <section class="plots">
+            <a href="../../push/im-rs-vector-balanced/200000/report/index.html">
+                <h4>push/im-rs-vector-balanced/200000</h4>
+            </a>
+            <table width="100%">
+                <tbody>
+                    <tr>
+                        <td>
+                            <a href="../../push/im-rs-vector-balanced/200000/report/pdf.svg">
+                                <img src="../../push/im-rs-vector-balanced/200000/report/pdf_small.svg" alt="PDF of Slope" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                        <td>
+                            <a href="../../push/im-rs-vector-balanced/200000/report/regression.svg">
+                                <img src="../../push/im-rs-vector-balanced/200000/report/regression_small.svg" alt="Regression" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+        <section class="plots">
+            <a href="../../push/im-rs-vector-balanced/400000/report/index.html">
+                <h4>push/im-rs-vector-balanced/400000</h4>
+            </a>
+            <table width="100%">
+                <tbody>
+                    <tr>
+                        <td>
+                            <a href="../../push/im-rs-vector-balanced/400000/report/pdf.svg">
+                                <img src="../../push/im-rs-vector-balanced/400000/report/pdf_small.svg" alt="PDF of Slope" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                        <td>
+                            <a href="../../push/im-rs-vector-balanced/400000/report/regression.svg">
+                                <img src="../../push/im-rs-vector-balanced/400000/report/regression_small.svg" alt="Regression" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+        <section class="plots">
+            <a href="../../push/im-rs-vector-balanced/600000/report/index.html">
+                <h4>push/im-rs-vector-balanced/600000</h4>
+            </a>
+            <table width="100%">
+                <tbody>
+                    <tr>
+                        <td>
+                            <a href="../../push/im-rs-vector-balanced/600000/report/pdf.svg">
+                                <img src="../../push/im-rs-vector-balanced/600000/report/pdf_small.svg" alt="PDF of Slope" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                        <td>
+                            <a href="../../push/im-rs-vector-balanced/600000/report/regression.svg">
+                                <img src="../../push/im-rs-vector-balanced/600000/report/regression_small.svg" alt="Regression" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+        <section class="plots">
+            <a href="../../push/im-rs-vector-balanced/800000/report/index.html">
+                <h4>push/im-rs-vector-balanced/800000</h4>
+            </a>
+            <table width="100%">
+                <tbody>
+                    <tr>
+                        <td>
+                            <a href="../../push/im-rs-vector-balanced/800000/report/pdf.svg">
+                                <img src="../../push/im-rs-vector-balanced/800000/report/pdf_small.svg" alt="PDF of Slope" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                        <td>
+                            <a href="../../push/im-rs-vector-balanced/800000/report/regression.svg">
+                                <img src="../../push/im-rs-vector-balanced/800000/report/regression_small.svg" alt="Regression" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+        <section class="plots">
+            <a href="../../push/im-rs-vector-balanced/1000000/report/index.html">
+                <h4>push/im-rs-vector-balanced/1000000</h4>
+            </a>
+            <table width="100%">
+                <tbody>
+                    <tr>
+                        <td>
+                            <a href="../../push/im-rs-vector-balanced/1000000/report/pdf.svg">
+                                <img src="../../push/im-rs-vector-balanced/1000000/report/pdf_small.svg" alt="PDF of Slope" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                        <td>
+                            <a href="../../push/im-rs-vector-balanced/1000000/report/regression.svg">
+                                <img src="../../push/im-rs-vector-balanced/1000000/report/regression_small.svg" alt="Regression" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+        <section class="plots">
+            <a href="../../push/pvec-rrbvec-balanced/20/report/index.html">
+                <h4>push/pvec-rrbvec-balanced/20</h4>
+            </a>
+            <table width="100%">
+                <tbody>
+                    <tr>
+                        <td>
+                            <a href="../../push/pvec-rrbvec-balanced/20/report/pdf.svg">
+                                <img src="../../push/pvec-rrbvec-balanced/20/report/pdf_small.svg" alt="PDF of Slope" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                        <td>
+                            <a href="../../push/pvec-rrbvec-balanced/20/report/regression.svg">
+                                <img src="../../push/pvec-rrbvec-balanced/20/report/regression_small.svg" alt="Regression" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+        <section class="plots">
+            <a href="../../push/pvec-rrbvec-balanced/40/report/index.html">
+                <h4>push/pvec-rrbvec-balanced/40</h4>
+            </a>
+            <table width="100%">
+                <tbody>
+                    <tr>
+                        <td>
+                            <a href="../../push/pvec-rrbvec-balanced/40/report/pdf.svg">
+                                <img src="../../push/pvec-rrbvec-balanced/40/report/pdf_small.svg" alt="PDF of Slope" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                        <td>
+                            <a href="../../push/pvec-rrbvec-balanced/40/report/regression.svg">
+                                <img src="../../push/pvec-rrbvec-balanced/40/report/regression_small.svg" alt="Regression" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+        <section class="plots">
+            <a href="../../push/pvec-rrbvec-balanced/60/report/index.html">
+                <h4>push/pvec-rrbvec-balanced/60</h4>
+            </a>
+            <table width="100%">
+                <tbody>
+                    <tr>
+                        <td>
+                            <a href="../../push/pvec-rrbvec-balanced/60/report/pdf.svg">
+                                <img src="../../push/pvec-rrbvec-balanced/60/report/pdf_small.svg" alt="PDF of Slope" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                        <td>
+                            <a href="../../push/pvec-rrbvec-balanced/60/report/regression.svg">
+                                <img src="../../push/pvec-rrbvec-balanced/60/report/regression_small.svg" alt="Regression" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+        <section class="plots">
+            <a href="../../push/pvec-rrbvec-balanced/80/report/index.html">
+                <h4>push/pvec-rrbvec-balanced/80</h4>
+            </a>
+            <table width="100%">
+                <tbody>
+                    <tr>
+                        <td>
+                            <a href="../../push/pvec-rrbvec-balanced/80/report/pdf.svg">
+                                <img src="../../push/pvec-rrbvec-balanced/80/report/pdf_small.svg" alt="PDF of Slope" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                        <td>
+                            <a href="../../push/pvec-rrbvec-balanced/80/report/regression.svg">
+                                <img src="../../push/pvec-rrbvec-balanced/80/report/regression_small.svg" alt="Regression" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+        <section class="plots">
+            <a href="../../push/pvec-rrbvec-balanced/100/report/index.html">
+                <h4>push/pvec-rrbvec-balanced/100</h4>
+            </a>
+            <table width="100%">
+                <tbody>
+                    <tr>
+                        <td>
+                            <a href="../../push/pvec-rrbvec-balanced/100/report/pdf.svg">
+                                <img src="../../push/pvec-rrbvec-balanced/100/report/pdf_small.svg" alt="PDF of Slope" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                        <td>
+                            <a href="../../push/pvec-rrbvec-balanced/100/report/regression.svg">
+                                <img src="../../push/pvec-rrbvec-balanced/100/report/regression_small.svg" alt="Regression" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+        <section class="plots">
+            <a href="../../push/pvec-rrbvec-balanced/200/report/index.html">
+                <h4>push/pvec-rrbvec-balanced/200</h4>
+            </a>
+            <table width="100%">
+                <tbody>
+                    <tr>
+                        <td>
+                            <a href="../../push/pvec-rrbvec-balanced/200/report/pdf.svg">
+                                <img src="../../push/pvec-rrbvec-balanced/200/report/pdf_small.svg" alt="PDF of Slope" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                        <td>
+                            <a href="../../push/pvec-rrbvec-balanced/200/report/regression.svg">
+                                <img src="../../push/pvec-rrbvec-balanced/200/report/regression_small.svg" alt="Regression" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+        <section class="plots">
+            <a href="../../push/pvec-rrbvec-balanced/400/report/index.html">
+                <h4>push/pvec-rrbvec-balanced/400</h4>
+            </a>
+            <table width="100%">
+                <tbody>
+                    <tr>
+                        <td>
+                            <a href="../../push/pvec-rrbvec-balanced/400/report/pdf.svg">
+                                <img src="../../push/pvec-rrbvec-balanced/400/report/pdf_small.svg" alt="PDF of Slope" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                        <td>
+                            <a href="../../push/pvec-rrbvec-balanced/400/report/regression.svg">
+                                <img src="../../push/pvec-rrbvec-balanced/400/report/regression_small.svg" alt="Regression" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+        <section class="plots">
+            <a href="../../push/pvec-rrbvec-balanced/600/report/index.html">
+                <h4>push/pvec-rrbvec-balanced/600</h4>
+            </a>
+            <table width="100%">
+                <tbody>
+                    <tr>
+                        <td>
+                            <a href="../../push/pvec-rrbvec-balanced/600/report/pdf.svg">
+                                <img src="../../push/pvec-rrbvec-balanced/600/report/pdf_small.svg" alt="PDF of Slope" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                        <td>
+                            <a href="../../push/pvec-rrbvec-balanced/600/report/regression.svg">
+                                <img src="../../push/pvec-rrbvec-balanced/600/report/regression_small.svg" alt="Regression" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+        <section class="plots">
+            <a href="../../push/pvec-rrbvec-balanced/800/report/index.html">
+                <h4>push/pvec-rrbvec-balanced/800</h4>
+            </a>
+            <table width="100%">
+                <tbody>
+                    <tr>
+                        <td>
+                            <a href="../../push/pvec-rrbvec-balanced/800/report/pdf.svg">
+                                <img src="../../push/pvec-rrbvec-balanced/800/report/pdf_small.svg" alt="PDF of Slope" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                        <td>
+                            <a href="../../push/pvec-rrbvec-balanced/800/report/regression.svg">
+                                <img src="../../push/pvec-rrbvec-balanced/800/report/regression_small.svg" alt="Regression" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+        <section class="plots">
+            <a href="../../push/pvec-rrbvec-balanced/1000/report/index.html">
+                <h4>push/pvec-rrbvec-balanced/1000</h4>
+            </a>
+            <table width="100%">
+                <tbody>
+                    <tr>
+                        <td>
+                            <a href="../../push/pvec-rrbvec-balanced/1000/report/pdf.svg">
+                                <img src="../../push/pvec-rrbvec-balanced/1000/report/pdf_small.svg" alt="PDF of Slope" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                        <td>
+                            <a href="../../push/pvec-rrbvec-balanced/1000/report/regression.svg">
+                                <img src="../../push/pvec-rrbvec-balanced/1000/report/regression_small.svg" alt="Regression" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+        <section class="plots">
+            <a href="../../push/pvec-rrbvec-balanced/2000/report/index.html">
+                <h4>push/pvec-rrbvec-balanced/2000</h4>
+            </a>
+            <table width="100%">
+                <tbody>
+                    <tr>
+                        <td>
+                            <a href="../../push/pvec-rrbvec-balanced/2000/report/pdf.svg">
+                                <img src="../../push/pvec-rrbvec-balanced/2000/report/pdf_small.svg" alt="PDF of Slope" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                        <td>
+                            <a href="../../push/pvec-rrbvec-balanced/2000/report/regression.svg">
+                                <img src="../../push/pvec-rrbvec-balanced/2000/report/regression_small.svg" alt="Regression" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+        <section class="plots">
+            <a href="../../push/pvec-rrbvec-balanced/4000/report/index.html">
+                <h4>push/pvec-rrbvec-balanced/4000</h4>
+            </a>
+            <table width="100%">
+                <tbody>
+                    <tr>
+                        <td>
+                            <a href="../../push/pvec-rrbvec-balanced/4000/report/pdf.svg">
+                                <img src="../../push/pvec-rrbvec-balanced/4000/report/pdf_small.svg" alt="PDF of Slope" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                        <td>
+                            <a href="../../push/pvec-rrbvec-balanced/4000/report/regression.svg">
+                                <img src="../../push/pvec-rrbvec-balanced/4000/report/regression_small.svg" alt="Regression" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+        <section class="plots">
+            <a href="../../push/pvec-rrbvec-balanced/6000/report/index.html">
+                <h4>push/pvec-rrbvec-balanced/6000</h4>
+            </a>
+            <table width="100%">
+                <tbody>
+                    <tr>
+                        <td>
+                            <a href="../../push/pvec-rrbvec-balanced/6000/report/pdf.svg">
+                                <img src="../../push/pvec-rrbvec-balanced/6000/report/pdf_small.svg" alt="PDF of Slope" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                        <td>
+                            <a href="../../push/pvec-rrbvec-balanced/6000/report/regression.svg">
+                                <img src="../../push/pvec-rrbvec-balanced/6000/report/regression_small.svg" alt="Regression" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+        <section class="plots">
+            <a href="../../push/pvec-rrbvec-balanced/8000/report/index.html">
+                <h4>push/pvec-rrbvec-balanced/8000</h4>
+            </a>
+            <table width="100%">
+                <tbody>
+                    <tr>
+                        <td>
+                            <a href="../../push/pvec-rrbvec-balanced/8000/report/pdf.svg">
+                                <img src="../../push/pvec-rrbvec-balanced/8000/report/pdf_small.svg" alt="PDF of Slope" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                        <td>
+                            <a href="../../push/pvec-rrbvec-balanced/8000/report/regression.svg">
+                                <img src="../../push/pvec-rrbvec-balanced/8000/report/regression_small.svg" alt="Regression" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+        <section class="plots">
+            <a href="../../push/pvec-rrbvec-balanced/10000/report/index.html">
+                <h4>push/pvec-rrbvec-balanced/10000</h4>
+            </a>
+            <table width="100%">
+                <tbody>
+                    <tr>
+                        <td>
+                            <a href="../../push/pvec-rrbvec-balanced/10000/report/pdf.svg">
+                                <img src="../../push/pvec-rrbvec-balanced/10000/report/pdf_small.svg" alt="PDF of Slope" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                        <td>
+                            <a href="../../push/pvec-rrbvec-balanced/10000/report/regression.svg">
+                                <img src="../../push/pvec-rrbvec-balanced/10000/report/regression_small.svg" alt="Regression" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+        <section class="plots">
+            <a href="../../push/pvec-rrbvec-balanced/20000/report/index.html">
+                <h4>push/pvec-rrbvec-balanced/20000</h4>
+            </a>
+            <table width="100%">
+                <tbody>
+                    <tr>
+                        <td>
+                            <a href="../../push/pvec-rrbvec-balanced/20000/report/pdf.svg">
+                                <img src="../../push/pvec-rrbvec-balanced/20000/report/pdf_small.svg" alt="PDF of Slope" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                        <td>
+                            <a href="../../push/pvec-rrbvec-balanced/20000/report/regression.svg">
+                                <img src="../../push/pvec-rrbvec-balanced/20000/report/regression_small.svg" alt="Regression" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+        <section class="plots">
+            <a href="../../push/pvec-rrbvec-balanced/40000/report/index.html">
+                <h4>push/pvec-rrbvec-balanced/40000</h4>
+            </a>
+            <table width="100%">
+                <tbody>
+                    <tr>
+                        <td>
+                            <a href="../../push/pvec-rrbvec-balanced/40000/report/pdf.svg">
+                                <img src="../../push/pvec-rrbvec-balanced/40000/report/pdf_small.svg" alt="PDF of Slope" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                        <td>
+                            <a href="../../push/pvec-rrbvec-balanced/40000/report/regression.svg">
+                                <img src="../../push/pvec-rrbvec-balanced/40000/report/regression_small.svg" alt="Regression" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+        <section class="plots">
+            <a href="../../push/pvec-rrbvec-balanced/60000/report/index.html">
+                <h4>push/pvec-rrbvec-balanced/60000</h4>
+            </a>
+            <table width="100%">
+                <tbody>
+                    <tr>
+                        <td>
+                            <a href="../../push/pvec-rrbvec-balanced/60000/report/pdf.svg">
+                                <img src="../../push/pvec-rrbvec-balanced/60000/report/pdf_small.svg" alt="PDF of Slope" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                        <td>
+                            <a href="../../push/pvec-rrbvec-balanced/60000/report/regression.svg">
+                                <img src="../../push/pvec-rrbvec-balanced/60000/report/regression_small.svg" alt="Regression" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+        <section class="plots">
+            <a href="../../push/pvec-rrbvec-balanced/80000/report/index.html">
+                <h4>push/pvec-rrbvec-balanced/80000</h4>
+            </a>
+            <table width="100%">
+                <tbody>
+                    <tr>
+                        <td>
+                            <a href="../../push/pvec-rrbvec-balanced/80000/report/pdf.svg">
+                                <img src="../../push/pvec-rrbvec-balanced/80000/report/pdf_small.svg" alt="PDF of Slope" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                        <td>
+                            <a href="../../push/pvec-rrbvec-balanced/80000/report/regression.svg">
+                                <img src="../../push/pvec-rrbvec-balanced/80000/report/regression_small.svg" alt="Regression" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+        <section class="plots">
+            <a href="../../push/pvec-rrbvec-balanced/100000/report/index.html">
+                <h4>push/pvec-rrbvec-balanced/100000</h4>
+            </a>
+            <table width="100%">
+                <tbody>
+                    <tr>
+                        <td>
+                            <a href="../../push/pvec-rrbvec-balanced/100000/report/pdf.svg">
+                                <img src="../../push/pvec-rrbvec-balanced/100000/report/pdf_small.svg" alt="PDF of Slope" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                        <td>
+                            <a href="../../push/pvec-rrbvec-balanced/100000/report/regression.svg">
+                                <img src="../../push/pvec-rrbvec-balanced/100000/report/regression_small.svg" alt="Regression" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+        <section class="plots">
+            <a href="../../push/pvec-rrbvec-balanced/200000/report/index.html">
+                <h4>push/pvec-rrbvec-balanced/200000</h4>
+            </a>
+            <table width="100%">
+                <tbody>
+                    <tr>
+                        <td>
+                            <a href="../../push/pvec-rrbvec-balanced/200000/report/pdf.svg">
+                                <img src="../../push/pvec-rrbvec-balanced/200000/report/pdf_small.svg" alt="PDF of Slope" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                        <td>
+                            <a href="../../push/pvec-rrbvec-balanced/200000/report/regression.svg">
+                                <img src="../../push/pvec-rrbvec-balanced/200000/report/regression_small.svg" alt="Regression" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+        <section class="plots">
+            <a href="../../push/pvec-rrbvec-balanced/400000/report/index.html">
+                <h4>push/pvec-rrbvec-balanced/400000</h4>
+            </a>
+            <table width="100%">
+                <tbody>
+                    <tr>
+                        <td>
+                            <a href="../../push/pvec-rrbvec-balanced/400000/report/pdf.svg">
+                                <img src="../../push/pvec-rrbvec-balanced/400000/report/pdf_small.svg" alt="PDF of Slope" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                        <td>
+                            <a href="../../push/pvec-rrbvec-balanced/400000/report/regression.svg">
+                                <img src="../../push/pvec-rrbvec-balanced/400000/report/regression_small.svg" alt="Regression" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+        <section class="plots">
+            <a href="../../push/pvec-rrbvec-balanced/600000/report/index.html">
+                <h4>push/pvec-rrbvec-balanced/600000</h4>
+            </a>
+            <table width="100%">
+                <tbody>
+                    <tr>
+                        <td>
+                            <a href="../../push/pvec-rrbvec-balanced/600000/report/pdf.svg">
+                                <img src="../../push/pvec-rrbvec-balanced/600000/report/pdf_small.svg" alt="PDF of Slope" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                        <td>
+                            <a href="../../push/pvec-rrbvec-balanced/600000/report/regression.svg">
+                                <img src="../../push/pvec-rrbvec-balanced/600000/report/regression_small.svg" alt="Regression" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+        <section class="plots">
+            <a href="../../push/pvec-rrbvec-balanced/800000/report/index.html">
+                <h4>push/pvec-rrbvec-balanced/800000</h4>
+            </a>
+            <table width="100%">
+                <tbody>
+                    <tr>
+                        <td>
+                            <a href="../../push/pvec-rrbvec-balanced/800000/report/pdf.svg">
+                                <img src="../../push/pvec-rrbvec-balanced/800000/report/pdf_small.svg" alt="PDF of Slope" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                        <td>
+                            <a href="../../push/pvec-rrbvec-balanced/800000/report/regression.svg">
+                                <img src="../../push/pvec-rrbvec-balanced/800000/report/regression_small.svg" alt="Regression" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+        <section class="plots">
+            <a href="../../push/pvec-rrbvec-balanced/1000000/report/index.html">
+                <h4>push/pvec-rrbvec-balanced/1000000</h4>
+            </a>
+            <table width="100%">
+                <tbody>
+                    <tr>
+                        <td>
+                            <a href="../../push/pvec-rrbvec-balanced/1000000/report/pdf.svg">
+                                <img src="../../push/pvec-rrbvec-balanced/1000000/report/pdf_small.svg" alt="PDF of Slope" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                        <td>
+                            <a href="../../push/pvec-rrbvec-balanced/1000000/report/regression.svg">
+                                <img src="../../push/pvec-rrbvec-balanced/1000000/report/regression_small.svg" alt="Regression" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+        <section class="plots">
+            <a href="../../push/pvec-std/20/report/index.html">
+                <h4>push/pvec-std/20</h4>
+            </a>
+            <table width="100%">
+                <tbody>
+                    <tr>
+                        <td>
+                            <a href="../../push/pvec-std/20/report/pdf.svg">
+                                <img src="../../push/pvec-std/20/report/pdf_small.svg" alt="PDF of Slope" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                        <td>
+                            <a href="../../push/pvec-std/20/report/regression.svg">
+                                <img src="../../push/pvec-std/20/report/regression_small.svg" alt="Regression" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+        <section class="plots">
+            <a href="../../push/pvec-std/40/report/index.html">
+                <h4>push/pvec-std/40</h4>
+            </a>
+            <table width="100%">
+                <tbody>
+                    <tr>
+                        <td>
+                            <a href="../../push/pvec-std/40/report/pdf.svg">
+                                <img src="../../push/pvec-std/40/report/pdf_small.svg" alt="PDF of Slope" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                        <td>
+                            <a href="../../push/pvec-std/40/report/regression.svg">
+                                <img src="../../push/pvec-std/40/report/regression_small.svg" alt="Regression" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+        <section class="plots">
+            <a href="../../push/pvec-std/60/report/index.html">
+                <h4>push/pvec-std/60</h4>
+            </a>
+            <table width="100%">
+                <tbody>
+                    <tr>
+                        <td>
+                            <a href="../../push/pvec-std/60/report/pdf.svg">
+                                <img src="../../push/pvec-std/60/report/pdf_small.svg" alt="PDF of Slope" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                        <td>
+                            <a href="../../push/pvec-std/60/report/regression.svg">
+                                <img src="../../push/pvec-std/60/report/regression_small.svg" alt="Regression" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+        <section class="plots">
+            <a href="../../push/pvec-std/80/report/index.html">
+                <h4>push/pvec-std/80</h4>
+            </a>
+            <table width="100%">
+                <tbody>
+                    <tr>
+                        <td>
+                            <a href="../../push/pvec-std/80/report/pdf.svg">
+                                <img src="../../push/pvec-std/80/report/pdf_small.svg" alt="PDF of Slope" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                        <td>
+                            <a href="../../push/pvec-std/80/report/regression.svg">
+                                <img src="../../push/pvec-std/80/report/regression_small.svg" alt="Regression" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+        <section class="plots">
+            <a href="../../push/pvec-std/100/report/index.html">
+                <h4>push/pvec-std/100</h4>
+            </a>
+            <table width="100%">
+                <tbody>
+                    <tr>
+                        <td>
+                            <a href="../../push/pvec-std/100/report/pdf.svg">
+                                <img src="../../push/pvec-std/100/report/pdf_small.svg" alt="PDF of Slope" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                        <td>
+                            <a href="../../push/pvec-std/100/report/regression.svg">
+                                <img src="../../push/pvec-std/100/report/regression_small.svg" alt="Regression" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+        <section class="plots">
+            <a href="../../push/pvec-std/200/report/index.html">
+                <h4>push/pvec-std/200</h4>
+            </a>
+            <table width="100%">
+                <tbody>
+                    <tr>
+                        <td>
+                            <a href="../../push/pvec-std/200/report/pdf.svg">
+                                <img src="../../push/pvec-std/200/report/pdf_small.svg" alt="PDF of Slope" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                        <td>
+                            <a href="../../push/pvec-std/200/report/regression.svg">
+                                <img src="../../push/pvec-std/200/report/regression_small.svg" alt="Regression" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+        <section class="plots">
+            <a href="../../push/pvec-std/400/report/index.html">
+                <h4>push/pvec-std/400</h4>
+            </a>
+            <table width="100%">
+                <tbody>
+                    <tr>
+                        <td>
+                            <a href="../../push/pvec-std/400/report/pdf.svg">
+                                <img src="../../push/pvec-std/400/report/pdf_small.svg" alt="PDF of Slope" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                        <td>
+                            <a href="../../push/pvec-std/400/report/regression.svg">
+                                <img src="../../push/pvec-std/400/report/regression_small.svg" alt="Regression" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+        <section class="plots">
+            <a href="../../push/pvec-std/600/report/index.html">
+                <h4>push/pvec-std/600</h4>
+            </a>
+            <table width="100%">
+                <tbody>
+                    <tr>
+                        <td>
+                            <a href="../../push/pvec-std/600/report/pdf.svg">
+                                <img src="../../push/pvec-std/600/report/pdf_small.svg" alt="PDF of Slope" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                        <td>
+                            <a href="../../push/pvec-std/600/report/regression.svg">
+                                <img src="../../push/pvec-std/600/report/regression_small.svg" alt="Regression" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+        <section class="plots">
+            <a href="../../push/pvec-std/800/report/index.html">
+                <h4>push/pvec-std/800</h4>
+            </a>
+            <table width="100%">
+                <tbody>
+                    <tr>
+                        <td>
+                            <a href="../../push/pvec-std/800/report/pdf.svg">
+                                <img src="../../push/pvec-std/800/report/pdf_small.svg" alt="PDF of Slope" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                        <td>
+                            <a href="../../push/pvec-std/800/report/regression.svg">
+                                <img src="../../push/pvec-std/800/report/regression_small.svg" alt="Regression" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+        <section class="plots">
+            <a href="../../push/pvec-std/1000/report/index.html">
+                <h4>push/pvec-std/1000</h4>
+            </a>
+            <table width="100%">
+                <tbody>
+                    <tr>
+                        <td>
+                            <a href="../../push/pvec-std/1000/report/pdf.svg">
+                                <img src="../../push/pvec-std/1000/report/pdf_small.svg" alt="PDF of Slope" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                        <td>
+                            <a href="../../push/pvec-std/1000/report/regression.svg">
+                                <img src="../../push/pvec-std/1000/report/regression_small.svg" alt="Regression" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+        <section class="plots">
+            <a href="../../push/pvec-std/2000/report/index.html">
+                <h4>push/pvec-std/2000</h4>
+            </a>
+            <table width="100%">
+                <tbody>
+                    <tr>
+                        <td>
+                            <a href="../../push/pvec-std/2000/report/pdf.svg">
+                                <img src="../../push/pvec-std/2000/report/pdf_small.svg" alt="PDF of Slope" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                        <td>
+                            <a href="../../push/pvec-std/2000/report/regression.svg">
+                                <img src="../../push/pvec-std/2000/report/regression_small.svg" alt="Regression" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+        <section class="plots">
+            <a href="../../push/pvec-std/4000/report/index.html">
+                <h4>push/pvec-std/4000</h4>
+            </a>
+            <table width="100%">
+                <tbody>
+                    <tr>
+                        <td>
+                            <a href="../../push/pvec-std/4000/report/pdf.svg">
+                                <img src="../../push/pvec-std/4000/report/pdf_small.svg" alt="PDF of Slope" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                        <td>
+                            <a href="../../push/pvec-std/4000/report/regression.svg">
+                                <img src="../../push/pvec-std/4000/report/regression_small.svg" alt="Regression" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+        <section class="plots">
+            <a href="../../push/pvec-std/6000/report/index.html">
+                <h4>push/pvec-std/6000</h4>
+            </a>
+            <table width="100%">
+                <tbody>
+                    <tr>
+                        <td>
+                            <a href="../../push/pvec-std/6000/report/pdf.svg">
+                                <img src="../../push/pvec-std/6000/report/pdf_small.svg" alt="PDF of Slope" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                        <td>
+                            <a href="../../push/pvec-std/6000/report/regression.svg">
+                                <img src="../../push/pvec-std/6000/report/regression_small.svg" alt="Regression" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+        <section class="plots">
+            <a href="../../push/pvec-std/8000/report/index.html">
+                <h4>push/pvec-std/8000</h4>
+            </a>
+            <table width="100%">
+                <tbody>
+                    <tr>
+                        <td>
+                            <a href="../../push/pvec-std/8000/report/pdf.svg">
+                                <img src="../../push/pvec-std/8000/report/pdf_small.svg" alt="PDF of Slope" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                        <td>
+                            <a href="../../push/pvec-std/8000/report/regression.svg">
+                                <img src="../../push/pvec-std/8000/report/regression_small.svg" alt="Regression" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+        <section class="plots">
+            <a href="../../push/pvec-std/10000/report/index.html">
+                <h4>push/pvec-std/10000</h4>
+            </a>
+            <table width="100%">
+                <tbody>
+                    <tr>
+                        <td>
+                            <a href="../../push/pvec-std/10000/report/pdf.svg">
+                                <img src="../../push/pvec-std/10000/report/pdf_small.svg" alt="PDF of Slope" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                        <td>
+                            <a href="../../push/pvec-std/10000/report/regression.svg">
+                                <img src="../../push/pvec-std/10000/report/regression_small.svg" alt="Regression" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+        <section class="plots">
+            <a href="../../push/pvec-std/20000/report/index.html">
+                <h4>push/pvec-std/20000</h4>
+            </a>
+            <table width="100%">
+                <tbody>
+                    <tr>
+                        <td>
+                            <a href="../../push/pvec-std/20000/report/pdf.svg">
+                                <img src="../../push/pvec-std/20000/report/pdf_small.svg" alt="PDF of Slope" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                        <td>
+                            <a href="../../push/pvec-std/20000/report/regression.svg">
+                                <img src="../../push/pvec-std/20000/report/regression_small.svg" alt="Regression" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+        <section class="plots">
+            <a href="../../push/pvec-std/40000/report/index.html">
+                <h4>push/pvec-std/40000</h4>
+            </a>
+            <table width="100%">
+                <tbody>
+                    <tr>
+                        <td>
+                            <a href="../../push/pvec-std/40000/report/pdf.svg">
+                                <img src="../../push/pvec-std/40000/report/pdf_small.svg" alt="PDF of Slope" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                        <td>
+                            <a href="../../push/pvec-std/40000/report/regression.svg">
+                                <img src="../../push/pvec-std/40000/report/regression_small.svg" alt="Regression" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+        <section class="plots">
+            <a href="../../push/pvec-std/60000/report/index.html">
+                <h4>push/pvec-std/60000</h4>
+            </a>
+            <table width="100%">
+                <tbody>
+                    <tr>
+                        <td>
+                            <a href="../../push/pvec-std/60000/report/pdf.svg">
+                                <img src="../../push/pvec-std/60000/report/pdf_small.svg" alt="PDF of Slope" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                        <td>
+                            <a href="../../push/pvec-std/60000/report/regression.svg">
+                                <img src="../../push/pvec-std/60000/report/regression_small.svg" alt="Regression" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+        <section class="plots">
+            <a href="../../push/pvec-std/80000/report/index.html">
+                <h4>push/pvec-std/80000</h4>
+            </a>
+            <table width="100%">
+                <tbody>
+                    <tr>
+                        <td>
+                            <a href="../../push/pvec-std/80000/report/pdf.svg">
+                                <img src="../../push/pvec-std/80000/report/pdf_small.svg" alt="PDF of Slope" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                        <td>
+                            <a href="../../push/pvec-std/80000/report/regression.svg">
+                                <img src="../../push/pvec-std/80000/report/regression_small.svg" alt="Regression" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+        <section class="plots">
+            <a href="../../push/pvec-std/100000/report/index.html">
+                <h4>push/pvec-std/100000</h4>
+            </a>
+            <table width="100%">
+                <tbody>
+                    <tr>
+                        <td>
+                            <a href="../../push/pvec-std/100000/report/pdf.svg">
+                                <img src="../../push/pvec-std/100000/report/pdf_small.svg" alt="PDF of Slope" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                        <td>
+                            <a href="../../push/pvec-std/100000/report/regression.svg">
+                                <img src="../../push/pvec-std/100000/report/regression_small.svg" alt="Regression" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+        <section class="plots">
+            <a href="../../push/pvec-std/200000/report/index.html">
+                <h4>push/pvec-std/200000</h4>
+            </a>
+            <table width="100%">
+                <tbody>
+                    <tr>
+                        <td>
+                            <a href="../../push/pvec-std/200000/report/pdf.svg">
+                                <img src="../../push/pvec-std/200000/report/pdf_small.svg" alt="PDF of Slope" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                        <td>
+                            <a href="../../push/pvec-std/200000/report/regression.svg">
+                                <img src="../../push/pvec-std/200000/report/regression_small.svg" alt="Regression" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+        <section class="plots">
+            <a href="../../push/pvec-std/400000/report/index.html">
+                <h4>push/pvec-std/400000</h4>
+            </a>
+            <table width="100%">
+                <tbody>
+                    <tr>
+                        <td>
+                            <a href="../../push/pvec-std/400000/report/pdf.svg">
+                                <img src="../../push/pvec-std/400000/report/pdf_small.svg" alt="PDF of Slope" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                        <td>
+                            <a href="../../push/pvec-std/400000/report/regression.svg">
+                                <img src="../../push/pvec-std/400000/report/regression_small.svg" alt="Regression" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+        <section class="plots">
+            <a href="../../push/pvec-std/600000/report/index.html">
+                <h4>push/pvec-std/600000</h4>
+            </a>
+            <table width="100%">
+                <tbody>
+                    <tr>
+                        <td>
+                            <a href="../../push/pvec-std/600000/report/pdf.svg">
+                                <img src="../../push/pvec-std/600000/report/pdf_small.svg" alt="PDF of Slope" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                        <td>
+                            <a href="../../push/pvec-std/600000/report/regression.svg">
+                                <img src="../../push/pvec-std/600000/report/regression_small.svg" alt="Regression" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+        <section class="plots">
+            <a href="../../push/pvec-std/800000/report/index.html">
+                <h4>push/pvec-std/800000</h4>
+            </a>
+            <table width="100%">
+                <tbody>
+                    <tr>
+                        <td>
+                            <a href="../../push/pvec-std/800000/report/pdf.svg">
+                                <img src="../../push/pvec-std/800000/report/pdf_small.svg" alt="PDF of Slope" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                        <td>
+                            <a href="../../push/pvec-std/800000/report/regression.svg">
+                                <img src="../../push/pvec-std/800000/report/regression_small.svg" alt="Regression" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+        <section class="plots">
+            <a href="../../push/pvec-std/1000000/report/index.html">
+                <h4>push/pvec-std/1000000</h4>
+            </a>
+            <table width="100%">
+                <tbody>
+                    <tr>
+                        <td>
+                            <a href="../../push/pvec-std/1000000/report/pdf.svg">
+                                <img src="../../push/pvec-std/1000000/report/pdf_small.svg" alt="PDF of Slope" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                        <td>
+                            <a href="../../push/pvec-std/1000000/report/regression.svg">
+                                <img src="../../push/pvec-std/1000000/report/regression_small.svg" alt="Regression" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+        <section class="plots">
+            <a href="../../push/rbvec/20/report/index.html">
+                <h4>push/rbvec/20</h4>
+            </a>
+            <table width="100%">
+                <tbody>
+                    <tr>
+                        <td>
+                            <a href="../../push/rbvec/20/report/pdf.svg">
+                                <img src="../../push/rbvec/20/report/pdf_small.svg" alt="PDF of Slope" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                        <td>
+                            <a href="../../push/rbvec/20/report/regression.svg">
+                                <img src="../../push/rbvec/20/report/regression_small.svg" alt="Regression" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+        <section class="plots">
+            <a href="../../push/rbvec/40/report/index.html">
+                <h4>push/rbvec/40</h4>
+            </a>
+            <table width="100%">
+                <tbody>
+                    <tr>
+                        <td>
+                            <a href="../../push/rbvec/40/report/pdf.svg">
+                                <img src="../../push/rbvec/40/report/pdf_small.svg" alt="PDF of Slope" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                        <td>
+                            <a href="../../push/rbvec/40/report/regression.svg">
+                                <img src="../../push/rbvec/40/report/regression_small.svg" alt="Regression" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+        <section class="plots">
+            <a href="../../push/rbvec/60/report/index.html">
+                <h4>push/rbvec/60</h4>
+            </a>
+            <table width="100%">
+                <tbody>
+                    <tr>
+                        <td>
+                            <a href="../../push/rbvec/60/report/pdf.svg">
+                                <img src="../../push/rbvec/60/report/pdf_small.svg" alt="PDF of Slope" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                        <td>
+                            <a href="../../push/rbvec/60/report/regression.svg">
+                                <img src="../../push/rbvec/60/report/regression_small.svg" alt="Regression" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+        <section class="plots">
+            <a href="../../push/rbvec/80/report/index.html">
+                <h4>push/rbvec/80</h4>
+            </a>
+            <table width="100%">
+                <tbody>
+                    <tr>
+                        <td>
+                            <a href="../../push/rbvec/80/report/pdf.svg">
+                                <img src="../../push/rbvec/80/report/pdf_small.svg" alt="PDF of Slope" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                        <td>
+                            <a href="../../push/rbvec/80/report/regression.svg">
+                                <img src="../../push/rbvec/80/report/regression_small.svg" alt="Regression" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+        <section class="plots">
+            <a href="../../push/rbvec/100/report/index.html">
+                <h4>push/rbvec/100</h4>
+            </a>
+            <table width="100%">
+                <tbody>
+                    <tr>
+                        <td>
+                            <a href="../../push/rbvec/100/report/pdf.svg">
+                                <img src="../../push/rbvec/100/report/pdf_small.svg" alt="PDF of Slope" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                        <td>
+                            <a href="../../push/rbvec/100/report/regression.svg">
+                                <img src="../../push/rbvec/100/report/regression_small.svg" alt="Regression" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+        <section class="plots">
+            <a href="../../push/rbvec/200/report/index.html">
+                <h4>push/rbvec/200</h4>
+            </a>
+            <table width="100%">
+                <tbody>
+                    <tr>
+                        <td>
+                            <a href="../../push/rbvec/200/report/pdf.svg">
+                                <img src="../../push/rbvec/200/report/pdf_small.svg" alt="PDF of Slope" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                        <td>
+                            <a href="../../push/rbvec/200/report/regression.svg">
+                                <img src="../../push/rbvec/200/report/regression_small.svg" alt="Regression" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+        <section class="plots">
+            <a href="../../push/rbvec/400/report/index.html">
+                <h4>push/rbvec/400</h4>
+            </a>
+            <table width="100%">
+                <tbody>
+                    <tr>
+                        <td>
+                            <a href="../../push/rbvec/400/report/pdf.svg">
+                                <img src="../../push/rbvec/400/report/pdf_small.svg" alt="PDF of Slope" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                        <td>
+                            <a href="../../push/rbvec/400/report/regression.svg">
+                                <img src="../../push/rbvec/400/report/regression_small.svg" alt="Regression" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+        <section class="plots">
+            <a href="../../push/rbvec/600/report/index.html">
+                <h4>push/rbvec/600</h4>
+            </a>
+            <table width="100%">
+                <tbody>
+                    <tr>
+                        <td>
+                            <a href="../../push/rbvec/600/report/pdf.svg">
+                                <img src="../../push/rbvec/600/report/pdf_small.svg" alt="PDF of Slope" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                        <td>
+                            <a href="../../push/rbvec/600/report/regression.svg">
+                                <img src="../../push/rbvec/600/report/regression_small.svg" alt="Regression" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+        <section class="plots">
+            <a href="../../push/rbvec/800/report/index.html">
+                <h4>push/rbvec/800</h4>
+            </a>
+            <table width="100%">
+                <tbody>
+                    <tr>
+                        <td>
+                            <a href="../../push/rbvec/800/report/pdf.svg">
+                                <img src="../../push/rbvec/800/report/pdf_small.svg" alt="PDF of Slope" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                        <td>
+                            <a href="../../push/rbvec/800/report/regression.svg">
+                                <img src="../../push/rbvec/800/report/regression_small.svg" alt="Regression" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+        <section class="plots">
+            <a href="../../push/rbvec/1000/report/index.html">
+                <h4>push/rbvec/1000</h4>
+            </a>
+            <table width="100%">
+                <tbody>
+                    <tr>
+                        <td>
+                            <a href="../../push/rbvec/1000/report/pdf.svg">
+                                <img src="../../push/rbvec/1000/report/pdf_small.svg" alt="PDF of Slope" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                        <td>
+                            <a href="../../push/rbvec/1000/report/regression.svg">
+                                <img src="../../push/rbvec/1000/report/regression_small.svg" alt="Regression" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+        <section class="plots">
+            <a href="../../push/rbvec/2000/report/index.html">
+                <h4>push/rbvec/2000</h4>
+            </a>
+            <table width="100%">
+                <tbody>
+                    <tr>
+                        <td>
+                            <a href="../../push/rbvec/2000/report/pdf.svg">
+                                <img src="../../push/rbvec/2000/report/pdf_small.svg" alt="PDF of Slope" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                        <td>
+                            <a href="../../push/rbvec/2000/report/regression.svg">
+                                <img src="../../push/rbvec/2000/report/regression_small.svg" alt="Regression" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+        <section class="plots">
+            <a href="../../push/rbvec/4000/report/index.html">
+                <h4>push/rbvec/4000</h4>
+            </a>
+            <table width="100%">
+                <tbody>
+                    <tr>
+                        <td>
+                            <a href="../../push/rbvec/4000/report/pdf.svg">
+                                <img src="../../push/rbvec/4000/report/pdf_small.svg" alt="PDF of Slope" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                        <td>
+                            <a href="../../push/rbvec/4000/report/regression.svg">
+                                <img src="../../push/rbvec/4000/report/regression_small.svg" alt="Regression" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+        <section class="plots">
+            <a href="../../push/rbvec/6000/report/index.html">
+                <h4>push/rbvec/6000</h4>
+            </a>
+            <table width="100%">
+                <tbody>
+                    <tr>
+                        <td>
+                            <a href="../../push/rbvec/6000/report/pdf.svg">
+                                <img src="../../push/rbvec/6000/report/pdf_small.svg" alt="PDF of Slope" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                        <td>
+                            <a href="../../push/rbvec/6000/report/regression.svg">
+                                <img src="../../push/rbvec/6000/report/regression_small.svg" alt="Regression" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+        <section class="plots">
+            <a href="../../push/rbvec/8000/report/index.html">
+                <h4>push/rbvec/8000</h4>
+            </a>
+            <table width="100%">
+                <tbody>
+                    <tr>
+                        <td>
+                            <a href="../../push/rbvec/8000/report/pdf.svg">
+                                <img src="../../push/rbvec/8000/report/pdf_small.svg" alt="PDF of Slope" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                        <td>
+                            <a href="../../push/rbvec/8000/report/regression.svg">
+                                <img src="../../push/rbvec/8000/report/regression_small.svg" alt="Regression" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+        <section class="plots">
+            <a href="../../push/rbvec/10000/report/index.html">
+                <h4>push/rbvec/10000</h4>
+            </a>
+            <table width="100%">
+                <tbody>
+                    <tr>
+                        <td>
+                            <a href="../../push/rbvec/10000/report/pdf.svg">
+                                <img src="../../push/rbvec/10000/report/pdf_small.svg" alt="PDF of Slope" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                        <td>
+                            <a href="../../push/rbvec/10000/report/regression.svg">
+                                <img src="../../push/rbvec/10000/report/regression_small.svg" alt="Regression" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+        <section class="plots">
+            <a href="../../push/rbvec/20000/report/index.html">
+                <h4>push/rbvec/20000</h4>
+            </a>
+            <table width="100%">
+                <tbody>
+                    <tr>
+                        <td>
+                            <a href="../../push/rbvec/20000/report/pdf.svg">
+                                <img src="../../push/rbvec/20000/report/pdf_small.svg" alt="PDF of Slope" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                        <td>
+                            <a href="../../push/rbvec/20000/report/regression.svg">
+                                <img src="../../push/rbvec/20000/report/regression_small.svg" alt="Regression" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+        <section class="plots">
+            <a href="../../push/rbvec/40000/report/index.html">
+                <h4>push/rbvec/40000</h4>
+            </a>
+            <table width="100%">
+                <tbody>
+                    <tr>
+                        <td>
+                            <a href="../../push/rbvec/40000/report/pdf.svg">
+                                <img src="../../push/rbvec/40000/report/pdf_small.svg" alt="PDF of Slope" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                        <td>
+                            <a href="../../push/rbvec/40000/report/regression.svg">
+                                <img src="../../push/rbvec/40000/report/regression_small.svg" alt="Regression" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+        <section class="plots">
+            <a href="../../push/rbvec/60000/report/index.html">
+                <h4>push/rbvec/60000</h4>
+            </a>
+            <table width="100%">
+                <tbody>
+                    <tr>
+                        <td>
+                            <a href="../../push/rbvec/60000/report/pdf.svg">
+                                <img src="../../push/rbvec/60000/report/pdf_small.svg" alt="PDF of Slope" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                        <td>
+                            <a href="../../push/rbvec/60000/report/regression.svg">
+                                <img src="../../push/rbvec/60000/report/regression_small.svg" alt="Regression" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+        <section class="plots">
+            <a href="../../push/rbvec/80000/report/index.html">
+                <h4>push/rbvec/80000</h4>
+            </a>
+            <table width="100%">
+                <tbody>
+                    <tr>
+                        <td>
+                            <a href="../../push/rbvec/80000/report/pdf.svg">
+                                <img src="../../push/rbvec/80000/report/pdf_small.svg" alt="PDF of Slope" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                        <td>
+                            <a href="../../push/rbvec/80000/report/regression.svg">
+                                <img src="../../push/rbvec/80000/report/regression_small.svg" alt="Regression" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+        <section class="plots">
+            <a href="../../push/rbvec/100000/report/index.html">
+                <h4>push/rbvec/100000</h4>
+            </a>
+            <table width="100%">
+                <tbody>
+                    <tr>
+                        <td>
+                            <a href="../../push/rbvec/100000/report/pdf.svg">
+                                <img src="../../push/rbvec/100000/report/pdf_small.svg" alt="PDF of Slope" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                        <td>
+                            <a href="../../push/rbvec/100000/report/regression.svg">
+                                <img src="../../push/rbvec/100000/report/regression_small.svg" alt="Regression" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+        <section class="plots">
+            <a href="../../push/rbvec/200000/report/index.html">
+                <h4>push/rbvec/200000</h4>
+            </a>
+            <table width="100%">
+                <tbody>
+                    <tr>
+                        <td>
+                            <a href="../../push/rbvec/200000/report/pdf.svg">
+                                <img src="../../push/rbvec/200000/report/pdf_small.svg" alt="PDF of Slope" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                        <td>
+                            <a href="../../push/rbvec/200000/report/regression.svg">
+                                <img src="../../push/rbvec/200000/report/regression_small.svg" alt="Regression" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+        <section class="plots">
+            <a href="../../push/rbvec/400000/report/index.html">
+                <h4>push/rbvec/400000</h4>
+            </a>
+            <table width="100%">
+                <tbody>
+                    <tr>
+                        <td>
+                            <a href="../../push/rbvec/400000/report/pdf.svg">
+                                <img src="../../push/rbvec/400000/report/pdf_small.svg" alt="PDF of Slope" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                        <td>
+                            <a href="../../push/rbvec/400000/report/regression.svg">
+                                <img src="../../push/rbvec/400000/report/regression_small.svg" alt="Regression" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+        <section class="plots">
+            <a href="../../push/rbvec/600000/report/index.html">
+                <h4>push/rbvec/600000</h4>
+            </a>
+            <table width="100%">
+                <tbody>
+                    <tr>
+                        <td>
+                            <a href="../../push/rbvec/600000/report/pdf.svg">
+                                <img src="../../push/rbvec/600000/report/pdf_small.svg" alt="PDF of Slope" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                        <td>
+                            <a href="../../push/rbvec/600000/report/regression.svg">
+                                <img src="../../push/rbvec/600000/report/regression_small.svg" alt="Regression" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+        <section class="plots">
+            <a href="../../push/rbvec/800000/report/index.html">
+                <h4>push/rbvec/800000</h4>
+            </a>
+            <table width="100%">
+                <tbody>
+                    <tr>
+                        <td>
+                            <a href="../../push/rbvec/800000/report/pdf.svg">
+                                <img src="../../push/rbvec/800000/report/pdf_small.svg" alt="PDF of Slope" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                        <td>
+                            <a href="../../push/rbvec/800000/report/regression.svg">
+                                <img src="../../push/rbvec/800000/report/regression_small.svg" alt="Regression" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+        <section class="plots">
+            <a href="../../push/rbvec/1000000/report/index.html">
+                <h4>push/rbvec/1000000</h4>
+            </a>
+            <table width="100%">
+                <tbody>
+                    <tr>
+                        <td>
+                            <a href="../../push/rbvec/1000000/report/pdf.svg">
+                                <img src="../../push/rbvec/1000000/report/pdf_small.svg" alt="PDF of Slope" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                        <td>
+                            <a href="../../push/rbvec/1000000/report/regression.svg">
+                                <img src="../../push/rbvec/1000000/report/regression_small.svg" alt="Regression" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+        <section class="plots">
+            <a href="../../push/std-vec/20/report/index.html">
+                <h4>push/std-vec/20</h4>
+            </a>
+            <table width="100%">
+                <tbody>
+                    <tr>
+                        <td>
+                            <a href="../../push/std-vec/20/report/pdf.svg">
+                                <img src="../../push/std-vec/20/report/pdf_small.svg" alt="PDF of Slope" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                        <td>
+                            <a href="../../push/std-vec/20/report/regression.svg">
+                                <img src="../../push/std-vec/20/report/regression_small.svg" alt="Regression" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+        <section class="plots">
+            <a href="../../push/std-vec/40/report/index.html">
+                <h4>push/std-vec/40</h4>
+            </a>
+            <table width="100%">
+                <tbody>
+                    <tr>
+                        <td>
+                            <a href="../../push/std-vec/40/report/pdf.svg">
+                                <img src="../../push/std-vec/40/report/pdf_small.svg" alt="PDF of Slope" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                        <td>
+                            <a href="../../push/std-vec/40/report/regression.svg">
+                                <img src="../../push/std-vec/40/report/regression_small.svg" alt="Regression" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+        <section class="plots">
+            <a href="../../push/std-vec/60/report/index.html">
+                <h4>push/std-vec/60</h4>
+            </a>
+            <table width="100%">
+                <tbody>
+                    <tr>
+                        <td>
+                            <a href="../../push/std-vec/60/report/pdf.svg">
+                                <img src="../../push/std-vec/60/report/pdf_small.svg" alt="PDF of Slope" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                        <td>
+                            <a href="../../push/std-vec/60/report/regression.svg">
+                                <img src="../../push/std-vec/60/report/regression_small.svg" alt="Regression" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+        <section class="plots">
+            <a href="../../push/std-vec/80/report/index.html">
+                <h4>push/std-vec/80</h4>
+            </a>
+            <table width="100%">
+                <tbody>
+                    <tr>
+                        <td>
+                            <a href="../../push/std-vec/80/report/pdf.svg">
+                                <img src="../../push/std-vec/80/report/pdf_small.svg" alt="PDF of Slope" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                        <td>
+                            <a href="../../push/std-vec/80/report/regression.svg">
+                                <img src="../../push/std-vec/80/report/regression_small.svg" alt="Regression" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+        <section class="plots">
+            <a href="../../push/std-vec/100/report/index.html">
+                <h4>push/std-vec/100</h4>
+            </a>
+            <table width="100%">
+                <tbody>
+                    <tr>
+                        <td>
+                            <a href="../../push/std-vec/100/report/pdf.svg">
+                                <img src="../../push/std-vec/100/report/pdf_small.svg" alt="PDF of Slope" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                        <td>
+                            <a href="../../push/std-vec/100/report/regression.svg">
+                                <img src="../../push/std-vec/100/report/regression_small.svg" alt="Regression" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+        <section class="plots">
+            <a href="../../push/std-vec/200/report/index.html">
+                <h4>push/std-vec/200</h4>
+            </a>
+            <table width="100%">
+                <tbody>
+                    <tr>
+                        <td>
+                            <a href="../../push/std-vec/200/report/pdf.svg">
+                                <img src="../../push/std-vec/200/report/pdf_small.svg" alt="PDF of Slope" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                        <td>
+                            <a href="../../push/std-vec/200/report/regression.svg">
+                                <img src="../../push/std-vec/200/report/regression_small.svg" alt="Regression" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+        <section class="plots">
+            <a href="../../push/std-vec/400/report/index.html">
+                <h4>push/std-vec/400</h4>
+            </a>
+            <table width="100%">
+                <tbody>
+                    <tr>
+                        <td>
+                            <a href="../../push/std-vec/400/report/pdf.svg">
+                                <img src="../../push/std-vec/400/report/pdf_small.svg" alt="PDF of Slope" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                        <td>
+                            <a href="../../push/std-vec/400/report/regression.svg">
+                                <img src="../../push/std-vec/400/report/regression_small.svg" alt="Regression" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+        <section class="plots">
+            <a href="../../push/std-vec/600/report/index.html">
+                <h4>push/std-vec/600</h4>
+            </a>
+            <table width="100%">
+                <tbody>
+                    <tr>
+                        <td>
+                            <a href="../../push/std-vec/600/report/pdf.svg">
+                                <img src="../../push/std-vec/600/report/pdf_small.svg" alt="PDF of Slope" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                        <td>
+                            <a href="../../push/std-vec/600/report/regression.svg">
+                                <img src="../../push/std-vec/600/report/regression_small.svg" alt="Regression" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+        <section class="plots">
+            <a href="../../push/std-vec/800/report/index.html">
+                <h4>push/std-vec/800</h4>
+            </a>
+            <table width="100%">
+                <tbody>
+                    <tr>
+                        <td>
+                            <a href="../../push/std-vec/800/report/pdf.svg">
+                                <img src="../../push/std-vec/800/report/pdf_small.svg" alt="PDF of Slope" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                        <td>
+                            <a href="../../push/std-vec/800/report/regression.svg">
+                                <img src="../../push/std-vec/800/report/regression_small.svg" alt="Regression" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+        <section class="plots">
+            <a href="../../push/std-vec/1000/report/index.html">
+                <h4>push/std-vec/1000</h4>
+            </a>
+            <table width="100%">
+                <tbody>
+                    <tr>
+                        <td>
+                            <a href="../../push/std-vec/1000/report/pdf.svg">
+                                <img src="../../push/std-vec/1000/report/pdf_small.svg" alt="PDF of Slope" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                        <td>
+                            <a href="../../push/std-vec/1000/report/regression.svg">
+                                <img src="../../push/std-vec/1000/report/regression_small.svg" alt="Regression" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+        <section class="plots">
+            <a href="../../push/std-vec/2000/report/index.html">
+                <h4>push/std-vec/2000</h4>
+            </a>
+            <table width="100%">
+                <tbody>
+                    <tr>
+                        <td>
+                            <a href="../../push/std-vec/2000/report/pdf.svg">
+                                <img src="../../push/std-vec/2000/report/pdf_small.svg" alt="PDF of Slope" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                        <td>
+                            <a href="../../push/std-vec/2000/report/regression.svg">
+                                <img src="../../push/std-vec/2000/report/regression_small.svg" alt="Regression" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+        <section class="plots">
+            <a href="../../push/std-vec/4000/report/index.html">
+                <h4>push/std-vec/4000</h4>
+            </a>
+            <table width="100%">
+                <tbody>
+                    <tr>
+                        <td>
+                            <a href="../../push/std-vec/4000/report/pdf.svg">
+                                <img src="../../push/std-vec/4000/report/pdf_small.svg" alt="PDF of Slope" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                        <td>
+                            <a href="../../push/std-vec/4000/report/regression.svg">
+                                <img src="../../push/std-vec/4000/report/regression_small.svg" alt="Regression" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+        <section class="plots">
+            <a href="../../push/std-vec/6000/report/index.html">
+                <h4>push/std-vec/6000</h4>
+            </a>
+            <table width="100%">
+                <tbody>
+                    <tr>
+                        <td>
+                            <a href="../../push/std-vec/6000/report/pdf.svg">
+                                <img src="../../push/std-vec/6000/report/pdf_small.svg" alt="PDF of Slope" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                        <td>
+                            <a href="../../push/std-vec/6000/report/regression.svg">
+                                <img src="../../push/std-vec/6000/report/regression_small.svg" alt="Regression" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+        <section class="plots">
+            <a href="../../push/std-vec/8000/report/index.html">
+                <h4>push/std-vec/8000</h4>
+            </a>
+            <table width="100%">
+                <tbody>
+                    <tr>
+                        <td>
+                            <a href="../../push/std-vec/8000/report/pdf.svg">
+                                <img src="../../push/std-vec/8000/report/pdf_small.svg" alt="PDF of Slope" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                        <td>
+                            <a href="../../push/std-vec/8000/report/regression.svg">
+                                <img src="../../push/std-vec/8000/report/regression_small.svg" alt="Regression" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+        <section class="plots">
+            <a href="../../push/std-vec/10000/report/index.html">
+                <h4>push/std-vec/10000</h4>
+            </a>
+            <table width="100%">
+                <tbody>
+                    <tr>
+                        <td>
+                            <a href="../../push/std-vec/10000/report/pdf.svg">
+                                <img src="../../push/std-vec/10000/report/pdf_small.svg" alt="PDF of Slope" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                        <td>
+                            <a href="../../push/std-vec/10000/report/regression.svg">
+                                <img src="../../push/std-vec/10000/report/regression_small.svg" alt="Regression" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+        <section class="plots">
+            <a href="../../push/std-vec/20000/report/index.html">
+                <h4>push/std-vec/20000</h4>
+            </a>
+            <table width="100%">
+                <tbody>
+                    <tr>
+                        <td>
+                            <a href="../../push/std-vec/20000/report/pdf.svg">
+                                <img src="../../push/std-vec/20000/report/pdf_small.svg" alt="PDF of Slope" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                        <td>
+                            <a href="../../push/std-vec/20000/report/regression.svg">
+                                <img src="../../push/std-vec/20000/report/regression_small.svg" alt="Regression" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+        <section class="plots">
+            <a href="../../push/std-vec/40000/report/index.html">
+                <h4>push/std-vec/40000</h4>
+            </a>
+            <table width="100%">
+                <tbody>
+                    <tr>
+                        <td>
+                            <a href="../../push/std-vec/40000/report/pdf.svg">
+                                <img src="../../push/std-vec/40000/report/pdf_small.svg" alt="PDF of Slope" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                        <td>
+                            <a href="../../push/std-vec/40000/report/regression.svg">
+                                <img src="../../push/std-vec/40000/report/regression_small.svg" alt="Regression" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+        <section class="plots">
+            <a href="../../push/std-vec/60000/report/index.html">
+                <h4>push/std-vec/60000</h4>
+            </a>
+            <table width="100%">
+                <tbody>
+                    <tr>
+                        <td>
+                            <a href="../../push/std-vec/60000/report/pdf.svg">
+                                <img src="../../push/std-vec/60000/report/pdf_small.svg" alt="PDF of Slope" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                        <td>
+                            <a href="../../push/std-vec/60000/report/regression.svg">
+                                <img src="../../push/std-vec/60000/report/regression_small.svg" alt="Regression" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+        <section class="plots">
+            <a href="../../push/std-vec/80000/report/index.html">
+                <h4>push/std-vec/80000</h4>
+            </a>
+            <table width="100%">
+                <tbody>
+                    <tr>
+                        <td>
+                            <a href="../../push/std-vec/80000/report/pdf.svg">
+                                <img src="../../push/std-vec/80000/report/pdf_small.svg" alt="PDF of Slope" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                        <td>
+                            <a href="../../push/std-vec/80000/report/regression.svg">
+                                <img src="../../push/std-vec/80000/report/regression_small.svg" alt="Regression" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+        <section class="plots">
+            <a href="../../push/std-vec/100000/report/index.html">
+                <h4>push/std-vec/100000</h4>
+            </a>
+            <table width="100%">
+                <tbody>
+                    <tr>
+                        <td>
+                            <a href="../../push/std-vec/100000/report/pdf.svg">
+                                <img src="../../push/std-vec/100000/report/pdf_small.svg" alt="PDF of Slope" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                        <td>
+                            <a href="../../push/std-vec/100000/report/regression.svg">
+                                <img src="../../push/std-vec/100000/report/regression_small.svg" alt="Regression" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+        <section class="plots">
+            <a href="../../push/std-vec/200000/report/index.html">
+                <h4>push/std-vec/200000</h4>
+            </a>
+            <table width="100%">
+                <tbody>
+                    <tr>
+                        <td>
+                            <a href="../../push/std-vec/200000/report/pdf.svg">
+                                <img src="../../push/std-vec/200000/report/pdf_small.svg" alt="PDF of Slope" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                        <td>
+                            <a href="../../push/std-vec/200000/report/regression.svg">
+                                <img src="../../push/std-vec/200000/report/regression_small.svg" alt="Regression" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+        <section class="plots">
+            <a href="../../push/std-vec/400000/report/index.html">
+                <h4>push/std-vec/400000</h4>
+            </a>
+            <table width="100%">
+                <tbody>
+                    <tr>
+                        <td>
+                            <a href="../../push/std-vec/400000/report/pdf.svg">
+                                <img src="../../push/std-vec/400000/report/pdf_small.svg" alt="PDF of Slope" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                        <td>
+                            <a href="../../push/std-vec/400000/report/regression.svg">
+                                <img src="../../push/std-vec/400000/report/regression_small.svg" alt="Regression" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+        <section class="plots">
+            <a href="../../push/std-vec/600000/report/index.html">
+                <h4>push/std-vec/600000</h4>
+            </a>
+            <table width="100%">
+                <tbody>
+                    <tr>
+                        <td>
+                            <a href="../../push/std-vec/600000/report/pdf.svg">
+                                <img src="../../push/std-vec/600000/report/pdf_small.svg" alt="PDF of Slope" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                        <td>
+                            <a href="../../push/std-vec/600000/report/regression.svg">
+                                <img src="../../push/std-vec/600000/report/regression_small.svg" alt="Regression" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+        <section class="plots">
+            <a href="../../push/std-vec/800000/report/index.html">
+                <h4>push/std-vec/800000</h4>
+            </a>
+            <table width="100%">
+                <tbody>
+                    <tr>
+                        <td>
+                            <a href="../../push/std-vec/800000/report/pdf.svg">
+                                <img src="../../push/std-vec/800000/report/pdf_small.svg" alt="PDF of Slope" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                        <td>
+                            <a href="../../push/std-vec/800000/report/regression.svg">
+                                <img src="../../push/std-vec/800000/report/regression_small.svg" alt="Regression" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+        <section class="plots">
+            <a href="../../push/std-vec/1000000/report/index.html">
+                <h4>push/std-vec/1000000</h4>
+            </a>
+            <table width="100%">
+                <tbody>
+                    <tr>
+                        <td>
+                            <a href="../../push/std-vec/1000000/report/pdf.svg">
+                                <img src="../../push/std-vec/1000000/report/pdf_small.svg" alt="PDF of Slope" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                        <td>
+                            <a href="../../push/std-vec/1000000/report/regression.svg">
+                                <img src="../../push/std-vec/1000000/report/regression_small.svg" alt="Regression" width="450"
+                                    height="300" />
+                            </a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+    </div>
+    <div id="footer">
+        <p>This report was generated by
+            <a href="https://github.com/bheisler/criterion.rs">Criterion.rs</a>, a statistics-driven benchmarking
+            library in Rust.</p>
+    </div>
+</body>
+
+</html>
