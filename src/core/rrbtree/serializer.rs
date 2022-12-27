@@ -20,20 +20,23 @@ where
             if let Some(child) = self.children[i].as_ref() {
                 let child_json_value = match child {
                     Node::RelaxedBranch(ref relaxed_branch) => json!({
-                            "relaxedBranch": child,
-                            "sizes": relaxed_branch.sizes,
-                            "refs": SharedPtr::strong_count(relaxed_branch),
-                            "len": relaxed_branch.len
+                        "relaxedBranch": child,
+                        "sizes": relaxed_branch.sizes,
+                        "refs": SharedPtr::strong_count(relaxed_branch),
+                        "addr": SharedPtr::as_ptr(relaxed_branch) as usize,
+                        "len": relaxed_branch.len
                     }),
                     Node::Branch(ref branch) => json!({
-                            "branch": child,
-                            "refs": SharedPtr::strong_count(branch),
-                            "len": branch.len
+                        "branch": child,
+                        "refs": SharedPtr::strong_count(branch),
+                        "addr": SharedPtr::as_ptr(branch) as usize,
+                        "len": branch.len
                     }),
                     Node::Leaf(ref leaf) => json!({
-                            "leaf": child,
-                            "refs": SharedPtr::strong_count(leaf),
-                            "len": leaf.len
+                        "leaf": child,
+                        "refs": SharedPtr::strong_count(leaf),
+                        "addr": SharedPtr::as_ptr(leaf) as usize,
+                        "len": leaf.len
                     }),
                 };
 
@@ -70,16 +73,19 @@ where
                             "relaxedBranch": child,
                             "sizes": relaxed_branch.sizes,
                             "refs": SharedPtr::strong_count(relaxed_branch),
+                            "addr": SharedPtr::as_ptr(relaxed_branch) as usize,
                             "len": relaxed_branch.len
                     }),
                     Node::Branch(ref branch) => json!({
                             "branch": child,
                             "refs": SharedPtr::strong_count(branch),
+                            "addr": SharedPtr::as_ptr(branch) as usize,
                             "len": branch.len
                     }),
                     Node::Leaf(ref leaf) => json!({
                             "leaf": child,
                             "refs": SharedPtr::strong_count(leaf),
+                            "addr": SharedPtr::as_ptr(leaf) as usize,
                             "len": leaf.len
                     }),
                 };
@@ -148,16 +154,19 @@ where
                     "relaxedBranch": root,
                     "sizes": relaxed_branch.sizes,
                     "refs": SharedPtr::strong_count(relaxed_branch),
+                    "addr": SharedPtr::as_ptr(relaxed_branch) as usize,
                     "len": relaxed_branch.len
                 }),
                 Node::Branch(ref branch) => json!({
                     "branch": root,
                     "refs":  SharedPtr::strong_count(branch),
+                    "addr": SharedPtr::as_ptr(branch) as usize,
                     "len": branch.len
                 }),
                 Node::Leaf(ref leaf) => json!({
                     "leaf": root,
                     "refs": SharedPtr::strong_count(leaf),
+                    "addr": SharedPtr::as_ptr(leaf) as usize,
                     "len": leaf.len
                 }),
             };
