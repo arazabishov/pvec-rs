@@ -6,7 +6,10 @@
   </head>
   <body>
     <noscript>This page contains webassembly and javascript content, please enable javascript in your browser.</noscript>    
-    <input type="range" min="1" max="1024" value="50" class="slider" id="vectorSize">
+    <div>
+      <input type="range" min="1" max="128" value="50" class="slider" id="vectorSize">
+      <button type="button" id="vectorSplitter">Split vector in the middle</button>
+    </div>  
     <script src="./bootstrap.js"></script>
   </body>
 </html>
