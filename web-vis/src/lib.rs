@@ -31,8 +31,8 @@ pub fn set_vec_size(vec_idx: usize, size: usize) {
 #[wasm_bindgen]
 pub fn split_off_vec(vec_idx: usize, idx: usize) {
     unsafe {
-        STATE[vec_idx] = STATE.get_mut(vec_idx).unwrap().split_off(idx);
-     }
+        STATE.get_mut(vec_idx).unwrap().split_off(idx);
+    }
 }
 
 #[wasm_bindgen]
