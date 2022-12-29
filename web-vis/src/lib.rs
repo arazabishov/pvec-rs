@@ -9,18 +9,27 @@ use wasm_bindgen::prelude::*;
 static mut STATE: Vec<RrbVec<usize>> = Vec::new();
 
 #[wasm_bindgen]
-pub fn add_vec(size: usize) {
-    let mut vec = RrbVec::new();
-
-    for i in 0..size {
-        vec.push(i);
-    }
-
-    unsafe { STATE.push(vec) }
+pub fn push_vec() {
+    unsafe { STATE.push(RrbVec::new()) }
 }
 
 #[wasm_bindgen]
-pub fn split_vec(vec_idx: usize, idx: usize) {
+pub fn set_vec_size(vec_idx: usize, size: usize) {
+    unsafe {
+        let vec = STATE.get_mut(vec_idx).unwrap();
+
+        if vec.len() < size {
+            for i in vec.len()..size {
+                vec.push(i);
+            }
+        } else {
+            vec.split_off(size);
+        }
+    }
+}
+
+#[wasm_bindgen]
+pub fn split_off_vec(vec_idx: usize, idx: usize) {
     unsafe {
         STATE[vec_idx] = STATE.get_mut(vec_idx).unwrap().split_off(idx);
      }
@@ -37,7 +46,7 @@ pub fn get() -> Vec<JsValue> {
 
     unsafe {
         for rrbvec in &STATE {
-            // println!("{:?}", );
+            // TODO: this is a hack, fix it!
             vec.push(JsValue::from_str(
                 serde_json::to_string(&rrbvec).unwrap().as_str(),
             ));

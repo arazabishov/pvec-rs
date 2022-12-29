@@ -13,11 +13,6 @@ const diagonal = d3
   .y((d) => d.y);
 const tree = d3.tree().nodeSize([dx, dy]);
 
-wasm.add_vec(427);
-
-let vec = JSON.parse(wasm.get()[0]);
-console.log(wasm.get()[0]);
-
 const getDescendants = (node) => {
   if (!node) {
     return null;
@@ -34,14 +29,14 @@ const getDescendants = (node) => {
   }
 };
 
-function drawCollapsibleTree() {
+function drawCollapsibleTree(vec) {
   const root = d3.hierarchy(vec.tree.root, getDescendants);
 
   root.x0 = dy / 2;
   root.y0 = 0;
 
   let descendants = root.descendants();
-  
+
   let next_node_to_expand = descendants ? descendants[0].data : null;
   let next_node_to_expand_i = 0;
 
@@ -53,7 +48,7 @@ function drawCollapsibleTree() {
     d._children = children;
 
     // keep only the right-most branches expanded to save space
-    if (next_node_to_expand === data) {      
+    if (next_node_to_expand === data) {
       // if we have not exhausted all children of the parent, keep increasing the index
       if (parent && next_node_to_expand_i < parent.data.len) {
         const children = getDescendants(parent.data);
@@ -62,7 +57,9 @@ function drawCollapsibleTree() {
         const children = getDescendants(data);
 
         next_node_to_expand_i = 0;
-        next_node_to_expand = children ? children[next_node_to_expand_i++] : null;
+        next_node_to_expand = children
+          ? children[next_node_to_expand_i++]
+          : null;
       }
     } else {
       d.children = null;
@@ -159,7 +156,7 @@ function drawCollapsibleTree() {
       .attr("stroke", "white");
 
     // Transition nodes to their new position.
-    const nodeUpdate = node
+    node
       .merge(nodeEnter)
       .transition(transition)
       .attr("transform", (d) => `translate(${d.x},${d.y})`)
@@ -167,7 +164,7 @@ function drawCollapsibleTree() {
       .attr("stroke-opacity", 1);
 
     // Transition exiting nodes to the parent's new position.
-    const nodeExit = node
+    node
       .exit()
       .transition(transition)
       .remove()
@@ -210,20 +207,22 @@ function drawCollapsibleTree() {
   update(root);
 }
 
-drawCollapsibleTree();
+wasm.push_vec();
 
 var slider = document.getElementById("vectorSize");
 slider.addEventListener("change", function () {
   // TODO: remove this hack
   d3.select("svg").remove();
 
-  // drawTree(slider.value);
-  drawCollapsibleTree();
+  wasm.set_vec_size(0, slider.value);
+  let vec = JSON.parse(wasm.get()[0]);
+  
+  drawCollapsibleTree(vec);
 });
 
 var splitter = document.getElementById("vectorSplitter");
 splitter.addEventListener("click", () => {
-  wasm.split_vec(0, 29);
+  wasm.split_vec_off(0, 29);
 
   // TODO: remove this hack
   d3.select("svg").remove();
