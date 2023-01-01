@@ -1,10 +1,13 @@
 import * as d3 from "d3";
 
 const margin = { top: 32, right: 120, bottom: 42, left: 512 };
-const width = 1400 + 512 - margin.left - margin.right;
+const width = 3400 + 512 - margin.left - margin.right;
+
+const arrayCellWidth = 20;
+const arrayCellHeight = 20;
 
 const dy = width / 12;
-const dx = 12;
+const dx = arrayCellWidth * 1.5;
 
 const diagonal = d3
   .linkVertical()
@@ -18,9 +21,9 @@ const getDescendants = (node) => {
   }
 
   if (node.relaxedBranch) {
-    return node.relaxedBranch;
+    return node.relaxedBranch.filter((child) => child);
   } else if (node.branch) {
-    return node.branch;
+    return node.branch.filter((child) => child);
   } else if (node.leaf) {
     return node.leaf;
   } else {
@@ -104,7 +107,7 @@ export class RrbVec {
       if (node.y < top.y) top = node;
       if (node.y > bottom.y) bottom = node;
     });
-    
+
     const height = bottom.y - top.y + margin.top + margin.bottom;
 
     const transition = this.svg
@@ -132,10 +135,42 @@ export class RrbVec {
       });
 
     nodeEnter
+      .filter((d) => !d.children)
       .append("circle")
       .attr("r", 2.5)
-      .attr("fill", (d) => (d._children ? "#555" : "#999"))
+      .attr("fill", (_d) => "#999")
       .attr("stroke-width", 10);
+
+    const array = nodeEnter
+      .filter((d) => d.children)
+      .append("g")
+      .style("stroke-width", "1px")
+      .attr(
+        "transform",
+        (d, i) => `translate(${-(d.data.len / 2) * arrayCellWidth}, 0)`
+      );
+
+    const cellsEnter = array
+      .selectAll("g")
+      .data((d) => Array.from({ length: d.data.len }, (_, i) => i))
+      .enter()
+      .append("g")
+      .attr("transform", (_d, i) => `translate(${i * arrayCellWidth}, 0)`);
+
+    cellsEnter
+      .append("rect")
+      .attr("width", arrayCellWidth)
+      .attr("height", arrayCellHeight)
+      .style("stroke", "black")
+      .style("fill", "none");
+
+    cellsEnter
+      .append("text")
+      .attr("x", arrayCellWidth / 2)
+      .attr("y", arrayCellHeight / 2)
+      .attr("text-anchor", "middle")
+      .attr("dominant-baseline", "central")
+      .text((_d, i) => i);
 
     nodeEnter
       .append("text")
@@ -199,9 +234,9 @@ export class RrbVec {
       });
 
     // Stash the old positions for transition.
-    root.eachBefore((d) => {
-      d.x0 = d.x;
-      d.y0 = d.y;
+    root.eachBefore((node) => {
+      node.x0 = node.x;
+      node.y0 = node.y;
     });
   }
 }
