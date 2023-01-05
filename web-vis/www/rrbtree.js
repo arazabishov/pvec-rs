@@ -6,7 +6,7 @@ const width = 3400 + 512 - margin.left - margin.right;
 const arrayCellWidth = 20;
 const arrayCellHeight = 20;
 
-const dy = width / 12;
+const dy = width / 24;
 const dx = arrayCellWidth * 1.5;
 
 const diagonal = d3
@@ -21,14 +21,14 @@ const getDescendants = (node) => {
   }
 
   if (node.relaxedBranch) {
-    return node.relaxedBranch.filter((child) => child);
+    return node.relaxedBranch;
   } else if (node.branch) {
-    return node.branch.filter((child) => child);
+    return node.branch;
   } else if (node.leaf) {
     return node.leaf;
-  } else {
-    return node;
   }
+
+  return null;
 };
 
 export class RrbVec {
@@ -53,13 +53,13 @@ export class RrbVec {
       .attr("pointer-events", "all");
   }
 
-  draw(vec) {
-    const root = d3.hierarchy(vec.tree.root, getDescendants);
+  set(vec) {
+    this.root = d3.hierarchy(vec.tree.root, getDescendants);
 
-    root.x0 = dy / 2;
-    root.y0 = 0;
+    this.root.x0 = dy / 2;
+    this.root.y0 = 0;
 
-    let descendants = root.descendants();
+    let descendants = this.root.descendants();
 
     let next_node_to_expand = descendants ? descendants[0].data : null;
     let next_node_to_expand_i = 0;
@@ -90,22 +90,28 @@ export class RrbVec {
       }
     });
 
-    this.update(root, root);
+    this.update(this.root);
   }
 
-  update(root, source) {
-    const duration = d3.event && d3.event.altKey ? 2500 : 250;
-    const nodes = root.descendants().reverse();
-    const links = root.links();
+  update(source) {
+    const duration = d3.event && d3.event.altKey ? 2500 : 2500;
+    const nodes = this.root.descendants().reverse();
+    const links = this.root.links();
 
     // Compute the new tree layout.
-    tree(root);
+    tree(this.root);
 
-    let top = root;
-    let bottom = root;
-    root.eachBefore((node) => {
-      if (node.y < top.y) top = node;
-      if (node.y > bottom.y) bottom = node;
+    let top = this.root;
+    let bottom = this.root;
+
+    this.root.eachBefore((node) => {
+      if (node.y < top.y) {
+        top = node;
+      }
+
+      if (node.y > bottom.y) {
+        bottom = node;
+      }
     });
 
     const height = bottom.y - top.y + margin.top + margin.bottom;
@@ -130,47 +136,18 @@ export class RrbVec {
       .attr("fill-opacity", 0)
       .attr("stroke-opacity", 0)
       .on("click", (event, d) => {
+        // TODO: this function has to be assigned/updated properly?
+        // otherwise it can capture variables/references and that can lead to a bug
+        console.log("about to do something with this node", d);
         d.children = d.children ? null : d._children;
-        this.update(root, d);
+        this.update(d);
       });
 
     nodeEnter
-      .filter((d) => !d.children)
       .append("circle")
       .attr("r", 2.5)
       .attr("fill", (_d) => "#999")
       .attr("stroke-width", 10);
-
-    const array = nodeEnter
-      .filter((d) => d.children)
-      .append("g")
-      .style("stroke-width", "1px")
-      .attr(
-        "transform",
-        (d, i) => `translate(${-(d.data.len / 2) * arrayCellWidth}, 0)`
-      );
-
-    const cellsEnter = array
-      .selectAll("g")
-      .data((d) => Array.from({ length: d.data.len }, (_, i) => i))
-      .enter()
-      .append("g")
-      .attr("transform", (_d, i) => `translate(${i * arrayCellWidth}, 0)`);
-
-    cellsEnter
-      .append("rect")
-      .attr("width", arrayCellWidth)
-      .attr("height", arrayCellHeight)
-      .style("stroke", "black")
-      .style("fill", "none");
-
-    cellsEnter
-      .append("text")
-      .attr("x", arrayCellWidth / 2)
-      .attr("y", arrayCellHeight / 2)
-      .attr("text-anchor", "middle")
-      .attr("dominant-baseline", "central")
-      .text((_d, i) => i);
 
     nodeEnter
       .append("text")
@@ -234,7 +211,7 @@ export class RrbVec {
       });
 
     // Stash the old positions for transition.
-    root.eachBefore((node) => {
+    this.root.eachBefore((node) => {
       node.x0 = node.x;
       node.y0 = node.y;
     });

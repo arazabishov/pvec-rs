@@ -47,7 +47,7 @@ slider.addEventListener("change", function () {
   console.log(vecOne)
   // const vecTwo = JSON.parse(vectors[1]);
 
-  rrbVecOne.draw(vecOne);
+  rrbVecOne.set(vecOne);
   // rrbVecTwo.draw(vecTwo);
 });
 
@@ -61,6 +61,6 @@ splitter.addEventListener("click", () => {
   const vecOne = JSON.parse(vectors[0]);
   // const vecTwo = JSON.parse(vectors[1]);
 
-  rrbVecOne.draw(vecOne);
+  rrbVecOne.set(vecOne);
   // rrbVecTwo.draw(vecTwo);
 });
