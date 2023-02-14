@@ -9,10 +9,14 @@ const arrayCellHeight = 20;
 const dy = width / 28;
 const dx = arrayCellWidth * 5;
 
+// TODO: export this value from WebAssembly
+const branchingFactor = 4;
+
 const diagonal = d3
   .linkVertical()
   .x((d) => d.x)
   .y((d) => d.y);
+
 const tree = d3
   .tree()
   .nodeSize([dx, dy])
@@ -35,7 +39,7 @@ const getDescendants = (node) => {
 
   if (node.relaxedBranch) {
     return node.relaxedBranch.filter((node) => node);
-  } else if (node.branch) {    
+  } else if (node.branch) {
     return node.branch.filter((node) => node);
   } else if (node.leaf) {
     return node;
@@ -151,186 +155,44 @@ export class RrbVec {
       .attr("fill", "#555")
       .attr("stroke-width", 10);
 
-    // TODO: too much duplication
-    nodeEnter
-      .filter((d) => !Number.isInteger(d.data))
-      .append("rect")
-      .attr("transform", `translate(${-2 * arrayCellWidth}, 0)`)
-      .attr("width", arrayCellWidth)
-      .attr("height", arrayCellHeight)
-      .style("stroke-width", "1px")
-      .style("stroke", "#555")
-      .style("fill", "none");
+    for (let i = 0; i < branchingFactor; i++) {
+      const relativePosition = i - 2;
 
-    nodeEnter
-      .append("text")
-      .attr("transform", (_d) => `translate(${(-2 * arrayCellWidth) + arrayCellWidth / 2}, ${arrayCellHeight / 1.16}) rotate(90)`)
-      .attr("dy", "0.31em")
-      .attr("x", (d) => (d._children ? -8 : 8))
-      .attr("text-anchor", (d) => (d._children ? "end" : "start"))
-      .text((d) => {
-        if (d.data && d.data.leaf) {
-          return d.data.leaf[0];
-        }
+      nodeEnter
+        .filter((d) => !Number.isInteger(d.data))
+        .append("rect")
+        .attr("transform", `translate(${relativePosition * arrayCellWidth}, 0)`)
+        .attr("width", arrayCellWidth)
+        .attr("height", arrayCellHeight)
+        .style("stroke-width", "1px")
+        .style("stroke", "#555")
+        .style("fill", "none");
 
-        return null;
-      })
-      .clone(true)
-      .lower()
-      .attr("stroke-linejoin", "round")
-      .attr("stroke-width", 3)
-      .attr("stroke", "white");
+      nodeEnter
+        .append("text")
+        .attr(
+          "transform",
+          (_d) =>
+            `translate(${
+              relativePosition * arrayCellWidth + arrayCellWidth / 2
+            }, ${arrayCellHeight / 1.16}) rotate(90)`
+        )
+        .attr("dy", "0.31em")
+        .attr("x", (d) => (d._children ? -8 : 8))
+        .attr("text-anchor", (d) => (d._children ? "end" : "start"))
+        .text((d) => {
+          if (d.data && d.data.leaf) {
+            return d.data.leaf[i];
+          }
 
-    nodeEnter
-      .filter((d) => !Number.isInteger(d.data))
-      .append("rect")
-      .attr("transform", `translate(${(-1 * arrayCellWidth)}, 0)`)
-      .attr("width", arrayCellWidth)
-      .attr("height", arrayCellHeight)
-      .style("stroke-width", "1px")
-      .style("stroke", "#555")
-      .style("fill", "none");
-
-    nodeEnter
-      .append("text")
-      .attr("transform", `translate(${(-1 * arrayCellWidth) + arrayCellWidth / 2}, ${arrayCellHeight / 1.16}) rotate(90)`)            
-      .attr("dy", "0.31em")
-      .attr("x", (d) => (d._children ? -8 : 8))
-      .attr("text-anchor", (d) => (d._children ? "end" : "start"))
-      .text((d) => {
-        if (d.data && d.data.leaf) {
-          return d.data.leaf[1];
-        }
-
-        return null;
-      })
-      .clone(true)
-      .lower()
-      .attr("stroke-linejoin", "round")
-      .attr("stroke-width", 3)
-      .attr("stroke", "white");
-
-    nodeEnter
-      .filter((d) => !Number.isInteger(d.data))
-      .append("rect")
-      .attr("transform", `translate(0, 0)`)
-      .attr("width", arrayCellWidth)
-      .attr("height", arrayCellHeight)
-      .style("stroke-width", "1px")
-      .style("stroke", "#555")
-      .style("fill", "none");
-
-    nodeEnter
-      .append("text")
-      .attr("transform", `translate(${arrayCellWidth / 2}, ${arrayCellHeight / 1.16}) rotate(90)`)            
-      .attr("dy", "0.31em")
-      .attr("x", (d) => (d._children ? -8 : 8))
-      .attr("text-anchor", (d) => (d._children ? "end" : "start"))
-      .text((d) => {
-        if (d.data && d.data.leaf) {
-          return d.data.leaf[2];
-        }
-
-        return null;
-      })
-      .clone(true)
-      .lower()
-      .attr("stroke-linejoin", "round")
-      .attr("stroke-width", 3)
-      .attr("stroke", "white");
-
-    nodeEnter
-      .filter((d) => !Number.isInteger(d.data))
-      .append("rect")
-      .attr("transform", `translate(${arrayCellWidth}, 0)`)
-      .attr("width", arrayCellWidth)
-      .attr("height", arrayCellHeight)
-      .style("stroke-width", "1px")
-      .style("stroke", "#555")
-      .style("fill", "none");
-
-    nodeEnter
-      .append("text")
-      .attr("transform", `translate(${arrayCellWidth + arrayCellWidth / 2}, ${arrayCellHeight / 1.16}) rotate(90)`)            
-      .attr("dy", "0.31em")
-      .attr("x", (d) => (d._children ? -8 : 8))
-      .attr("text-anchor", (d) => (d._children ? "end" : "start"))
-      .text((d) => {
-        if (d.data && d.data.leaf) {
-          return d.data.leaf[3];
-        }
-
-        return null;
-      })
-      .clone(true)
-      .lower()
-      .attr("stroke-linejoin", "round")
-      .attr("stroke-width", 3)
-      .attr("stroke", "white");
-
-    // const cells = nodeEnter.selectAll("rect").data((d) => {
-    //   const length = d.children ? d.children.length : 0;
-    //   return Array.from({ length }, (_d, _i) => length);
-    // });
-
-    // cells
-    //   .enter()
-    //   .append("rect")
-    //   .attr(
-    //     "transform",
-    //     (len, i) =>
-    //       `translate(${-(len / 2) * arrayCellWidth + i * arrayCellWidth}, 0)`
-    //   )
-    //   .attr("width", arrayCellWidth)
-    //   .attr("height", arrayCellHeight)
-    //   .style("stroke-width", "1px")
-    //   .style("stroke", "black")
-    //   .style("fill", "none");
-
-    // cells
-    //   .enter()
-    //   .append("text")
-    //   .attr(
-    //     "transform",
-    //     (len, i) =>
-    //       `translate(${-(len / 2) * arrayCellWidth + i * arrayCellWidth}, 0)`
-    //   )
-    //   .attr("x", arrayCellWidth / 2)
-    //   .attr("y", arrayCellHeight / 2)
-    //   .attr("text-anchor", "middle")
-    //   .attr("dominant-baseline", "central")
-    //   .text((_d, i) => i)
-    //   .clone(true)
-    //   .lower()
-    //   .attr("stroke-linejoin", "round")
-    //   .attr("stroke-width", 3)
-    //   .attr("stroke", "white");
-
-    // cells.exit().remove();
-
-    // TODO: I need to figure out how to do filtering properly, otherwise things won't work as you expect them too.
-    // nodeEnter
-    //   .append("text")
-    //   .attr("transform", (_d) => `rotate(90)`)
-    //   .attr("dy", "0.31em")
-    //   .attr("x", (d) => (d._children ? -8 : 8))
-    //   .attr("text-anchor", (d) => (d._children ? "end" : "start"))
-    //   .text((d) => {
-    //     if (d.data && d.data.leaf) {
-    //       return "*";
-    //     }
-
-    //     // if (Number.isInteger(d.data)) {
-    //     //   return d.data;
-    //     // }
-
-    //     return null;
-    //   })
-    //   .clone(true)
-    //   .lower()
-    //   .attr("stroke-linejoin", "round")
-    //   .attr("stroke-width", 3)
-    //   .attr("stroke", "white");
+          return null;
+        })
+        .clone(true)
+        .lower()
+        .attr("stroke-linejoin", "round")
+        .attr("stroke-width", 3)
+        .attr("stroke", "white");
+    }
 
     // Transition nodes to their new position.
     node
