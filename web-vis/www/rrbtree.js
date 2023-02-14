@@ -1,19 +1,32 @@
 import * as d3 from "d3";
 
 const margin = { top: 32, right: 120, bottom: 42, left: 512 };
-const width = 3400 + 512 - margin.left - margin.right;
+const width = 1512 + 512 - margin.left - margin.right;
 
-const arrayCellWidth = 20;
+const arrayCellWidth = 16;
 const arrayCellHeight = 20;
 
-const dy = width / 24;
-const dx = arrayCellWidth * 1.5;
+const dy = width / 28;
+const dx = arrayCellWidth * 5;
 
 const diagonal = d3
   .linkVertical()
   .x((d) => d.x)
   .y((d) => d.y);
-const tree = d3.tree().nodeSize([dx, dy]);
+const tree = d3
+  .tree()
+  .nodeSize([dx, dy])
+  .separation((a, b) => {
+    if (a.parent && b.parent) {
+      if (a.parent.data.leaf && b.parent.data.leaf) {
+        console.log("a", a.parent);
+        console.log("b", b.parent);
+        return a.parent == b.parent ? 0.3 : 0.8;
+      }
+    }
+
+    return a.parent == b.parent ? 1 : 2;
+  });
 
 const getDescendants = (node) => {
   if (!node) {
@@ -25,7 +38,8 @@ const getDescendants = (node) => {
   } else if (node.branch) {
     return node.branch;
   } else if (node.leaf) {
-    return node.leaf;
+    return node;
+    // return node.leaf;    
   }
 
   return null;
@@ -60,31 +74,19 @@ export class RrbVec {
     this.root.y0 = 0;
 
     let descendants = this.root.descendants();
-
     let next_node_to_expand = descendants ? descendants[0].data : null;
-    let next_node_to_expand_i = 0;
 
     // descendants are sorted in topological order
     descendants.forEach((d, i) => {
-      const { children, data, parent } = d;
+      const { children, data } = d;
 
       d.id = i;
       d._children = children;
 
       // keep only the right-most branches expanded to save space
-      if (next_node_to_expand === data) {
-        // if we have not exhausted all children of the parent, keep increasing the index
-        if (parent && next_node_to_expand_i < parent.data.len) {
-          const children = getDescendants(parent.data);
-          next_node_to_expand = children[next_node_to_expand_i++];
-        } else {
-          const children = getDescendants(data);
-
-          next_node_to_expand_i = 0;
-          next_node_to_expand = children
-            ? children[next_node_to_expand_i++]
-            : null;
-        }
+      if (next_node_to_expand === data || (data && data.leaf)) {
+        const children = getDescendants(data);
+        next_node_to_expand = children ? children[data.len - 1] : undefined;
       } else {
         d.children = null;
       }
@@ -146,27 +148,137 @@ export class RrbVec {
     nodeEnter
       .append("circle")
       .attr("r", 2.5)
-      .attr("fill", (_d) => "#999")
+      .attr("fill", "#555")
       .attr("stroke-width", 10);
 
+    // TODO: too much duplication
     nodeEnter
-      .append("text")
-      .attr("transform", (d) => `rotate(90)`)
-      .attr("dy", "0.31em")
-      .attr("x", (d) => (d._children ? -8 : 8))
-      .attr("text-anchor", (d) => (d._children ? "end" : "start"))
-      .text((d) => {
-        if (Number.isInteger(d.data)) {
-          return d.data;
-        }
+      .filter((d) => !Number.isInteger(d.data))
+      .append("rect")
+      .attr("transform", `translate(${-2 * arrayCellWidth}, 0)`)
+      .attr("width", arrayCellWidth)
+      .attr("height", arrayCellHeight)
+      .style("stroke-width", "1px")
+      .style("stroke", "#555")
+      .style("fill", "none");
 
-        return null;
-      })
-      .clone(true)
-      .lower()
-      .attr("stroke-linejoin", "round")
-      .attr("stroke-width", 3)
-      .attr("stroke", "white");
+      nodeEnter
+        .append("text")
+        .attr("transform", (_d) => `rotate(90)`)
+        .attr("dy", "0.31em")
+        .attr("x", (d) => (d._children ? -8 : 8))
+        .attr("text-anchor", (d) => (d._children ? "end" : "start"))
+        .text((d) => {
+          if (d.data && d.data.leaf) {
+            console.log("d.data.leaf", d.data.leaf);            
+            return "*";
+          }
+
+          // if (Number.isInteger(d.data)) {
+          //   return d.data;
+          // }
+
+          return null;
+        })
+        .clone(true)
+        .lower()
+        .attr("stroke-linejoin", "round")
+        .attr("stroke-width", 3)
+        .attr("stroke", "white");
+
+    nodeEnter
+      .filter((d) => !Number.isInteger(d.data))
+      .append("rect")
+      .attr("transform", `translate(${-1 * arrayCellWidth}, 0)`)
+      .attr("width", arrayCellWidth)
+      .attr("height", arrayCellHeight)
+      .style("stroke-width", "1px")
+      .style("stroke", "#555")
+      .style("fill", "none");
+
+    nodeEnter
+      .filter((d) => !Number.isInteger(d.data))
+      .append("rect")
+      .attr("transform", `translate(0, 0)`)
+      .attr("width", arrayCellWidth)
+      .attr("height", arrayCellHeight)
+      .style("stroke-width", "1px")
+      .style("stroke", "#555")
+      .style("fill", "none");
+
+    nodeEnter
+      .filter((d) => !Number.isInteger(d.data))
+      .append("rect")
+      .attr("transform", `translate(${arrayCellWidth}, 0)`)
+      .attr("width", arrayCellWidth)
+      .attr("height", arrayCellHeight)
+      .style("stroke-width", "1px")
+      .style("stroke", "#555")
+      .style("fill", "none");
+
+    // const cells = nodeEnter.selectAll("rect").data((d) => {
+    //   const length = d.children ? d.children.length : 0;
+    //   return Array.from({ length }, (_d, _i) => length);
+    // });
+
+    // cells
+    //   .enter()
+    //   .append("rect")
+    //   .attr(
+    //     "transform",
+    //     (len, i) =>
+    //       `translate(${-(len / 2) * arrayCellWidth + i * arrayCellWidth}, 0)`
+    //   )
+    //   .attr("width", arrayCellWidth)
+    //   .attr("height", arrayCellHeight)
+    //   .style("stroke-width", "1px")
+    //   .style("stroke", "black")
+    //   .style("fill", "none");
+
+    // cells
+    //   .enter()
+    //   .append("text")
+    //   .attr(
+    //     "transform",
+    //     (len, i) =>
+    //       `translate(${-(len / 2) * arrayCellWidth + i * arrayCellWidth}, 0)`
+    //   )
+    //   .attr("x", arrayCellWidth / 2)
+    //   .attr("y", arrayCellHeight / 2)
+    //   .attr("text-anchor", "middle")
+    //   .attr("dominant-baseline", "central")
+    //   .text((_d, i) => i)
+    //   .clone(true)
+    //   .lower()
+    //   .attr("stroke-linejoin", "round")
+    //   .attr("stroke-width", 3)
+    //   .attr("stroke", "white");
+
+    // cells.exit().remove();
+
+    // TODO: I need to figure out how to do filtering properly, otherwise things won't work as you expect them too.
+    // nodeEnter
+    //   .append("text")
+    //   .attr("transform", (_d) => `rotate(90)`)
+    //   .attr("dy", "0.31em")
+    //   .attr("x", (d) => (d._children ? -8 : 8))
+    //   .attr("text-anchor", (d) => (d._children ? "end" : "start"))
+    //   .text((d) => {
+    //     if (d.data && d.data.leaf) {
+    //       return "*";
+    //     }
+
+    //     // if (Number.isInteger(d.data)) {
+    //     //   return d.data;
+    //     // }
+
+    //     return null;
+    //   })
+    //   .clone(true)
+    //   .lower()
+    //   .attr("stroke-linejoin", "round")
+    //   .attr("stroke-width", 3)
+    //   .attr("stroke", "white");
 
     // Transition nodes to their new position.
     node
