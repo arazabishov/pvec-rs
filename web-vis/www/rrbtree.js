@@ -81,10 +81,10 @@ export class RrbVec {
     let next_node_to_expand = descendants ? descendants[0].data : null;
 
     // descendants are sorted in topological order
-    descendants.forEach((d, i) => {
+    descendants.forEach((d) => {
       const { children, data } = d;
 
-      d.id = i;
+      d.id = `${data.addr}:${data.len}`;
       d._children = children;
 
       // keep only the right-most branches expanded to save space
