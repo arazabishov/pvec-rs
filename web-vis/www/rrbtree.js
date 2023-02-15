@@ -37,13 +37,13 @@ const getDescendants = (node) => {
     return null;
   }
 
+  // TODO: do we need filtering here at all? Should it be done later in the tree?
   if (node.relaxedBranch) {
     return node.relaxedBranch.filter((node) => node);
   } else if (node.branch) {
     return node.branch.filter((node) => node);
   } else if (node.leaf) {
     return node;
-    // return node.leaf;
   }
 
   return null;
@@ -150,49 +150,43 @@ export class RrbVec {
       });
 
     nodeEnter
-      .append("circle")
-      .attr("r", 2.5)
-      .attr("fill", "#555")
-      .attr("stroke-width", 10);
+      .selectAll("rect")
+      .data((d) => Array.from({ length: d.data.len }, () => d.data.len))
+      .enter()
+      .append("rect")
+      .style("stroke-width", "1px")
+      .style("stroke", "black")
+      .style("fill", "none")
+      .attr("width", arrayCellWidth)
+      .attr("height", arrayCellHeight)
+      .attr(
+        "transform",
+        (len, i) => `translate(${(i - len / 2) * arrayCellWidth}, 0)`
+      );
 
-    for (let i = 0; i < branchingFactor; i++) {
-      const relativePosition = i - 2;
-
-      nodeEnter
-        .filter((d) => !Number.isInteger(d.data))
-        .append("rect")
-        .attr("transform", `translate(${relativePosition * arrayCellWidth}, 0)`)
-        .attr("width", arrayCellWidth)
-        .attr("height", arrayCellHeight)
-        .style("stroke-width", "1px")
-        .style("stroke", "#555")
-        .style("fill", "none");
-
-      nodeEnter
-        .append("text")
-        .attr(
-          "transform",
-          (_d) =>
-            `translate(${
-              relativePosition * arrayCellWidth + arrayCellWidth / 2
-            }, ${arrayCellHeight / 1.16}) rotate(90)`
-        )
-        .attr("dy", "0.31em")
-        .attr("x", (d) => (d._children ? -8 : 8))
-        .attr("text-anchor", (d) => (d._children ? "end" : "start"))
-        .text((d) => {
-          if (d.data && d.data.leaf) {
-            return d.data.leaf[i];
-          }
-
-          return null;
-        })
-        .clone(true)
-        .lower()
-        .attr("stroke-linejoin", "round")
-        .attr("stroke-width", 3)
-        .attr("stroke", "white");
-    }
+    nodeEnter
+      .selectAll("text")
+      .data((d) =>
+        Array.from(d.data.leaf || [], (item) => ({ item, len: d.data.len }))
+      )
+      .enter()
+      .append("text")
+      .attr(
+        "transform",
+        (d, i) =>
+          `translate(${
+            (i - d.len / 2) * arrayCellWidth + arrayCellWidth / 2
+          }, ${arrayCellHeight / 1.16}) rotate(90)`
+      )
+      .attr("dy", "0.31em")
+      .attr("x", 8)
+      .attr("text-anchor", "start")
+      .text((d) => d.item)
+      .clone(true)
+      .lower()
+      .attr("stroke-linejoin", "round")
+      .attr("stroke-width", 3)
+      .attr("stroke", "white");
 
     // Transition nodes to their new position.
     node
