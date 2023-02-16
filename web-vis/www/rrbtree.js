@@ -20,8 +20,6 @@ const tree = d3
   .separation((a, b) => {
     if (a.parent && b.parent) {
       if (a.parent.data.leaf && b.parent.data.leaf) {
-        console.log("a", a.parent);
-        console.log("b", b.parent);
         return a.parent == b.parent ? 0.3 : 0.8;
       }
     }
@@ -135,10 +133,10 @@ export class RrbVec {
     const nodeEnter = node
       .enter()
       .append("g")
-      .attr("transform", (d) => `translate(${source.x0},${source.y0})`)
+      .attr("transform", () => `translate(${source.x0},${source.y0})`)
       .attr("fill-opacity", 0)
       .attr("stroke-opacity", 0)
-      .on("click", (event, d) => {
+      .on("click", (_event, d) => {
         // TODO: this function has to be assigned/updated properly?
         // otherwise it can capture variables/references and that can lead to a bug
         console.log("about to do something with this node", d);
@@ -209,13 +207,21 @@ export class RrbVec {
     const linkEnter = link
       .enter()
       .append("path")
-      .attr("d", (d) => {
+      .attr("d", () => {
         const o = { x: source.x0, y: source.y0 };
         return diagonal({ source: o, target: o });
       });
 
     // Transition links to their new position.
-    link.merge(linkEnter).transition(transition).attr("d", diagonal);
+    link
+      .merge(linkEnter)
+      .transition(transition)
+      .attr("d", (d) =>
+        diagonal({
+          source: { x: d.source.x, y: d.source.y + arrayCellHeight },
+          target: { x: d.target.x, y: d.target.y },
+        })
+      );
 
     // Transition exiting nodes to the parent's new position.
     link
