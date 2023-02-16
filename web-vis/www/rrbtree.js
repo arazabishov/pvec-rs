@@ -9,9 +9,6 @@ const arrayCellHeight = 20;
 const dy = width / 28;
 const dx = arrayCellWidth * 5;
 
-// TODO: export this value from WebAssembly
-const branchingFactor = 4;
-
 const diagonal = d3
   .linkVertical()
   .x((d) => d.x)
