@@ -18,10 +18,26 @@ const tree = d3
   .tree()
   .nodeSize([dx, dy])
   .separation((a, b) => {
+    // if (a.data.relaxedBranch) {
+    //   console.log("a parent of b: ", a.data.relaxedBranch.includes(b.data));
+    // }
+
+    // if (b.data.relaxedBranch) {
+    //   console.log("b parent of a: ", b.data.relaxedBranch.includes(a.data));
+    // }
+
+    if (a.parent === b || b.parent === a) {
+      console.log("::: found parent-child relationship :::");     
+    }
+
     if (a.parent && b.parent) {
       if (a.parent.data.leaf && b.parent.data.leaf) {
         return a.parent == b.parent ? 0.3 : 0.8;
       }
+    }
+
+    if (b.data.relaxedBranch) {
+      return 3;
     }
 
     return a.parent == b.parent ? 1 : 2;
@@ -32,12 +48,17 @@ const getDescendants = (node) => {
     return null;
   }
 
-  // TODO: do we need filtering here at all? Should it be done later in the tree?
   if (node.relaxedBranch) {
-    return node.relaxedBranch.filter((node) => node);
+    const sizes = {
+      sizeTable: node.sizes.filter((size) => size),
+      addr: `${node.addr}:table`,
+      len: node.len,
+    };
+
+    return [...node.relaxedBranch.filter((node) => node), sizes];
   } else if (node.branch) {
     return node.branch.filter((node) => node);
-  } else if (node.leaf) {
+  } else if (node.leaf || node.sizeTable) {
     return node;
   }
 
@@ -102,6 +123,16 @@ export class RrbVec {
     // Compute the new tree layout.
     tree(this.root);
 
+    nodes.forEach((node) => {
+      if (node.data.sizeTable) {
+        // TODO: this value must be calculated properly, including cases
+        // when the number of elements is 4
+
+        node.x = node.parent.x + 60;
+        console.log("sizeTable", node);
+      }
+    });
+
     let top = this.root;
     let bottom = this.root;
 
@@ -136,7 +167,7 @@ export class RrbVec {
       .attr("transform", () => `translate(${source.x0},${source.y0})`)
       .attr("fill-opacity", 0)
       .attr("stroke-opacity", 0)
-      .on("click", (_event, d) => {
+      .on("click", (event, d) => {
         // TODO: this function has to be assigned/updated properly?
         // otherwise it can capture variables/references and that can lead to a bug
         console.log("about to do something with this node", d);
@@ -162,7 +193,10 @@ export class RrbVec {
     nodeEnter
       .selectAll("text")
       .data((d) =>
-        Array.from(d.data.leaf || [], (item) => ({ item, len: d.data.len }))
+        Array.from(d.data.leaf || d.data.sizeTable || [], (item) => ({
+          item,
+          len: d.data.len,
+        }))
       )
       .enter()
       .append("text")
@@ -187,7 +221,13 @@ export class RrbVec {
     node
       .merge(nodeEnter)
       .transition(transition)
-      .attr("transform", (d) => `translate(${d.x},${d.y})`)
+      .attr("transform", (d) => {
+        if (d.data.sizeTable) {
+          return `translate(${d.x},${d.parent.y})`;
+        }
+
+        return `translate(${d.x},${d.y})`;
+      })
       .attr("fill-opacity", 1)
       .attr("stroke-opacity", 1);
 
@@ -212,16 +252,60 @@ export class RrbVec {
         return diagonal({ source: o, target: o });
       });
 
+    // TODO: de-dupe this code
+    const getDescendants = (node) => {
+      if (node.branch) {
+        return node.branch;
+      } else if (node.relaxedBranch) {
+        return node.relaxedBranch;
+      }
+    };
+
     // Transition links to their new position.
     link
       .merge(linkEnter)
       .transition(transition)
-      .attr("d", (d) =>
-        diagonal({
-          source: { x: d.source.x, y: d.source.y + arrayCellHeight },
+      .attr("d", (d) => {
+        // We need to handle size tables differently contrary to other node types
+        if (d.target.data.sizeTable) {
+          return diagonal({
+            source: {
+              x: d.source.x + arrayCellWidth,
+              y: d.source.y + arrayCellHeight / 2,
+            },
+            target: {
+              x: d.target.x - arrayCellWidth,
+              y: d.source.y + arrayCellHeight / 2,
+            },
+          });
+        }
+
+        const childNodePosition = getDescendants(d.source.data).indexOf(
+          d.target.data
+        );
+        const halfCellWidth = arrayCellWidth / 2;
+
+        // TODO: making assumptions about branching factor is not great + array is ugly.
+        const offsets = {
+          1: [0],
+          2: [-halfCellWidth, halfCellWidth],
+          3: [-arrayCellWidth, 0, arrayCellWidth],
+          4: [
+            -arrayCellWidth - halfCellWidth,
+            -halfCellWidth,
+            halfCellWidth,
+            arrayCellWidth + halfCellWidth,
+          ],
+        };
+
+        let sourceX =
+          d.source.x + offsets[d.source.data.len][childNodePosition];
+
+        return diagonal({
+          source: { x: sourceX, y: d.source.y + arrayCellHeight },
           target: { x: d.target.x, y: d.target.y },
-        })
-      );
+        });
+      });
 
     // Transition exiting nodes to the parent's new position.
     link

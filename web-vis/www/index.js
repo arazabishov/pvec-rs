@@ -53,14 +53,13 @@ slider.addEventListener("change", function () {
 
 const splitter = document.getElementById("vectorSplitter");
 splitter.addEventListener("click", () => {
-  wasm.split_off_vec(0, 167);
-  // wasm.split_off_vec(1, 167);
+  wasm.split_off_vec(0, 167);  
 
   const vectors = wasm.get();
 
   const vecOne = JSON.parse(vectors[0]);
-  // const vecTwo = JSON.parse(vectors[1]);
+  const vecTwo = JSON.parse(vectors[1]);
 
-  rrbVecOne.set(vecOne);
+  rrbVecOne.set(vecTwo);
   // rrbVecTwo.draw(vecTwo);
 });
