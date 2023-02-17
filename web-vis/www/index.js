@@ -5,7 +5,7 @@ wasm.push_vec();
 // wasm.push_vec();
 
 const rrbVecOne = new RrbVec("#tree1");
-// const rrbVecTwo = new RrbVec("#tree2");
+const rrbVecTwo = new RrbVec("#tree2");
 
 // const svg = d3.select("#branch");
 
@@ -53,14 +53,13 @@ slider.addEventListener("change", function () {
 
 const splitter = document.getElementById("vectorSplitter");
 splitter.addEventListener("click", () => {
-  wasm.split_off_vec(0, 167);
-  // wasm.split_off_vec(1, 167);
+  wasm.split_off_vec(0, 167);  
 
   const vectors = wasm.get();
 
   const vecOne = JSON.parse(vectors[0]);
-  // const vecTwo = JSON.parse(vectors[1]);
+  const vecTwo = JSON.parse(vectors[1]);
 
   rrbVecOne.set(vecOne);
-  // rrbVecTwo.draw(vecTwo);
+  rrbVecTwo.set(vecTwo);
 });

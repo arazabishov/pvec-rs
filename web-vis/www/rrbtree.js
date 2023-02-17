@@ -32,7 +32,6 @@ const getDescendants = (node) => {
     return null;
   }
 
-  // TODO: do we need filtering here at all? Should it be done later in the tree?
   if (node.relaxedBranch) {
     return node.relaxedBranch.filter((node) => node);
   } else if (node.branch) {
@@ -95,7 +94,7 @@ export class RrbVec {
   }
 
   update(source) {
-    const duration = d3.event && d3.event.altKey ? 2500 : 2500;
+    const duration = d3.event && d3.event.altKey ? 2500 : 256;
     const nodes = this.root.descendants().reverse();
     const links = this.root.links();
 
@@ -136,7 +135,7 @@ export class RrbVec {
       .attr("transform", () => `translate(${source.x0},${source.y0})`)
       .attr("fill-opacity", 0)
       .attr("stroke-opacity", 0)
-      .on("click", (_event, d) => {
+      .on("click", (event, d) => {
         // TODO: this function has to be assigned/updated properly?
         // otherwise it can capture variables/references and that can lead to a bug
         console.log("about to do something with this node", d);
@@ -171,11 +170,35 @@ export class RrbVec {
         (d, i) =>
           `translate(${
             (i - d.len / 2) * arrayCellWidth + arrayCellWidth / 2
-          }, ${arrayCellHeight / 1.16}) rotate(90)`
+          }, ${arrayCellHeight + arrayCellHeight * 0.6}) rotate(270)`
       )
       .attr("dy", "0.31em")
       .attr("x", 8)
-      .attr("text-anchor", "start")
+      .attr("text-anchor", "end")
+      .text((d) => d.item)
+      .clone(true)
+      .lower()
+      .attr("stroke-linejoin", "round")
+      .attr("stroke-width", 3)
+      .attr("stroke", "white");
+
+    nodeEnter
+      .selectAll("text")
+      .data((d) =>
+        Array.from(d.data.sizes || [], (item) => ({ item, len: d.data.len }))
+      )
+      .enter()
+      .append("text")
+      .attr(
+        "transform",
+        (d, i) =>
+          `translate(${
+            (i - d.len / 2) * arrayCellWidth + arrayCellWidth / 2
+          }, ${-0.6 * arrayCellHeight}) rotate(315)`
+      )
+      .attr("dy", "0.31em")
+      .attr("x", 8)
+      .attr("text-anchor", "end")
       .text((d) => d.item)
       .clone(true)
       .lower()
@@ -212,16 +235,46 @@ export class RrbVec {
         return diagonal({ source: o, target: o });
       });
 
+    // TODO: de-dupe this code
+    const getDescendants = (node) => {
+      if (node.branch) {
+        return node.branch;
+      } else if (node.relaxedBranch) {
+        return node.relaxedBranch;
+      }
+    };
+
     // Transition links to their new position.
     link
       .merge(linkEnter)
       .transition(transition)
-      .attr("d", (d) =>
-        diagonal({
-          source: { x: d.source.x, y: d.source.y + arrayCellHeight },
+      .attr("d", (d) => {
+        const childNodePosition = getDescendants(d.source.data).indexOf(
+          d.target.data
+        );
+        const halfCellWidth = arrayCellWidth / 2;
+
+        // TODO: making assumptions about branching factor is not great + array is ugly.
+        const offsets = {
+          1: [0],
+          2: [-halfCellWidth, halfCellWidth],
+          3: [-arrayCellWidth, 0, arrayCellWidth],
+          4: [
+            -arrayCellWidth - halfCellWidth,
+            -halfCellWidth,
+            halfCellWidth,
+            arrayCellWidth + halfCellWidth,
+          ],
+        };
+
+        let sourceX =
+          d.source.x + offsets[d.source.data.len][childNodePosition];
+
+        return diagonal({
+          source: { x: sourceX, y: d.source.y + arrayCellHeight },
           target: { x: d.target.x, y: d.target.y },
-        })
-      );
+        });
+      });
 
     // Transition exiting nodes to the parent's new position.
     link
