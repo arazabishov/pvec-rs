@@ -45,24 +45,28 @@ const getDescendants = (node) => {
 
 export class RrbVec {
   constructor(selector) {
-    this.svg = d3
+    this.svgTree = d3
       .select(selector)
       .append("svg")
       .attr("viewBox", [-margin.left, -margin.top, width, dx])
       .style("font", "10px sans-serif")
       .style("user-select", "none");
 
-    this.gLink = this.svg
+    this.gLink = this.svgTree
       .append("g")
       .attr("fill", "none")
       .attr("stroke", "#555")
       .attr("stroke-opacity", 0.4)
       .attr("stroke-width", 1.5);
 
-    this.gNode = this.svg
+    this.gNode = this.svgTree
       .append("g")
       .attr("cursor", "pointer")
       .attr("pointer-events", "all");
+
+    this.gNodeTail = this.svgTree
+      .append("g")
+      .attr("transform", () => `translate(${arrayCellWidth * 8}, 0)`);
   }
 
   set(vec) {
@@ -90,11 +94,14 @@ export class RrbVec {
       }
     });
 
-    this.update(this.root);
+    this.updateTree(this.root);
+
+    // TODO: pass something else to be similar to updateTree?
+    this.updateTail(vec.tail);
   }
 
-  update(source) {
-    const duration = d3.event && d3.event.altKey ? 2500 : 256;
+  updateTree(source) {
+    const duration = d3.event && d3.event.altKey ? 2560 : 256;
     const nodes = this.root.descendants().reverse();
     const links = this.root.links();
 
@@ -116,7 +123,7 @@ export class RrbVec {
 
     const height = bottom.y - top.y + margin.top + margin.bottom;
 
-    const transition = this.svg
+    const transition = this.svgTree
       .transition()
       .duration(duration)
       .attr("viewBox", [-margin.left, -margin.top, width, height])
@@ -140,7 +147,7 @@ export class RrbVec {
         // otherwise it can capture variables/references and that can lead to a bug
         console.log("about to do something with this node", d);
         d.children = d.children ? null : d._children;
-        this.update(d);
+        this.updateTree(d);
       });
 
     nodeEnter
@@ -291,5 +298,56 @@ export class RrbVec {
       node.x0 = node.x;
       node.y0 = node.y;
     });
+  }
+
+  updateTail(tail) {
+    // TODO: this is ugly
+    tail = tail.filter((d) => d !== null);
+
+    const node = this.gNodeTail.selectAll("g").data(tail, (d) => `${d}:tail`);
+    const nodeEnter = node.enter().append("g");
+
+    nodeEnter
+      .append("rect")
+      .style("stroke-width", "1px")
+      .style("stroke", "black")
+      .style("fill", "none")
+      .attr("width", arrayCellWidth)
+      .attr("height", arrayCellHeight)
+      .attr("transform", (_val, i) => `translate(${i * arrayCellWidth}, 0)`);
+
+    // TODO: the problem here is that the underlayer contrast text is being kept, while the top level text gets removed.
+    // TODO: somehow both have to stay in sync
+    nodeEnter
+      .append("text")
+      .attr(
+        "transform",
+        (_d, i) =>
+          `translate(${i * arrayCellWidth + arrayCellWidth / 2}, ${
+            arrayCellHeight + arrayCellHeight * 0.6
+          }) rotate(270)`
+      )
+      .attr("dy", "0.31em")
+      .attr("x", 8)
+      .attr("text-anchor", "end")
+      .text((d) => d)
+      .clone(true)
+      .lower() // TODO: what the hell is underlayer for?
+      .attr("stroke-linejoin", "round")
+      .attr("stroke-width", 3)
+      .attr("stroke", "white");
+
+    node
+      .merge(nodeEnter)
+      .transition() // TODO: its interesting that transition works out of the box
+      .attr("fill-opacity", 1)
+      .attr("stroke-opacity", 1);
+
+    node
+      .exit()
+      .transition()
+      .remove()
+      .attr("fill-opacity", 0)
+      .attr("stroke-opacity", 0);
   }
 }
