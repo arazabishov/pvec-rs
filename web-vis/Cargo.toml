@@ -12,7 +12,8 @@ crate-type = ["cdylib", "rlib"]
 default = ["console_error_panic_hook"]
 
 [dependencies]
-wasm-bindgen = "0.2"
+wasm-bindgen = "=0.2.82"
+serde-wasm-bindgen = "0.4.3"
 
 # TODO: feature flags pass through
 pvec = { path = "../", features = ["serde_serializer", "small_branch"] }
@@ -25,7 +26,7 @@ serde = "1.0.102"
 # logging them with `console.error`. This is great for development, but requires
 # all the `std::fmt` and `std::panicking` infrastructure, so isn't great for
 # code size when deploying.
-console_error_panic_hook = { version = "0.1.1", optional = true }
+console_error_panic_hook = { version = "0.1.7", optional = true }
 
 [dev-dependencies]
-wasm-bindgen-test = "0.2"
+wasm-bindgen-test = "0.3.32"

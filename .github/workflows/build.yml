@@ -10,32 +10,18 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
+      - uses: dtolnay/rust-toolchain@stable
         with:
-          profile: minimal
-          toolchain: 1.42.0
+          toolchain: 1.68.1
           components: rustfmt, clippy
-          override: true
-      - uses: actions-rs/cargo@v1
-        name: Checking code style
-        with:
-          command: fmt
-          args: --all -- --check
-      - uses: actions-rs/cargo@v1
-        name: Running unit tests for the large branching factor
-        with:
-          command: test
-          args: --all
-      - uses: actions-rs/cargo@v1
-        name: Running unit tests for the small branching factor
-        with:
-          command: test
-          args: --all --features "small_branch"
-      - uses: actions-rs/cargo@v1
-        name: Running benchmarks as tests
-        with:
-          command: test
-          args: --benches
+      - name: Checking code style
+        run: cargo fmt --all -- --check
+      - name: Running unit tests for the large branching factor
+        run: cargo test --all
+      - name: Running unit tests for the small branching factor
+        run: cargo test --all --features "small_branch"
+      - name: Running benchmarks as tests
+        run: cargo test --benches
       - name: Running memory benchmarks as tests
         run: sh bench.sh
         working-directory: benches-mem

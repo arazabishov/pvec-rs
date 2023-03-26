@@ -24,7 +24,7 @@ macro_rules! impl_iter {
         /// for the tree-based vector. It takes the ownership of the vector
         /// contents. The iterator implementation consumes the contents of
         /// the RrbTree by chunks, this way reducing the number of the
-        /// tree traversals.        
+        /// tree traversals.
         #[derive(Debug, Clone)]
         pub struct $iter<T> {
             tree_iter: RrbTreeIter<T>,

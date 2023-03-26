@@ -17,6 +17,10 @@
   <sub>Built with 🦀🕸 by <a href="https://rustwasm.github.io/">The Rust and WebAssembly Working Group</a></sub>
 </div>
 
+## Read before proceeding
+
+When installing `wasm-pack` and friends on Apple Silicon machine, simply go for Rosetta 2 translation layer. That will save you a lot of headache!
+
 ## About
 
 [**📚 Read this template tutorial! 📚**][template-docs]
