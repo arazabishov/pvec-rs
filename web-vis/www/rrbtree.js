@@ -1,5 +1,7 @@
 import * as d3 from "d3";
 
+const transitionDuration = 256;
+
 const margin = { top: 32, right: 120, bottom: 42, left: 512 };
 const width = 1512 + 512 - margin.left - margin.right;
 
@@ -100,8 +102,7 @@ export class RrbVec {
     this.updateTail(vec.tail);
   }
 
-  updateTree(source) {
-    const duration = d3.event && d3.event.altKey ? 2560 : 256;
+  updateTree(source) {    
     const nodes = this.root.descendants().reverse();
     const links = this.root.links();
 
@@ -125,7 +126,7 @@ export class RrbVec {
 
     const transition = this.svgTree
       .transition()
-      .duration(duration)
+      .duration(transitionDuration)
       .attr("viewBox", [-margin.left, -margin.top, width, height])
       .tween(
         "resize",
