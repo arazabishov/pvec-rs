@@ -28,7 +28,7 @@ rayon = { version = "1.1.0", optional = true }
 
 [dev-dependencies]
 im-rc = "14.0.0"
-im = "14.0.0"
+im = "15.1.0"
 rand_xorshift = "0.1"
 criterion = "0.3.1"
 rand = "0.6"
