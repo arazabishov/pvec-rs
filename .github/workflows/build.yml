@@ -2,14 +2,15 @@ name: build
 on:
   push:
     branches:
-    - master
+      - master
   pull_request:
 jobs:
-  build:
+  build_rust:
+    name: Build and validate Rust bits
     runs-on: macos-latest
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - uses: dtolnay/rust-toolchain@stable
         with:
           toolchain: 1.68.1
@@ -25,3 +26,21 @@ jobs:
       - name: Running memory benchmarks as tests
         run: sh bench.sh
         working-directory: benches-mem
+
+  build_js:
+    name: Build and validate JS bits
+    runs-on: macos-latest
+
+    defaults:
+      run:
+        working-directory: web-vis/www/
+
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 18
+      - name: Installing dependencies
+        run: npm install
+      - name: Checking code style
+        run: npx prettier --check .

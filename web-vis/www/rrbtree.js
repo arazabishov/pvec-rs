@@ -102,7 +102,7 @@ export class RrbVec {
     this.updateTail(vec.tail);
   }
 
-  updateTree(source) {    
+  updateTree(source) {
     const nodes = this.root.descendants().reverse();
     const links = this.root.links();
 
