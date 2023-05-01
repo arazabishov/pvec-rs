@@ -302,10 +302,10 @@ export class RrbVec {
   }
 
   updateTail(tail) {
-    // TODO: this is ugly
-    tail = tail.filter((d) => d !== null);
-
-    const node = this.gNodeTail.selectAll("g").data(tail, (d) => `${d}:tail`);
+    const tailElements = tail.filter((d) => d !== null && d !== undefined);
+    const node = this.gNodeTail
+      .selectAll("g")
+      .data(tailElements, (d) => `${d}:tail`);
     const nodeEnter = node.enter().append("g");
 
     nodeEnter
@@ -317,8 +317,6 @@ export class RrbVec {
       .attr("height", arrayCellHeight)
       .attr("transform", (_val, i) => `translate(${i * arrayCellWidth}, 0)`);
 
-    // TODO: the problem here is that the underlayer contrast text is being kept, while the top level text gets removed.
-    // TODO: somehow both have to stay in sync
     nodeEnter
       .append("text")
       .attr(
@@ -333,14 +331,14 @@ export class RrbVec {
       .attr("text-anchor", "end")
       .text((d) => d)
       .clone(true)
-      .lower() // TODO: what the hell is underlayer for?
+      .lower()
       .attr("stroke-linejoin", "round")
       .attr("stroke-width", 3)
       .attr("stroke", "white");
 
     node
       .merge(nodeEnter)
-      .transition() // TODO: its interesting that transition works out of the box
+      .transition()
       .attr("fill-opacity", 1)
       .attr("stroke-opacity", 1);
 
