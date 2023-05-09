@@ -42,17 +42,11 @@ pub fn clear() {
 }
 
 #[wasm_bindgen]
-pub fn get() -> Vec<JsValue> {
-    let mut vec = Vec::new();
+pub fn get(index: usize) -> JsValue {
+    unsafe { JsValue::from_str(serde_json::to_string(&STATE.get(index)).unwrap().as_str()) }
+}
 
-    unsafe {
-        for rrbvec in &STATE {
-            // TODO: this is a hack, fix it!
-            vec.push(JsValue::from_str(
-                serde_json::to_string(&rrbvec).unwrap().as_str(),
-            ));
-        }
-    }
-
-    vec
+#[wasm_bindgen]
+pub fn len() -> usize {
+    unsafe { STATE.len() }
 }
