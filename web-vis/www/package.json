@@ -6,7 +6,7 @@
   "main": "index.js",
   "scripts": {
     "build": "webpack --config webpack.config.js",
-    "deploy:vercel": "curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y; source \"$HOME/.cargo/env\"; cargo install wasm-pack; wasm-pack build; npm run build",
+    "build:vercel": "curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y; source \"$HOME/.cargo/env\"; cargo install wasm-pack; wasm-pack build; npm run build",
     "start": "webpack-dev-server"
   },
   "repository": {
