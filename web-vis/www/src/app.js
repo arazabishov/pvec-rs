@@ -1,3 +1,4 @@
+import "./styles.css";
 import * as wasm from "web-vis";
 import { RrbVec } from "./rrbtree";
 
@@ -59,6 +60,21 @@ function addTree() {
 function addButton() {
   const button = document.createElement("button");
   button.innerHTML = "Add Tree";
+  button.type = "button";
+  button.classList.add(
+    "focus:outline-none",
+    "text-blue-600",
+    "text-sm",
+    "py-2.5",
+    "px-5",
+    "rounded-md",
+    "border",
+    "border-blue-600",
+    "hover:bg-blue-50",
+    "fixed",
+    "bottom-4",
+    "right-4"
+  );
   button.addEventListener("click", addTree);
 
   document.body.appendChild(button);
