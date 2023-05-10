@@ -6,11 +6,19 @@ module.exports = {
   entry: "./index.js",
   output: {
     path: path.resolve(__dirname, "dist"),
-    filename: "index.js",
+    filename: "bundle.js",
   },
   mode: "development",
   experiments: {
     asyncWebAssembly: true,
+  },
+  module: {
+    rules: [
+      {
+        test: /\.css$/,
+        use: ["style-loader", "css-loader", "postcss-loader"],
+      },
+    ],
   },
   plugins: [
     new HtmlWebpackPlugin({
