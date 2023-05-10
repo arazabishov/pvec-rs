@@ -1,3 +1,64 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+.slider-track {
+  @apply appearance-none h-5;
+
+  background: linear-gradient(
+        to right,
+        theme("colors.gray.300"),
+        theme("colors.gray.300")
+      )
+      no-repeat left center,
+    linear-gradient(to left, theme("colors.gray.300"), theme("colors.gray.300"))
+      no-repeat right center,
+    linear-gradient(theme("colors.gray.300"), theme("colors.gray.300"))
+      no-repeat center center;
+  background-size: 2px 100%, 2px 100%, 100% 2px;
+  background-position: left center, right center, center center;
+}
+
+.slider-thumb {
+  @apply appearance-none h-5 w-2.5 rounded-sm bg-gray-500 border-none;
+  box-sizing: border-box;
+}
+
+@layer components {
+  input[type="range"] {
+    @apply appearance-none w-full;
+  }
+
+  input[type="range"]::-webkit-slider-runnable-track {
+    @apply slider-track;
+  }
+
+  input[type="range"]::-moz-range-track {
+    @apply slider-track;
+  }
+
+  input[type="range"]::-webkit-slider-thumb {
+    @apply slider-thumb;
+  }
+
+  input[type="range"]::-moz-range-thumb {
+    @apply slider-thumb;
+  }
+}
+
+.tooltip-value {
+  @apply absolute -translate-y-8;
+}
+
+.tooltip-value span {
+  @apply absolute block rounded-md bg-sky-400 text-white text-xs text-center w-8 h-6 leading-6;
+  @apply left-2/4 -translate-x-2/4;
+}
+
+.tooltip-value span:before {
+  @apply absolute content-[""] w-0 h-0 border-t-8 border-sky-400;
+  @apply translate-y-6 left-2/4 -ml-[5px];
+
+  border-right: 5px solid transparent;
+  border-left: 5px solid transparent;
+}
