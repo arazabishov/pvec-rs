@@ -2,6 +2,35 @@
 @tailwind components;
 @tailwind utilities;
 
+body {
+  background: radial-gradient(#000 1px, transparent 0px) 0 0 / 24px 24px;
+}
+
+.grid-tree {
+  @apply grid grid-cols-1 md:grid-cols-1 lg:grid-cols-2 gap-4 m-4;
+}
+
+.tree {
+  @apply bg-white rounded-lg border border-gray-300 p-4 min-h-[600px] relative;
+}
+
+.button-add-tree-container {
+  @apply flex justify-center items-center min-h-[600px];
+}
+
+.button-add-tree {
+  @apply bg-white hover:bg-gray-50 border-gray-300 focus:outline-none rounded-lg p-4;
+  @apply min-h-[196px] min-w-[196px] py-2.5 px-5 border flex items-center justify-center;
+}
+
+.button-add-tree-icon {
+  @apply text-gray-500 text-4xl;
+}
+
+.slider-container {
+  @apply absolute  w-1/4 bottom-4 right-12;
+}
+
 .slider-track {
   @apply appearance-none h-5;
 

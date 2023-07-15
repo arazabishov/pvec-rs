@@ -2,66 +2,71 @@ import "./styles.css";
 import * as wasm from "web-vis";
 import { RrbVec } from "./rrbtree";
 
-const trees = [];
+class Vector {
+  constructor(id) {
+    this._id = id;
+  }
 
-// <button type="button" id="vectorSplitter">
-//   Split vector in the middle
-// </button>
+  id() {
+    return this._id;
+  }
 
-// const splitter = document.getElementById("vectorSplitter");
-// splitter.addEventListener("click", () => {
-//   wasm.split_off_vec(0, 167);
+  setSize(size) {
+    wasm.set_vec_size(this._id, size);
+  }
 
-//   const vectors = wasm.get();
+  json() {
+    return JSON.parse(wasm.get(this._id));
+  }
+}
 
-//   const vecOne = JSON.parse(vectors[0]);
-//   const vecTwo = JSON.parse(vectors[1]);
+class VectorVis {
+  constructor(vector) {
+    this.vector = vector;
+  }
 
-//   // rrbVecOne.set(vecOne);
-//   // rrbVecTwo.set(vecTwo);
-// });
+  id() {
+    return `tree${this.vector.id()}`;
+  }
 
-const grid = addGrid();
+  setSize(size) {
+    if (this.rrbVecVis === undefined) {
+      this.rrbVecVis = new RrbVec(`#${this.id()}`);
+    }
 
-function addTree() {
-  const vectorIndex = wasm.len();
+    this.vector.setSize(size);
+    const rrbVec = this.vector.json();
 
-  // push a vector so then a new instance becomes accessible
-  // to the rest of the code below
-  wasm.push_vec();
+    this.rrbVecVis.set(rrbVec);
+  }
+}
 
+class VectorFactory {
+  static create() {
+    const vecId = wasm.len();
+
+    wasm.push_vec();
+
+    return new Vector(vecId);
+  }
+}
+
+function createTree(vectorVis) {
   const tree = document.createElement("div");
-  tree.id = `tree${trees.length}`;
-  tree.classList.add(
-    "bg-white",
-    "rounded-lg",
-    "border",
-    "border-gray-300",
-    "p-4",
-    "min-h-[600px]",
-    "relative"
-  );
+  tree.id = vectorVis.id();
+  tree.classList.add("tree");
 
   const sliderContainer = document.createElement("div");
-  sliderContainer.classList.add("absolute", "w-1/4", "bottom-4", "right-12");
+  sliderContainer.classList.add("slider-container");
 
   const sliderTooltip = document.createElement("output");
   sliderTooltip.classList.add("tooltip-value");
 
   const slider = document.createElement("input");
+  slider.addEventListener("change", () => vectorVis.setSize(slider.value));
   slider.type = "range";
   slider.min = 1;
   slider.max = 512;
-  slider.value = 50;
-  slider.addEventListener("change", () => {
-    wasm.set_vec_size(vectorIndex, slider.value);
-
-    const rrbVecVis = trees[vectorIndex];
-    const rrbVec = JSON.parse(wasm.get(vectorIndex));
-
-    console.log(rrbVec);
-    rrbVecVis.set(rrbVec);
-  });
 
   sliderContainer.appendChild(slider);
   sliderContainer.appendChild(sliderTooltip);
@@ -79,72 +84,52 @@ function addTree() {
   updateTooltip();
 
   tree.appendChild(sliderContainer);
-  grid.insertBefore(tree, newTreeButton);
-
-  const rrbVec = new RrbVec(`#${tree.id}`);
-  trees.push(rrbVec);
+  return { tree, slider };
 }
 
-function addNewTreeButton() {
+function createAddTreeButton(onClick) {
+  const container = document.createElement("div");
+  container.classList.add("button-add-tree-container");
+
   const button = document.createElement("button");
   button.type = "button";
-  button.classList.add(
-    "bg-white",
-    "rounded-lg",
-    "border",
-    "border-gray-300",
-    "p-4",
-    "min-h-[196px]",
-    "min-w-[196px]",
-    "focus:outline-none",
-    "py-2.5",
-    "px-5",
-    "border",
-    "hover:bg-gray-50",
-    "flex",
-    "items-center",
-    "justify-center"
-  );
+  button.classList.add("button-add-tree");
 
   const plusIcon = document.createElement("span");
-  plusIcon.classList.add("text-gray-500", "text-4xl");
+  plusIcon.classList.add("button-add-tree-icon");
   plusIcon.innerHTML = "+";
 
   button.appendChild(plusIcon);
-  button.addEventListener("click", addTree);
+  button.addEventListener("click", () => onClick(container));
 
-  const container = document.createElement("div");
-  container.classList.add(
-    "flex",
-    "justify-center",
-    "items-center",
-    "min-h-[600px]"
-  );
   container.appendChild(button);
-
-  grid.appendChild(container);
-
   return container;
 }
 
-function addGrid() {
+function createGrid() {
   const grid = document.createElement("div");
-  grid.classList.add(
-    "grid",
-    "grid-cols-1",
-    "md:grid-cols-1",
-    "lg:grid-cols-2",
-    "gap-4",
-    "m-4"
-  );
-  document.body.appendChild(grid);
+  grid.classList.add("grid-tree");
+
   return grid;
 }
+const grid = createGrid();
 
-const body = document.body;
-body.style.background =
-  "radial-gradient(#000 1px, transparent 0px) 0 0 / 24px 24px";
+const addTree = (button, initialSize) => {
+  const vector = VectorFactory.create();
+  const vectorVis = new VectorVis(vector);
+  const { tree, slider } = createTree(vectorVis);
 
-const newTreeButton = addNewTreeButton();
+  grid.insertBefore(tree, button);
 
-addTree();
+  if (initialSize !== undefined) {
+    slider.value = initialSize;
+    slider.dispatchEvent(new Event("input"));
+    slider.dispatchEvent(new Event("change"));
+  }
+};
+const addTreeButton = createAddTreeButton(addTree);
+
+grid.appendChild(addTreeButton);
+document.body.appendChild(grid);
+
+addTree(addTreeButton, 256);
