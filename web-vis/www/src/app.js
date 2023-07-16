@@ -57,16 +57,19 @@ class AddVectorButtonComponent extends HTMLElement {
   }
 
   connectedCallback() {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.classList.add("button-add-vector");
+
     const plusIcon = document.createElement("span");
-    plusIcon.classList.add("button-add-vector");
+    plusIcon.classList.add("button-add-vector-icon");
     plusIcon.innerHTML = "+";
 
-    this.classList.add("button-add-vector-container");
-    this.addEventListener("click", (event) => {
-      this.onClick(event);
-    });
+    button.appendChild(plusIcon);
+    button.addEventListener("click", () => this.onClick(this));
 
-    this.appendChild(plusIcon);
+    this.classList.add("button-add-vector-container");
+    this.appendChild(button);
   }
 }
 
@@ -82,14 +85,15 @@ customElements.define("grid-component", GridComponent);
 
 const grid = new GridComponent();
 const addVectorButton = new AddVectorButtonComponent();
-addVectorButton.onClick = (event) => {
+const addVector = (button) => {
   const vectorVis = new VectorVis(VectorFactory.create(64));
   const vectorComponent = new VectorComponent(vectorVis);
 
-  grid.insertBefore(vectorComponent, event.currentTarget);
+  grid.insertBefore(vectorComponent, button);
 };
+addVectorButton.onClick = addVector;
 
 grid.appendChild(addVectorButton);
 document.body.appendChild(grid);
 
-addVectorButton.dispatchEvent(new Event("click"));
+addVector(addVectorButton);
