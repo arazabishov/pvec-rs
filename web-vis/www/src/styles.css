@@ -18,10 +18,13 @@ body {
   @apply flex justify-center items-center min-h-[600px];
 }
 
+.button-add-vector-icon {
+  @apply text-gray-500 text-4xl;
+}
+
 .button-add-vector {
   @apply bg-white hover:bg-gray-50 border-gray-300 focus:outline-none rounded-lg p-4;
   @apply min-h-[196px] min-w-[196px] py-2.5 px-5 border flex items-center justify-center;
-  @apply text-gray-500 text-4xl;
 }
 
 .slider-container {
