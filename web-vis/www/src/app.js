@@ -1,135 +1,95 @@
 import "./styles.css";
-import * as wasm from "web-vis";
-import { RrbVec } from "./rrbtree";
+import { VectorFactory, VectorVis } from "./vector";
 
-class Vector {
-  constructor(id) {
-    this._id = id;
+class VectorComponent extends HTMLElement {
+  constructor(vectorVis) {
+    super();
+    this.vectorVis = vectorVis;
   }
 
-  id() {
-    return this._id;
-  }
+  connectedCallback() {
+    this.id = this.vectorVis.id();
+    this.classList.add("vector");
 
-  setSize(size) {
-    wasm.set_vec_size(this._id, size);
-  }
+    const sliderContainer = document.createElement("div");
+    sliderContainer.classList.add("slider-container");
 
-  json() {
-    return JSON.parse(wasm.get(this._id));
-  }
-}
+    const sliderTooltip = document.createElement("output");
+    sliderTooltip.classList.add("tooltip-value");
 
-class VectorVis {
-  constructor(vector) {
-    this.vector = vector;
-  }
+    const slider = document.createElement("input");
+    slider.addEventListener("change", () =>
+      this.vectorVis.setSize(slider.value)
+    );
+    slider.type = "range";
+    slider.min = 1;
+    slider.max = 512;
 
-  id() {
-    return `tree${this.vector.id()}`;
-  }
+    sliderContainer.appendChild(slider);
+    sliderContainer.appendChild(sliderTooltip);
 
-  setSize(size) {
-    if (this.rrbVecVis === undefined) {
-      this.rrbVecVis = new RrbVec(`#${this.id()}`);
+    const updateTooltip = () => {
+      const offset =
+        ((slider.value - slider.min) * 100) / (slider.max - slider.min);
+      sliderTooltip.innerHTML = `<span>${slider.value}</span>`;
+
+      // Kind of magic numbers based on size of the native UI thumb
+      sliderTooltip.style.left = `calc(${offset}% + (${5 - offset * 0.1}px))`;
+    };
+
+    slider.addEventListener("input", updateTooltip);
+    updateTooltip();
+
+    this.appendChild(sliderContainer);
+
+    if (this.vectorVis.size() > 0) {
+      slider.value = this.vectorVis.size();
+      slider.dispatchEvent(new Event("input"));
+      slider.dispatchEvent(new Event("change"));
     }
-
-    this.vector.setSize(size);
-    const rrbVec = this.vector.json();
-
-    this.rrbVecVis.set(rrbVec);
   }
 }
 
-class VectorFactory {
-  static create() {
-    const vecId = wasm.len();
+class AddVectorButtonComponent extends HTMLElement {
+  constructor() {
+    super();
+    this.onClick = null;
+  }
 
-    wasm.push_vec();
+  connectedCallback() {
+    const plusIcon = document.createElement("span");
+    plusIcon.classList.add("button-add-vector");
+    plusIcon.innerHTML = "+";
 
-    return new Vector(vecId);
+    this.classList.add("button-add-vector-container");
+    this.addEventListener("click", (event) => {
+      this.onClick(event);
+    });
+
+    this.appendChild(plusIcon);
   }
 }
 
-function createTree(vectorVis) {
-  const tree = document.createElement("div");
-  tree.id = vectorVis.id();
-  tree.classList.add("tree");
-
-  const sliderContainer = document.createElement("div");
-  sliderContainer.classList.add("slider-container");
-
-  const sliderTooltip = document.createElement("output");
-  sliderTooltip.classList.add("tooltip-value");
-
-  const slider = document.createElement("input");
-  slider.addEventListener("change", () => vectorVis.setSize(slider.value));
-  slider.type = "range";
-  slider.min = 1;
-  slider.max = 512;
-
-  sliderContainer.appendChild(slider);
-  sliderContainer.appendChild(sliderTooltip);
-
-  const updateTooltip = () => {
-    const offset =
-      ((slider.value - slider.min) * 100) / (slider.max - slider.min);
-    sliderTooltip.innerHTML = `<span>${slider.value}</span>`;
-
-    // Kind of magic numbers based on size of the native UI thumb
-    sliderTooltip.style.left = `calc(${offset}% + (${5 - offset * 0.1}px))`;
-  };
-
-  slider.addEventListener("input", updateTooltip);
-  updateTooltip();
-
-  tree.appendChild(sliderContainer);
-  return { tree, slider };
-}
-
-function createAddTreeButton(onClick) {
-  const container = document.createElement("div");
-  container.classList.add("button-add-tree-container");
-
-  const button = document.createElement("button");
-  button.type = "button";
-  button.classList.add("button-add-tree");
-
-  const plusIcon = document.createElement("span");
-  plusIcon.classList.add("button-add-tree-icon");
-  plusIcon.innerHTML = "+";
-
-  button.appendChild(plusIcon);
-  button.addEventListener("click", () => onClick(container));
-
-  container.appendChild(button);
-  return container;
-}
-
-function createGrid() {
-  const grid = document.createElement("div");
-  grid.classList.add("grid-tree");
-
-  return grid;
-}
-const grid = createGrid();
-
-const addTree = (button, initialSize) => {
-  const vector = VectorFactory.create();
-  const vectorVis = new VectorVis(vector);
-  const { tree, slider } = createTree(vectorVis);
-
-  grid.insertBefore(tree, button);
-
-  if (initialSize !== undefined) {
-    slider.value = initialSize;
-    slider.dispatchEvent(new Event("input"));
-    slider.dispatchEvent(new Event("change"));
+class GridComponent extends HTMLElement {
+  connectedCallback() {
+    this.classList.add("grid-vector");
   }
+}
+
+customElements.define("vector-component", VectorComponent);
+customElements.define("add-vector-button-component", AddVectorButtonComponent);
+customElements.define("grid-component", GridComponent);
+
+const grid = new GridComponent();
+const addVectorButton = new AddVectorButtonComponent();
+addVectorButton.onClick = (event) => {
+  const vectorVis = new VectorVis(VectorFactory.create(64));
+  const vectorComponent = new VectorComponent(vectorVis);
+
+  grid.insertBefore(vectorComponent, event.currentTarget);
 };
-const addTreeButton = createAddTreeButton(addTree);
 
-grid.appendChild(addTreeButton);
+grid.appendChild(addVectorButton);
 document.body.appendChild(grid);
 
-addTree(addTreeButton, 256);
+addVectorButton.dispatchEvent(new Event("click"));
