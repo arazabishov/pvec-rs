@@ -34,10 +34,14 @@ pub fn get_vec_size(vec_idx: usize) -> usize {
 }
 
 #[wasm_bindgen]
-pub fn split_off_vec(vec_idx: usize, idx: usize) {
+pub fn split_off_vec(vec_idx: usize, idx: usize) -> usize {
     unsafe {
         let other = STATE.get_mut(vec_idx).unwrap().split_off(idx);
-        STATE.push(other);
+        let new_vec_idx = vec_idx + 1;
+
+        STATE.insert(new_vec_idx, other);
+
+        new_vec_idx
     }
 }
 

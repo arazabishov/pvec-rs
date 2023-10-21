@@ -71,35 +71,55 @@ export class RrbVec {
       .attr("transform", () => `translate(${arrayCellWidth * 8}, 0)`);
   }
 
+  setOnMouseOverListener(listener) {
+    this.listener = listener;
+  }
+
   set(vec) {
-    this.root = d3.hierarchy(vec.tree.root, getDescendants);
-
-    this.root.x0 = dy / 2;
-    this.root.y0 = 0;
-
-    let descendants = this.root.descendants();
-    let next_node_to_expand = descendants ? descendants[0].data : null;
-
-    // descendants are sorted in topological order
-    descendants.forEach((d) => {
-      const { children, data } = d;
-
-      d.id = `${data.addr}:${data.len}`;
-      d._children = children;
-
-      // keep only the right-most branches expanded to save space
-      if (next_node_to_expand === data || (data && data.leaf)) {
-        const children = getDescendants(data);
-        next_node_to_expand = children ? children[data.len - 1] : undefined;
-      } else {
-        d.children = null;
-      }
-    });
-
-    this.updateTree(this.root);
-
-    // TODO: pass something else to be similar to updateTree?
     this.updateTail(vec.tail);
+
+    if (vec.tree.root_len > 0) {
+      this.root = d3.hierarchy(vec.tree.root, getDescendants);
+
+      this.root.x0 = dy / 2;
+      this.root.y0 = 0;
+
+      let descendants = this.root.descendants();
+      let next_node_to_expand = descendants ? descendants[0].data : null;
+
+      // Here we store subtree length within leaves to simplify
+      // vector splitting in outer layers.
+      let lenSubTree = 0;
+
+      // Sorting descendants in topological order.
+      descendants.forEach((d) => {
+        const { children, data } = d;
+
+        if (data.leaf) {
+          data.lenSubTree = lenSubTree;
+          lenSubTree += data.len;
+        }
+
+        d.id = `${data.addr}:${data.len}`;
+        d._children = children;
+
+        // keep only the right-most branches expanded to save space
+        if (next_node_to_expand === data || (data && data.leaf)) {
+          const children = getDescendants(data);
+          next_node_to_expand = children ? children[data.len - 1] : undefined;
+        } else {
+          d.children = null;
+        }
+      });
+
+      this.updateTree(this.root);
+    } else {
+      this.root = null;
+
+      // Clear out all nodes and paths when the root node is empty.
+      this.gNode.selectAll("g").remove();
+      this.gLink.selectAll("path").remove();
+    }
   }
 
   updateTree(source) {
@@ -143,17 +163,33 @@ export class RrbVec {
       .attr("transform", () => `translate(${source.x0},${source.y0})`)
       .attr("fill-opacity", 0)
       .attr("stroke-opacity", 0)
-      .on("click", (event, d) => {
-        // TODO: this function has to be assigned/updated properly?
-        // otherwise it can capture variables/references and that can lead to a bug
-        console.log("about to do something with this node", d);
+      .on("click", (_event, d) => {
         d.children = d.children ? null : d._children;
         this.updateTree(d);
       });
 
+    const onMouseOverNode = (onMouseOver, event, d) => {
+      // We don't want branch nodes to emit mouse hover events to outer layers as of now.
+      if (d.data.leaf && this.listener) {
+        // Inferring index here, so that outer layers don't have to deal with nodes directly.
+        const index = d.data.lenSubTree + d.position;
+
+        if (onMouseOver) {
+          this.listener.onMouseOver && this.listener.onMouseOver(event, index);
+        } else {
+          this.listener.onMouseOut && this.listener.onMouseOut(event, index);
+        }
+      }
+    };
+
     nodeEnter
       .selectAll("rect")
-      .data((d) => Array.from({ length: d.data.len }, () => d.data.len))
+      .data((d) =>
+        Array.from({ length: d.data.len }, (_v, i) => ({
+          data: d.data,
+          position: i,
+        }))
+      )
       .enter()
       .append("rect")
       .style("stroke-width", "1px")
@@ -163,8 +199,10 @@ export class RrbVec {
       .attr("height", arrayCellHeight)
       .attr(
         "transform",
-        (len, i) => `translate(${(i - len / 2) * arrayCellWidth}, 0)`
-      );
+        (d, i) => `translate(${(i - d.data.len / 2) * arrayCellWidth}, 0)`
+      )
+      .on("mouseover", (event, d) => onMouseOverNode(true, event, d))
+      .on("mouseout", (event, d) => onMouseOverNode(false, event, d));
 
     nodeEnter
       .selectAll("text")

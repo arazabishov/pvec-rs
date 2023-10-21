@@ -14,6 +14,11 @@ export class Vector {
     wasm.set_vec_size(this._id, size);
   }
 
+  splitAt(index) {
+    const newVecId = wasm.split_off_vec(this._id, index);
+    return new Vector(newVecId);
+  }
+
   size() {
     return wasm.get_vec_size(this._id);
   }
@@ -46,9 +51,27 @@ export class VectorVis {
     return `vec${this.vector.id()}`;
   }
 
+  vec() {
+    return this.vector;
+  }
+
+  selector() {
+    return `#${this.id()}`;
+  }
+
+  setOnMouseOverListener(listener) {
+    this.listener = listener;
+  }
+
+  update() {
+    const rrbVec = this.vector.json();
+    this.rrbVecVis.set(rrbVec);
+  }
+
   setSize(size) {
     if (this.rrbVecVis === undefined) {
-      this.rrbVecVis = new RrbVec(`#${this.id()}`);
+      this.rrbVecVis = new RrbVec(this.selector());
+      this.rrbVecVis.setOnMouseOverListener(this.listener);
     }
 
     this.vector.setSize(size);

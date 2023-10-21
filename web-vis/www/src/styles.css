@@ -75,19 +75,40 @@ body {
   }
 }
 
-.tooltip-value {
-  @apply absolute -translate-y-8;
-}
-
-.tooltip-value span {
+.tooltip-styles {
   @apply absolute block rounded-md bg-sky-400 text-white text-xs text-center w-8 h-6 leading-6;
-  @apply left-2/4 -translate-x-2/4;
 }
 
-.tooltip-value span:before {
+.tooltip-span-styles {
   @apply absolute content-[""] w-0 h-0 border-t-8 border-sky-400;
   @apply translate-y-6 left-2/4 -ml-[5px];
 
   border-right: 5px solid transparent;
   border-left: 5px solid transparent;
+}
+
+.tooltip-value {
+  @apply absolute -translate-y-8;
+}
+
+.tooltip-value span {
+  @apply tooltip-styles;
+  @apply left-2/4 -translate-x-2/4;
+}
+
+.tooltip-value span:before {
+  @apply tooltip-span-styles;
+}
+
+.tooltip-split {
+  @apply fixed cursor-pointer;
+  @apply opacity-0 transition-opacity duration-300 ease-in-out;
+}
+
+.tooltip-split span {
+  @apply tooltip-styles;
+}
+
+.tooltip-split span:before {
+  @apply tooltip-span-styles;
 }
