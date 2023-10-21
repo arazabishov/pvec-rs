@@ -85,11 +85,110 @@ customElements.define("grid-component", GridComponent);
 
 const grid = new GridComponent();
 const addVectorButton = new AddVectorButtonComponent();
-const addVector = (button) => {
-  const vectorVis = new VectorVis(VectorFactory.create(64));
-  const vectorComponent = new VectorComponent(vectorVis);
 
-  grid.insertBefore(vectorComponent, button);
+const createMouseEventsHandler = (vectorVis, vectorComponent) => {
+  const onHoverEventDelay = 256;
+
+  let vectorSplitControl = null;
+  let vectorSplitControlEntered = false;
+  let lastTargetHovered = null;
+
+  return {
+    onMouseOver: (onLeafOverEvent, index) => {
+      if (vectorSplitControl) {
+        vectorSplitControl.remove();
+      }
+
+      lastTargetHovered = onLeafOverEvent.target;
+      setTimeout(() => {
+        const target = onLeafOverEvent.target;
+        const targetElementRect = target.getBoundingClientRect();
+
+        if (target !== lastTargetHovered) {
+          // If mouse has already moved to another element, don't show the split control
+          return;
+        }
+
+        const vectorVisRoot = document.querySelector(vectorVis.selector());
+        vectorSplitControl = document.createElement("div");
+        vectorSplitControl.classList.add("tooltip-split");
+        vectorSplitControl.innerHTML = "<span>Split</span>";
+        vectorSplitControl.addEventListener("click", () => {
+          const vector = vectorVis.vec();
+          const other = vector.splitAt(index);
+
+          vectorVis.update();
+          addVectorToGrid(other, vectorComponent.nextSibling);
+
+          // Remove the control, otherwise it will be left hanging around
+          vectorSplitControl.remove();
+        });
+
+        vectorSplitControlEntered = false;
+        vectorSplitControl.addEventListener("mouseover", () => {
+          vectorSplitControlEntered = true;
+        });
+
+        vectorSplitControl.addEventListener("mouseout", () => {
+          vectorSplitControl.getBoundingClientRect();
+          vectorSplitControl.style.opacity = 0;
+
+          vectorSplitControl.addEventListener("transitionend", () => {
+            vectorSplitControl.remove();
+            vectorSplitControlEntered = false;
+          });
+        });
+
+        vectorVisRoot.appendChild(vectorSplitControl);
+
+        const vectorSplitControlRect =
+          vectorSplitControl.firstChild.getBoundingClientRect();
+        const offsetLeft =
+          targetElementRect.left +
+          targetElementRect.width / 2 -
+          vectorSplitControlRect.width / 2;
+        const offsetTop =
+          targetElementRect.top -
+          targetElementRect.height / 2 -
+          vectorSplitControlRect.height;
+        vectorSplitControl.style.left = `${offsetLeft}px`;
+        vectorSplitControl.style.top = `${offsetTop}px`;
+
+        // Trigger a reflow to force the browser to apply the opacity transition
+        vectorSplitControl.getBoundingClientRect();
+        vectorSplitControl.style.opacity = 1;
+      }, onHoverEventDelay);
+    },
+    onMouseOut: (event) => {
+      setTimeout(() => {
+        if (event.target === lastTargetHovered && !vectorSplitControlEntered) {
+          vectorSplitControl.getBoundingClientRect();
+          vectorSplitControl.style.opacity = 0;
+
+          vectorSplitControl.addEventListener("transitionend", () => {
+            vectorSplitControl.remove();
+          });
+        }
+      }, onHoverEventDelay);
+    },
+  };
+};
+
+const addVectorToGrid = (vector, nextSibling) => {
+  const vectorVis = new VectorVis(vector);
+  const vectorComponent = new VectorComponent(vectorVis);
+  const mouseEventsHandler = createMouseEventsHandler(
+    vectorVis,
+    vectorComponent
+  );
+
+  vectorVis.setOnMouseOverListener(mouseEventsHandler);
+  grid.insertBefore(vectorComponent, nextSibling);
+};
+
+const addVector = (button) => {
+  const vector = VectorFactory.create(64);
+  addVectorToGrid(vector, button);
 };
 addVectorButton.onClick = addVector;
 
