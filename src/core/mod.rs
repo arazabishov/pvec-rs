@@ -345,6 +345,9 @@ impl<T: Clone + Debug> RrbVec<T> {
 
                         right.tail = new_tail;
                         right.tail_len = new_tail_len;
+
+                        // in case if tail is exactly BRANCH_FACTOR long, we should push it to the tree
+                        right.push_tail()
                     } else if right.tree.len() < BRANCH_FACTOR {
                         // root is leaf, but it is not fully dense
                         // hence, some of the values should be redistributed to the actual leaf
