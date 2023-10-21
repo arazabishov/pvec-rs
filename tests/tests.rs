@@ -266,6 +266,21 @@ macro_rules! make_tests {
             }
 
             #[test]
+            fn interleaving_push_split_off_push_operations() {
+                let mut vec_one = $vec::new();
+
+                for i in 0..(BRANCH_FACTOR * BRANCH_FACTOR) {
+                    vec_one.push(i);
+                }
+
+                let mut vec_two = vec_one.split_off(BRANCH_FACTOR * BRANCH_FACTOR - BRANCH_FACTOR);
+                vec_two.push(0xbeef);
+
+                assert_eq!(vec_one.len(), BRANCH_FACTOR * BRANCH_FACTOR - BRANCH_FACTOR);
+                assert_eq!(vec_two.len(), BRANCH_FACTOR + 1);
+            }
+
+            #[test]
             fn interleaving_different_operations_must_maintain_correct_internal_state_for_var_sizes_4() {
                 interleaving_different_operations_must_maintain_correct_internal_state(4);
             }
