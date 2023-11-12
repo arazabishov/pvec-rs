@@ -1,5 +1,6 @@
 import "./styles.css";
-import { WasmDecorator, VectorVis } from "./vector";
+import { VectorVis, Vector } from "./vector";
+import { WasmDecorator } from "./wasm";
 
 class VectorComponent extends HTMLElement {
   constructor(vectorVis) {
@@ -263,7 +264,10 @@ const addVectorToGrid = (vector, nextSibling) => {
 };
 
 const addVector = (button) => {
-  const vector = wasmDecorator.add(64);
+  const vecId = wasmDecorator.pushVec();
+  const vector = new Vector(vecId, wasmDecorator);
+  vector.setSize(64);
+
   addVectorToGrid(vector, button);
 };
 addVectorButton.onClick = addVector;

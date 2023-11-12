@@ -1,54 +1,4 @@
 import { RrbVec } from "./rrbvec.js";
-import * as wasm from "web-vis";
-
-export class WasmDecorator {
-  constructor(listener) {
-    this.listener = listener;
-  }
-
-  add(initialSize) {
-    const vecId = wasm.len();
-    wasm.push_vec();
-
-    const vector = new Vector(vecId, this);
-    if (initialSize !== undefined) {
-      vector.setSize(initialSize);
-    }
-
-    this.listener();
-
-    return vector;
-  }
-
-  setSize(id, size) {
-    wasm.set_vec_size(id, size);
-    this.listener();
-  }
-
-  splitOffVec(id, index) {
-    const other = wasm.split_off_vec(id, index);
-    this.listener();
-
-    return other;
-  }
-
-  getVecSize(id) {
-    return wasm.get_vec_size(id);
-  }
-
-  get(id) {
-    return wasm.get(id);
-  }
-
-  concatenatAll() {
-    wasm.concatenat_all();
-    this.listener();
-  }
-
-  len() {
-    return wasm.len();
-  }
-}
 
 export class Vector {
   constructor(id, wasmDecorator) {
@@ -61,7 +11,7 @@ export class Vector {
   }
 
   setSize(size) {
-    this.wasmDecorator.setSize(this._id, size);
+    this.wasmDecorator.setVecSize(this._id, size);
   }
 
   splitAt(index) {
