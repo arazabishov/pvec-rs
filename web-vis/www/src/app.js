@@ -17,35 +17,51 @@ class VectorComponent extends HTMLElement {
     const sliderTooltip = document.createElement("output");
     sliderTooltip.classList.add("tooltip-value");
 
-    const slider = document.createElement("input");
-    slider.addEventListener("change", () =>
-      this.vectorVis.setSize(slider.value)
+    this.slider = document.createElement("input");
+    this.slider.addEventListener("change", () =>
+      this.vectorVis.setSize(this.slider.value)
     );
-    slider.type = "range";
-    slider.min = 1;
-    slider.max = 512;
+    this.slider.type = "range";
+    this.slider.min = 1;
+    this.slider.max = 512;
 
-    sliderContainer.appendChild(slider);
+    sliderContainer.appendChild(this.slider);
     sliderContainer.appendChild(sliderTooltip);
 
     const updateTooltip = () => {
       const offset =
-        ((slider.value - slider.min) * 100) / (slider.max - slider.min);
-      sliderTooltip.innerHTML = `<span>${slider.value}</span>`;
+        ((this.slider.value - this.slider.min) * 100) /
+        (this.slider.max - this.slider.min);
+      sliderTooltip.innerHTML = `<span>${this.slider.value}</span>`;
 
       // Kind of magic numbers based on size of the native UI thumb
       sliderTooltip.style.left = `calc(${offset}% + (${5 - offset * 0.1}px))`;
     };
 
-    slider.addEventListener("input", updateTooltip);
+    this.slider.addEventListener("input", updateTooltip);
     updateTooltip();
 
     this.appendChild(sliderContainer);
 
     if (this.vectorVis.size() > 0) {
-      slider.value = this.vectorVis.size();
-      slider.dispatchEvent(new Event("input"));
-      slider.dispatchEvent(new Event("change"));
+      this.slider.value = this.vectorVis.size();
+      this.slider.dispatchEvent(new Event("input"));
+      this.slider.dispatchEvent(new Event("change"));
+    }
+  }
+
+  update() {
+    this.vectorVis.update();
+    const vecSize = this.vectorVis.size();
+
+    if (vecSize > 0) {
+      if (this.slider.max < vecSize) {
+        this.slider.max = vecSize;
+      }
+
+      this.slider.value = vecSize;
+      this.slider.dispatchEvent(new Event("input"));
+      this.slider.dispatchEvent(new Event("change"));
     }
   }
 }
@@ -117,7 +133,7 @@ const createMouseEventsHandler = (vectorVis, vectorComponent) => {
           const vector = vectorVis.vec();
           const other = vector.splitAt(index);
 
-          vectorVis.update();
+          vectorComponent.update();
           addVectorToGrid(other, vectorComponent.nextSibling);
 
           // Remove the control, otherwise it will be left hanging around
