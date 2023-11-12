@@ -1,5 +1,5 @@
 import "./styles.css";
-import { VectorFactory, VectorVis } from "./vector";
+import { WasmDecorator, VectorVis } from "./vector";
 
 class VectorComponent extends HTMLElement {
   constructor(vectorVis) {
@@ -89,6 +89,39 @@ class AddVectorButtonComponent extends HTMLElement {
   }
 }
 
+class ConcatenateVectorsButtonComponent extends HTMLElement {
+  constructor() {
+    super();
+    this.onClick = null;
+    this.classList.add(
+      "transition-opacity",
+      "duration-500",
+      "ease-in-out",
+      "opacity-0"
+    );
+  }
+
+  connectedCallback() {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.innerHTML = "Concatenate";
+    button.classList.add("button-concat-all");
+    button.addEventListener("click", () => this.onClick(this));
+
+    this.appendChild(button);
+  }
+
+  show() {
+    this.classList.remove("opacity-0");
+    this.classList.add("opacity-100");
+  }
+
+  hide() {
+    this.classList.remove("opacity-100");
+    this.classList.add("opacity-0");
+  }
+}
+
 class GridComponent extends HTMLElement {
   connectedCallback() {
     this.classList.add("grid-vector");
@@ -98,7 +131,34 @@ class GridComponent extends HTMLElement {
 customElements.define("vector-component", VectorComponent);
 customElements.define("add-vector-button-component", AddVectorButtonComponent);
 customElements.define("grid-component", GridComponent);
+customElements.define(
+  "concatenate-vectors-button-component",
+  ConcatenateVectorsButtonComponent
+);
 
+const concatenateVectorsButton = new ConcatenateVectorsButtonComponent();
+concatenateVectorsButton.onClick = () => {
+  // If we have only one vector, there is nothing to concatenate.
+  if (wasmDecorator.len() > 1) {
+    wasmDecorator.concatenatAll();
+
+    // After concatenation, there will be only one vector left. Hence, we need to prune the rest.
+    while (grid.children.length > 2) {
+      grid.removeChild(grid.children[1]);
+    }
+
+    // Signal the first vector to update itself, as it now contains values from all other vectors.
+    grid.firstElementChild.update();
+  }
+};
+
+const wasmDecorator = new WasmDecorator(() => {
+  if (wasmDecorator.len() > 1) {
+    concatenateVectorsButton.show();
+  } else {
+    concatenateVectorsButton.hide();
+  }
+});
 const grid = new GridComponent();
 const addVectorButton = new AddVectorButtonComponent();
 
@@ -203,7 +263,7 @@ const addVectorToGrid = (vector, nextSibling) => {
 };
 
 const addVector = (button) => {
-  const vector = VectorFactory.create(64);
+  const vector = wasmDecorator.add(64);
   addVectorToGrid(vector, button);
 };
 addVectorButton.onClick = addVector;
@@ -212,3 +272,4 @@ grid.appendChild(addVectorButton);
 document.body.appendChild(grid);
 
 addVector(addVectorButton);
+document.body.appendChild(concatenateVectorsButton);

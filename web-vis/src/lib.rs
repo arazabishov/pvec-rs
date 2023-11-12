@@ -46,6 +46,20 @@ pub fn split_off_vec(vec_idx: usize, idx: usize) -> usize {
 }
 
 #[wasm_bindgen]
+pub fn concatenat_all() {
+    unsafe {
+        let mut first = STATE.first_mut();
+        if let Some(ref mut accumulator) = first {
+            for i in 1..STATE.len() {
+                let other = STATE.get_mut(i).unwrap();
+                accumulator.append(other);
+            }
+        }
+        STATE.truncate(1);
+    }
+}
+
+#[wasm_bindgen]
 pub fn clear() {
     unsafe { STATE.clear() }
 }
