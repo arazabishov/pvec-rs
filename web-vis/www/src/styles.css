@@ -76,11 +76,11 @@ body {
 }
 
 .tooltip-styles {
-  @apply absolute block rounded-md bg-sky-400 text-white text-xs text-center w-8 h-6 leading-6;
+  @apply absolute block rounded-md bg-blue-400 text-white text-xs text-center w-12 h-6 leading-6 font-mono;
 }
 
 .tooltip-span-styles {
-  @apply absolute content-[""] w-0 h-0 border-t-8 border-sky-400;
+  @apply absolute content-[""] w-0 h-0 border-t-8 border-blue-400;
   @apply translate-y-6 left-2/4 -ml-[5px];
 
   border-right: 5px solid transparent;
@@ -106,9 +106,17 @@ body {
 }
 
 .tooltip-split span {
-  @apply tooltip-styles;
+  @apply tooltip-styles hover:bg-blue-500;
 }
 
 .tooltip-split span:before {
   @apply tooltip-span-styles;
+}
+
+.tooltip-split span:hover:before {
+  border-top-color: theme("colors.blue.500");
+}
+
+.button-concat-all {
+  @apply fixed bottom-4 right-4 bg-blue-400 hover:bg-blue-500 text-white rounded-md py-6 px-4 shadow-lg font-mono;
 }

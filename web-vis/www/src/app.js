@@ -1,5 +1,6 @@
 import "./styles.css";
-import { VectorFactory, VectorVis } from "./vector";
+import { VectorVis, Vector } from "./vector";
+import { WasmDecorator } from "./wasm";
 
 class VectorComponent extends HTMLElement {
   constructor(vectorVis) {
@@ -17,35 +18,51 @@ class VectorComponent extends HTMLElement {
     const sliderTooltip = document.createElement("output");
     sliderTooltip.classList.add("tooltip-value");
 
-    const slider = document.createElement("input");
-    slider.addEventListener("change", () =>
-      this.vectorVis.setSize(slider.value)
+    this.slider = document.createElement("input");
+    this.slider.addEventListener("change", () =>
+      this.vectorVis.setSize(this.slider.value)
     );
-    slider.type = "range";
-    slider.min = 1;
-    slider.max = 512;
+    this.slider.type = "range";
+    this.slider.min = 1;
+    this.slider.max = 512;
 
-    sliderContainer.appendChild(slider);
+    sliderContainer.appendChild(this.slider);
     sliderContainer.appendChild(sliderTooltip);
 
     const updateTooltip = () => {
       const offset =
-        ((slider.value - slider.min) * 100) / (slider.max - slider.min);
-      sliderTooltip.innerHTML = `<span>${slider.value}</span>`;
+        ((this.slider.value - this.slider.min) * 100) /
+        (this.slider.max - this.slider.min);
+      sliderTooltip.innerHTML = `<span>${this.slider.value}</span>`;
 
       // Kind of magic numbers based on size of the native UI thumb
       sliderTooltip.style.left = `calc(${offset}% + (${5 - offset * 0.1}px))`;
     };
 
-    slider.addEventListener("input", updateTooltip);
+    this.slider.addEventListener("input", updateTooltip);
     updateTooltip();
 
     this.appendChild(sliderContainer);
 
     if (this.vectorVis.size() > 0) {
-      slider.value = this.vectorVis.size();
-      slider.dispatchEvent(new Event("input"));
-      slider.dispatchEvent(new Event("change"));
+      this.slider.value = this.vectorVis.size();
+      this.slider.dispatchEvent(new Event("input"));
+      this.slider.dispatchEvent(new Event("change"));
+    }
+  }
+
+  update() {
+    this.vectorVis.update();
+    const vecSize = this.vectorVis.size();
+
+    if (vecSize > 0) {
+      if (this.slider.max < vecSize) {
+        this.slider.max = vecSize;
+      }
+
+      this.slider.value = vecSize;
+      this.slider.dispatchEvent(new Event("input"));
+      this.slider.dispatchEvent(new Event("change"));
     }
   }
 }
@@ -73,6 +90,39 @@ class AddVectorButtonComponent extends HTMLElement {
   }
 }
 
+class ConcatenateVectorsButtonComponent extends HTMLElement {
+  constructor() {
+    super();
+    this.onClick = null;
+    this.classList.add(
+      "transition-opacity",
+      "duration-500",
+      "ease-in-out",
+      "opacity-0"
+    );
+  }
+
+  connectedCallback() {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.innerHTML = "Concatenate";
+    button.classList.add("button-concat-all");
+    button.addEventListener("click", () => this.onClick(this));
+
+    this.appendChild(button);
+  }
+
+  show() {
+    this.classList.remove("opacity-0");
+    this.classList.add("opacity-100");
+  }
+
+  hide() {
+    this.classList.remove("opacity-100");
+    this.classList.add("opacity-0");
+  }
+}
+
 class GridComponent extends HTMLElement {
   connectedCallback() {
     this.classList.add("grid-vector");
@@ -82,7 +132,34 @@ class GridComponent extends HTMLElement {
 customElements.define("vector-component", VectorComponent);
 customElements.define("add-vector-button-component", AddVectorButtonComponent);
 customElements.define("grid-component", GridComponent);
+customElements.define(
+  "concatenate-vectors-button-component",
+  ConcatenateVectorsButtonComponent
+);
 
+const concatenateVectorsButton = new ConcatenateVectorsButtonComponent();
+concatenateVectorsButton.onClick = () => {
+  // If we have only one vector, there is nothing to concatenate.
+  if (wasmDecorator.len() > 1) {
+    wasmDecorator.concatenatAll();
+
+    // After concatenation, there will be only one vector left. Hence, we need to prune the rest.
+    while (grid.children.length > 2) {
+      grid.removeChild(grid.children[1]);
+    }
+
+    // Signal the first vector to update itself, as it now contains values from all other vectors.
+    grid.firstElementChild.update();
+  }
+};
+
+const wasmDecorator = new WasmDecorator(() => {
+  if (wasmDecorator.len() > 1) {
+    concatenateVectorsButton.show();
+  } else {
+    concatenateVectorsButton.hide();
+  }
+});
 const grid = new GridComponent();
 const addVectorButton = new AddVectorButtonComponent();
 
@@ -117,7 +194,7 @@ const createMouseEventsHandler = (vectorVis, vectorComponent) => {
           const vector = vectorVis.vec();
           const other = vector.splitAt(index);
 
-          vectorVis.update();
+          vectorComponent.update();
           addVectorToGrid(other, vectorComponent.nextSibling);
 
           // Remove the control, otherwise it will be left hanging around
@@ -187,7 +264,10 @@ const addVectorToGrid = (vector, nextSibling) => {
 };
 
 const addVector = (button) => {
-  const vector = VectorFactory.create(64);
+  const vecId = wasmDecorator.pushVec();
+  const vector = new Vector(vecId, wasmDecorator);
+  vector.setSize(64);
+
   addVectorToGrid(vector, button);
 };
 addVectorButton.onClick = addVector;
@@ -196,3 +276,4 @@ grid.appendChild(addVectorButton);
 document.body.appendChild(grid);
 
 addVector(addVectorButton);
+document.body.appendChild(concatenateVectorsButton);
