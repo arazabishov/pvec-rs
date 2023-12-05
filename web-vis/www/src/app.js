@@ -24,7 +24,7 @@ class VectorComponent extends HTMLElement {
     );
     this.slider.type = "range";
     this.slider.min = 1;
-    this.slider.max = 512;
+    this.slider.max = 4096;
 
     sliderContainer.appendChild(this.slider);
     sliderContainer.appendChild(sliderTooltip);
@@ -140,16 +140,22 @@ customElements.define(
 const concatenateVectorsButton = new ConcatenateVectorsButtonComponent();
 concatenateVectorsButton.onClick = () => {
   // If we have only one vector, there is nothing to concatenate.
-  if (wasmDecorator.len() > 1) {
-    wasmDecorator.concatenatAll();
+  while (grid.children.length > 2) {
+    const lastVector = grid.children[grid.children.length - 1 - 1];
+    const prevToLastVector = lastVector.previousSibling;
 
-    // After concatenation, there will be only one vector left. Hence, we need to prune the rest.
-    while (grid.children.length > 2) {
-      grid.removeChild(grid.children[1]);
-    }
+    prevToLastVector.vectorVis.concatenate(lastVector.vectorVis);
+    prevToLastVector.update();
 
+    lastVector.remove();
+
+    // wasmDecorator.concatenate();
+    // // After concatenation, there will be only one vector left. Hence, we need to prune the rest.
+    // while (grid.children.length > 2) {
+    //   grid.removeChild(grid.children[1]);
+    // }
     // Signal the first vector to update itself, as it now contains values from all other vectors.
-    grid.firstElementChild.update();
+    // grid.firstElementChild.update();
   }
 };
 
@@ -238,7 +244,11 @@ const createMouseEventsHandler = (vectorVis, vectorComponent) => {
     },
     onMouseOut: (event) => {
       setTimeout(() => {
-        if (event.target === lastTargetHovered && !vectorSplitControlEntered) {
+        if (
+          event.target === lastTargetHovered &&
+          !vectorSplitControlEntered &&
+          vectorSplitControl
+        ) {
           vectorSplitControl.getBoundingClientRect();
           vectorSplitControl.style.opacity = 0;
 
