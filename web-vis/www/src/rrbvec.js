@@ -46,7 +46,8 @@ const getDescendants = (node) => {
 };
 
 export class RrbVec {
-  constructor(selector) {
+  constructor(selector, colorResolver) {
+    this.colorResolver = colorResolver;
     this.svgTree = d3
       .select(selector)
       .append("svg")
@@ -76,6 +77,10 @@ export class RrbVec {
   }
 
   set(vec) {
+    // color that is being reused: prev: 1175784, next: 1175784
+    //
+    console.log("::: vec", vec);
+
     this.updateTail(vec.tail);
 
     if (vec.tree.root_len > 0) {
@@ -186,6 +191,7 @@ export class RrbVec {
       .selectAll("rect")
       .data((d) =>
         Array.from({ length: d.data.len }, (_v, i) => ({
+          parent: d?.parent,
           data: d.data,
           position: i,
         }))
@@ -194,7 +200,10 @@ export class RrbVec {
       .append("rect")
       .style("stroke-width", "1px")
       .style("stroke", "black")
-      .style("fill", "none")
+      .style("fill", (node) => {
+        console.log("::: node", node);
+        return this.colorResolver(node);
+      })
       .attr("width", arrayCellWidth)
       .attr("height", arrayCellHeight)
       .attr(

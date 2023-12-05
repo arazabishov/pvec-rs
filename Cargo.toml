@@ -25,6 +25,7 @@ serde = { version = "1.0.73", features = ["rc"], optional = true}
 serde_json = { version = "1.0.26", optional = true }
 serde_derive = { version = "1.0.73", optional = true }
 rayon = { version = "1.1.0", optional = true }
+uuid = { version = "1.5.0", features = ["v4", "js"], optional = true }
 
 [dev-dependencies]
 im-rc = "14.0.0"
@@ -39,6 +40,7 @@ serde_serializer = ["serde", "serde_json", "serde_derive"]
 rayon_iter = ["rayon"]
 small_branch = []
 arc = []
+vis = ["uuid"]
 
 [lib]
 bench = false

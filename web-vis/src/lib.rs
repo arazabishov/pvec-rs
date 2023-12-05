@@ -46,6 +46,19 @@ pub fn split_off_vec(vec_idx: usize, idx: usize) -> usize {
 }
 
 #[wasm_bindgen]
+pub fn concatenate(vec_idx_self: usize, vec_idx_that: usize) {
+    unsafe {
+        let vec_self = STATE.get_mut(vec_idx_self).unwrap();
+        let vec_that = STATE.get_mut(vec_idx_that).unwrap();
+
+        vec_self.append(vec_that);
+
+        // Ensure that empty vector is removed.
+        STATE.remove(vec_idx_that);
+    }
+}
+
+#[wasm_bindgen]
 pub fn concatenat_all() {
     unsafe {
         let mut first = STATE.first_mut();
