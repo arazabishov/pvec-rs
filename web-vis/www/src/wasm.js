@@ -26,6 +26,11 @@ export class WasmDecorator {
     return other;
   }
 
+  concatenate(one, two) {
+    wasm.concatenate(one, two);
+    this.listener();
+  }
+
   concatenatAll() {
     wasm.concatenat_all();
     this.listener();

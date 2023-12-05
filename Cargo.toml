@@ -24,6 +24,7 @@ members = [
 serde = { version = "1.0.200", features = ["rc"], optional = true }
 serde_json = { version = "1.0.133", optional = true }
 rayon = { version = "1.10", optional = true }
+uuid = { version = "1.5.0", features = ["v4", "js"], optional = true }
 
 [dev-dependencies]
 im-rc = "15.1.0"
@@ -38,6 +39,7 @@ serde_serializer = ["serde", "serde_json"]
 rayon_iter = ["rayon"]
 small_branch = []
 arc = []
+vis = ["uuid"]
 
 [lib]
 bench = false

@@ -4,6 +4,7 @@ use super::{Branch, Leaf, Node, RelaxedBranch, RrbTree};
 
 use serde::ser::{Serialize, SerializeSeq, SerializeStruct, Serializer};
 
+#[cfg(feature = "vis")]
 impl<T> RelaxedBranch<T>
 where
     T: Serialize,
@@ -19,21 +20,21 @@ where
                 let child_json_value = match child {
                     Node::RelaxedBranch(ref relaxed_branch) => serde_json::json!({
                         "relaxedBranch": child,
-                        "sizes": relaxed_branch.sizes,
-                        "refs": SharedPtr::strong_count(relaxed_branch),
-                        "addr": SharedPtr::as_ptr(relaxed_branch) as usize,
+                        "sizes": relaxed_branch.sizes,           
+                        "refs": SharedPtr::strong_count(relaxed_branch),             
+                        "addr": relaxed_branch.get_uuid(),
                         "len": relaxed_branch.len
                     }),
                     Node::Branch(ref branch) => serde_json::json!({
                         "branch": child,
                         "refs": SharedPtr::strong_count(branch),
-                        "addr": SharedPtr::as_ptr(branch) as usize,
+                        "addr": branch.get_uuid(),
                         "len": branch.len
                     }),
                     Node::Leaf(ref leaf) => serde_json::json!({
                         "leaf": child,
                         "refs": SharedPtr::strong_count(leaf),
-                        "addr": SharedPtr::as_ptr(leaf) as usize,
+                        "addr": leaf.get_uuid(),
                         "len": leaf.len
                     }),
                 };
@@ -54,6 +55,7 @@ where
     }
 }
 
+#[cfg(feature = "vis")]
 impl<T> Branch<T>
 where
     T: Serialize,
@@ -71,19 +73,19 @@ where
                             "relaxedBranch": child,
                             "sizes": relaxed_branch.sizes,
                             "refs": SharedPtr::strong_count(relaxed_branch),
-                            "addr": SharedPtr::as_ptr(relaxed_branch) as usize,
+                            "addr": relaxed_branch.get_uuid(),
                             "len": relaxed_branch.len
                     }),
                     Node::Branch(ref branch) => serde_json::json!({
                             "branch": child,
                             "refs": SharedPtr::strong_count(branch),
-                            "addr": SharedPtr::as_ptr(branch) as usize,
+                            "addr": branch.get_uuid(),
                             "len": branch.len
                     }),
                     Node::Leaf(ref leaf) => serde_json::json!({
                             "leaf": child,
                             "refs": SharedPtr::strong_count(leaf),
-                            "addr": SharedPtr::as_ptr(leaf) as usize,
+                            "addr": leaf.get_uuid(),
                             "len": leaf.len
                     }),
                 };
@@ -104,6 +106,7 @@ where
     }
 }
 
+#[cfg(feature = "vis")]
 impl<T> Leaf<T>
 where
     T: Serialize,
@@ -122,6 +125,7 @@ where
     }
 }
 
+#[cfg(feature = "vis")]
 impl<T> Serialize for Node<T>
 where
     T: Serialize,
@@ -138,6 +142,7 @@ where
     }
 }
 
+#[cfg(feature = "vis")]
 impl<T> Serialize for RrbTree<T>
 where
     T: Serialize,
@@ -152,19 +157,19 @@ where
                     "relaxedBranch": root,
                     "sizes": relaxed_branch.sizes,
                     "refs": SharedPtr::strong_count(relaxed_branch),
-                    "addr": SharedPtr::as_ptr(relaxed_branch) as usize,
+                    "addr": relaxed_branch.get_uuid(),
                     "len": relaxed_branch.len
                 }),
                 Node::Branch(ref branch) => serde_json::json!({
                     "branch": root,
                     "refs":  SharedPtr::strong_count(branch),
-                    "addr": SharedPtr::as_ptr(branch) as usize,
+                    "addr": branch.get_uuid(),
                     "len": branch.len
                 }),
                 Node::Leaf(ref leaf) => serde_json::json!({
                     "leaf": root,
                     "refs": SharedPtr::strong_count(leaf),
-                    "addr": SharedPtr::as_ptr(leaf) as usize,
+                    "addr": leaf.get_uuid(),
                     "len": leaf.len
                 }),
             };
