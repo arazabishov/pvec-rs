@@ -1,5 +1,17 @@
+# JetBrains IDE configuration
 .idea/
+
+# Rust build artifacts
 target/
+
+# Backup files
 **/*.rs.bk
+
+# Binary directories
 bin/
+
+# macOS directory metadata
 .DS_Store
+
+# Jekyll
+_site/
