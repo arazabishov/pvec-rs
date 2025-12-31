@@ -1,0 +1,57 @@
+name: deploy
+on:
+  push:
+    branches:
+      - trunk
+jobs:
+  deploy:
+    name: Deploy to Cloudflare Pages
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      deployments: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # Build WASM
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+      - name: Install wasm-pack
+        run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
+      - name: Build wasm
+        run: wasm-pack build
+        working-directory: web-vis
+
+      # Build web-vis/www
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install web-vis dependencies
+        run: npm install
+        working-directory: web-vis/www
+      - name: Build web-vis
+        run: npm run build
+        working-directory: web-vis/www
+
+      # Build Jekyll site
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.2'
+          bundler-cache: true
+      - name: Build Jekyll site
+        run: bundle exec jekyll build
+
+      # Copy web-vis output into Jekyll _site
+      - name: Copy web-vis to _site
+        run: cp -r web-vis/www/dist _site/web-vis
+
+      # Deploy to Cloudflare Pages
+      - name: Deploy to Cloudflare Pages
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy _site --project-name=pvec-rs
