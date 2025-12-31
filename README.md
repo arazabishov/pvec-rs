@@ -8,7 +8,7 @@ A persistent vector implementation based on RRB-Tree for Rust, inspired by the b
 
 One of the vector types - **PVec**, explores an idea of starting out as the standard vector and spills to the tree representation only when cloned to offer the best possible performance. The API of methods provided by pvec-rs is identical to the standard vector, reducing the friction of using the library. Another notable feature is the out of the box support for [Rayon](https://github.com/rayon-rs/rayon).
 
-The performance evaluation of the library is provided in the [technical report](https://abishov.com/thesis). PVec is available on [crates.io](https://crates.io/crates/pvec), and API documentation is available on [docs.rs](https://docs.rs/pvec/0.2.1/pvec/).
+The performance evaluation of the library is provided in the [technical report](https://abishov.com/thesis). PVec is available on [crates.io](https://crates.io/crates/pvec), and API documentation is available on [docs.rs](https://docs.rs/pvec/0.2.1/pvec/). An interactive visualization of the RRB-Tree structure is available at [web-vis](https://abishov.com/pvec-rs/web-vis/).
 
 ## Example
 
