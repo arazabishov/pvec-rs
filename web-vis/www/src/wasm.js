@@ -6,9 +6,8 @@ export class WasmDecorator {
   }
 
   pushVec() {
-    const vecId = wasm.len();
-
-    wasm.push_vec();
+    // push_vec now returns the stable ID directly
+    const vecId = wasm.push_vec();
     this.listener();
 
     return vecId;
