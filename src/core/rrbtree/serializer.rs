@@ -20,8 +20,8 @@ where
                 let child_json_value = match child {
                     Node::RelaxedBranch(ref relaxed_branch) => serde_json::json!({
                         "relaxedBranch": child,
-                        "sizes": relaxed_branch.sizes,           
-                        "refs": SharedPtr::strong_count(relaxed_branch),             
+                        "sizes": relaxed_branch.sizes,
+                        "refs": SharedPtr::strong_count(relaxed_branch),
                         "addr": relaxed_branch.get_uuid(),
                         "len": relaxed_branch.len
                     }),

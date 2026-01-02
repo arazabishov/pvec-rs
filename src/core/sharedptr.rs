@@ -3,8 +3,8 @@ use std::rc::Rc;
 #[cfg(feature = "arc")]
 use std::sync::Arc;
 
-use std::ops::Deref;
 use std::fmt::Debug;
+use std::ops::Deref;
 
 #[cfg(feature = "vis")]
 use uuid::Uuid;
@@ -41,10 +41,16 @@ impl<T> IdentifiableSharedPtr<T> {
         self.uuid.clone()
     }
 
-    pub fn try_unwrap(this: Self) -> Result<T, Self> where T: Clone {
+    pub fn try_unwrap(this: Self) -> Result<T, Self>
+    where
+        T: Clone,
+    {
         match StdSharedPtr::try_unwrap(this.data) {
             Ok(data) => Ok(data),
-            Err(data) => Err(Self { data, uuid: this.uuid }),
+            Err(data) => Err(Self {
+                data,
+                uuid: this.uuid,
+            }),
         }
     }
     pub fn strong_count(&self) -> usize {
@@ -78,13 +84,12 @@ impl<T> Clone for IdentifiableSharedPtr<T> {
     }
 }
 
-
 pub trait Take<T: Clone> {
     fn take(self) -> T;
 }
 
 impl<T: Clone + Debug> Take<T> for SharedPtr<T> {
-    /// Takes the ownership of the underlying value if the reference count is one. 
+    /// Takes the ownership of the underlying value if the reference count is one.
     /// Otherwise, clones the value and returns it.
     fn take(self) -> T {
         SharedPtr::try_unwrap(self).unwrap_or_else(|ptr| (*ptr).clone())

@@ -1,19 +1,49 @@
 use pvec::core::RrbVec;
+use std::cell::RefCell;
+use std::collections::HashMap;
+use uuid::Uuid;
 use wasm_bindgen::prelude::*;
 
-// We need to keep state on the WASM side because we rely on the identity of underlying objects.
-// If we serialize and send values over to JS we will lose identity of objects, which defeats the whole point of the demo.
-static mut STATE: Vec<RrbVec<usize>> = Vec::new();
+type VecId = String;
 
-#[wasm_bindgen]
-pub fn push_vec() {
-    unsafe { STATE.push(RrbVec::new()) }
+struct State {
+    vectors: HashMap<VecId, RrbVec<usize>>,
+    order: Vec<VecId>,
+}
+
+impl State {
+    fn new() -> Self {
+        State {
+            vectors: HashMap::new(),
+            order: Vec::new(),
+        }
+    }
+
+    fn new_id() -> VecId {
+        Uuid::new_v4().to_string()
+    }
+}
+
+thread_local! {
+    static STATE: RefCell<State> = RefCell::new(State::new());
 }
 
 #[wasm_bindgen]
-pub fn set_vec_size(vec_idx: usize, size: usize) {
-    unsafe {
-        let vec = STATE.get_mut(vec_idx).unwrap();
+pub fn push_vec() -> String {
+    STATE.with(|state| {
+        let mut s = state.borrow_mut();
+        let id = State::new_id();
+        s.vectors.insert(id.clone(), RrbVec::new());
+        s.order.push(id.clone());
+        id
+    })
+}
+
+#[wasm_bindgen]
+pub fn set_vec_size(vec_id: String, size: usize) {
+    STATE.with(|state| {
+        let mut s = state.borrow_mut();
+        let vec = s.vectors.get_mut(&vec_id).expect("Vector not found");
 
         if vec.len() < size {
             for i in vec.len()..size {
@@ -22,72 +52,113 @@ pub fn set_vec_size(vec_idx: usize, size: usize) {
         } else {
             vec.split_off(size);
         }
-    }
+    })
 }
 
 #[wasm_bindgen]
-pub fn get_vec_size(vec_idx: usize) -> usize {
-    unsafe { STATE.get(vec_idx).unwrap().len() }
+pub fn get_vec_size(vec_id: String) -> usize {
+    STATE.with(|state| {
+        state
+            .borrow()
+            .vectors
+            .get(&vec_id)
+            .expect("Vector not found")
+            .len()
+    })
 }
 
 #[wasm_bindgen]
-pub fn split_off_vec(vec_idx: usize, idx: usize) -> usize {
-    unsafe {
-        let other = STATE.get_mut(vec_idx).unwrap().split_off(idx);
-        let new_vec_idx = vec_idx + 1;
+pub fn split_off_vec(vec_id: String, idx: usize) -> String {
+    STATE.with(|state| {
+        let mut s = state.borrow_mut();
 
-        STATE.insert(new_vec_idx, other);
+        let vec = s.vectors.get_mut(&vec_id).expect("Vector not found");
+        let other = vec.split_off(idx);
 
-        new_vec_idx
-    }
+        let new_id = State::new_id();
+
+        s.vectors.insert(new_id.clone(), other);
+
+        let pos = s.order.iter().position(|id| *id == vec_id).unwrap();
+        s.order.insert(pos + 1, new_id.clone());
+
+        new_id
+    })
 }
 
 #[wasm_bindgen]
-pub fn concatenate(vec_idx_self: usize, vec_idx_that: usize) {
-    unsafe {
-        // Remove the second vector first to avoid mutable aliasing UB
-        let mut vec_that = STATE.remove(vec_idx_that);
+pub fn concatenate(vec_id_self: String, vec_id_that: String) {
+    STATE.with(|state| {
+        let mut s = state.borrow_mut();
 
-        // Adjust index if vec_idx_self was after vec_idx_that
-        let adjusted_idx = if vec_idx_self > vec_idx_that {
-            vec_idx_self - 1
-        } else {
-            vec_idx_self
-        };
+        // Remove the second vector
+        let mut vec_that = s
+            .vectors
+            .remove(&vec_id_that)
+            .expect("Second vector not found");
 
-        let vec_self = STATE.get_mut(adjusted_idx).unwrap();
+        // Remove from order
+        let pos = s.order.iter().position(|id| *id == vec_id_that).unwrap();
+        s.order.remove(pos);
+
+        // Append to first vector
+        let vec_self = s
+            .vectors
+            .get_mut(&vec_id_self)
+            .expect("First vector not found");
         vec_self.append(&mut vec_that);
-    }
+    })
 }
 
 #[wasm_bindgen]
 pub fn concatenate_all() {
-    unsafe {
-        if STATE.len() <= 1 {
+    STATE.with(|state| {
+        let mut s = state.borrow_mut();
+
+        if s.order.len() <= 1 {
             return;
         }
 
-        // Drain all vectors except the first, then append them one by one
-        let others: Vec<_> = STATE.drain(1..).collect();
+        let first_id = s.order[0].clone();
+        let other_ids: Vec<VecId> = s.order.drain(1..).collect();
 
-        let first = STATE.get_mut(0).unwrap();
+        let others: Vec<RrbVec<usize>> = other_ids
+            .iter()
+            .map(|id| s.vectors.remove(id).unwrap())
+            .collect();
+
+        let first = s.vectors.get_mut(&first_id).unwrap();
         for mut other in others {
             first.append(&mut other);
         }
-    }
+    })
 }
 
 #[wasm_bindgen]
 pub fn clear() {
-    unsafe { STATE.clear() }
+    STATE.with(|state| {
+        let mut s = state.borrow_mut();
+        s.vectors.clear();
+        s.order.clear();
+    })
 }
 
 #[wasm_bindgen]
-pub fn get(index: usize) -> JsValue {
-    unsafe { JsValue::from_str(serde_json::to_string(&STATE.get(index)).unwrap().as_str()) }
+pub fn get(vec_id: String) -> JsValue {
+    STATE.with(|state| {
+        let s = state.borrow();
+        let vec = s.vectors.get(&vec_id);
+        JsValue::from_str(serde_json::to_string(&vec).unwrap().as_str())
+    })
 }
 
 #[wasm_bindgen]
 pub fn len() -> usize {
-    unsafe { STATE.len() }
+    STATE.with(|state| state.borrow().vectors.len())
+}
+
+/// Returns the list of vector IDs in display order
+#[wasm_bindgen]
+pub fn get_ids() -> Vec<String> {
+    STATE.with(|state| state.borrow().order.clone())
 }
