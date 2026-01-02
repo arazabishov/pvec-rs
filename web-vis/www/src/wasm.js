@@ -31,8 +31,8 @@ export class WasmDecorator {
     this.listener();
   }
 
-  concatenatAll() {
-    wasm.concatenat_all();
+  concatenateAll() {
+    wasm.concatenate_all();
     this.listener();
   }
 
