@@ -6,6 +6,7 @@ use std::sync::Arc;
 use std::ops::Deref;
 use std::fmt::Debug;
 
+#[cfg(feature = "vis")]
 use uuid::Uuid;
 
 #[cfg(feature = "arc")]
@@ -20,12 +21,14 @@ pub type SharedPtr<K> = StdSharedPtr<K>;
 #[cfg(feature = "vis")]
 pub type SharedPtr<K> = IdentifiableSharedPtr<K>;
 
+#[cfg(feature = "vis")]
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct IdentifiableSharedPtr<T> {
     data: StdSharedPtr<T>,
     uuid: String,
 }
 
+#[cfg(feature = "vis")]
 impl<T> IdentifiableSharedPtr<T> {
     pub fn new(data: T) -> IdentifiableSharedPtr<T> {
         IdentifiableSharedPtr {
@@ -49,12 +52,14 @@ impl<T> IdentifiableSharedPtr<T> {
     }
 }
 
+#[cfg(feature = "vis")]
 impl<T: Clone> IdentifiableSharedPtr<T> {
     pub fn make_mut(&mut self) -> &mut T {
         StdSharedPtr::make_mut(&mut self.data)
     }
 }
 
+#[cfg(feature = "vis")]
 impl<T> Deref for IdentifiableSharedPtr<T> {
     type Target = T;
 
@@ -63,6 +68,7 @@ impl<T> Deref for IdentifiableSharedPtr<T> {
     }
 }
 
+#[cfg(feature = "vis")]
 impl<T> Clone for IdentifiableSharedPtr<T> {
     fn clone(&self) -> Self {
         Self {
