@@ -1,9 +1,6 @@
-extern crate serde;
-extern crate serde_json;
-
-use self::serde::ser::{Serialize, SerializeStruct, Serializer};
 use super::RbVec;
 use super::RrbVec;
+use serde::ser::{Serialize, SerializeStruct, Serializer};
 
 macro_rules! impl_serializer {
     ($vec:ident, $name:literal) => {

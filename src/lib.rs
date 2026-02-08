@@ -41,13 +41,6 @@
 
 #![warn(missing_docs)]
 
-#[cfg(all(feature = "arc", feature = "rayon_iter"))]
-extern crate rayon;
-
-#[macro_use]
-#[cfg(feature = "serde_serializer")]
-extern crate serde_json;
-
 use std::fmt::Debug;
 use std::ops;
 

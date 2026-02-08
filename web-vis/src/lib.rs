@@ -1,6 +1,3 @@
-extern crate pvec;
-extern crate serde_json;
-
 use pvec::core::RrbVec;
 use wasm_bindgen::prelude::*;
 

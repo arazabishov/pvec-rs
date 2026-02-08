@@ -1,6 +1,3 @@
-extern crate im_rc;
-extern crate pvec;
-
 use pvec::core::{RbVec, RrbVec};
 use pvec::PVec;
 use std::env;

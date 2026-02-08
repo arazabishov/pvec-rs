@@ -1,11 +1,5 @@
 //! A module providing persistent vector types based on RrbTree.
 
-#[cfg(all(feature = "arc", feature = "rayon_iter"))]
-extern crate rayon;
-
-#[cfg(feature = "serde_serializer")]
-extern crate serde;
-
 use rrbtree::RrbTree;
 use rrbtree::BRANCH_FACTOR;
 use std::fmt::Debug;
