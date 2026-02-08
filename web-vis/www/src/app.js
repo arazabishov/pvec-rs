@@ -1,5 +1,5 @@
 import "./styles.css";
-import { VectorVis, Vector } from "./vector";
+import { VectorVis, Vector, pruneColors } from "./vector";
 import { WasmDecorator } from "./wasm";
 
 class VectorComponent extends HTMLElement {
@@ -148,15 +148,19 @@ concatenateVectorsButton.onClick = () => {
     prevToLastVector.update();
 
     lastVector.remove();
-
-    // wasmDecorator.concatenate();
-    // // After concatenation, there will be only one vector left. Hence, we need to prune the rest.
-    // while (grid.children.length > 2) {
-    //   grid.removeChild(grid.children[1]);
-    // }
-    // Signal the first vector to update itself, as it now contains values from all other vectors.
-    // grid.firstElementChild.update();
   }
+
+  // Remove color cache entries for nodes that no longer exist in any vector.
+  const active = [...grid.children].filter((c) => c.vectorVis).map((c) => c.vectorVis);
+  pruneColors(active);
+
+  // wasmDecorator.concatenate();
+  // // After concatenation, there will be only one vector left. Hence, we need to prune the rest.
+  // while (grid.children.length > 2) {
+  //   grid.removeChild(grid.children[1]);
+  // }
+  // Signal the first vector to update itself, as it now contains values from all other vectors.
+  // grid.firstElementChild.update();
 };
 
 const wasmDecorator = new WasmDecorator(() => {

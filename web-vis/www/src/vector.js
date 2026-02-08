@@ -40,28 +40,31 @@ const resolveColor = (color) => {
   return `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${0.6})`;
 };
 
+// Global addr(UUID)→color cache. Structurally shared nodes keep their UUID
+// and thus their original color after concatenation.
 const colors = new Map();
+
+// Remove stale entries from the color cache. Call after removing vectors.
+export const pruneColors = (activeVectors) => {
+  const live = new Set(activeVectors.flatMap((v) => [...v.rrbVecVis.nodeAddrs]));
+  for (const addr of colors.keys()) {
+    if (!live.has(addr)) colors.delete(addr);
+  }
+};
 export class VectorVis {
   constructor(vector) {
     this.vector = vector;
 
+    // Returns cached color for known addrs, otherwise assigns this vector's
+    // color. Called with null for tail elements (always current vector's color).
     this.colorResolver = (node) => {
+      if (!node) {
+        return this.rrbVecVisColor ?? "none";
+      }
+
       if (colors.has(node.data.addr)) {
         return colors.get(node.data.addr);
       }
-
-      // Traverse nodes all the way to parent until we find a painted node
-      //   let next = node;
-      //   while (next && !this.colors.has(next.data.addr)) {
-      //     next = next.parent;
-      //   }
-
-      //   if (next && this.colors.has(next.data.addr)) {
-      //     const parentNodeColor = this.colors.get(next.data.addr);
-      //     this.colors.set(node.data.addr, parentNodeColor);
-
-      //     return resolveColor(parentNodeColor);
-      //  }
 
       const newColor = this.rrbVecVisColor ?? "none";
       colors.set(node.data.addr, newColor);
@@ -91,8 +94,6 @@ export class VectorVis {
   }
 
   concatenate(two) {
-    // TODO: you will have to programatically paint nodes, otherwise this information will be lost
-    // TODO: altenatively, you can implement concatenation by drag and drug for individual vectors
     this.vector.concatenate(two.vector);
     this.rrbVecVis.set(this.vector.json());
   }
@@ -102,16 +103,6 @@ export class VectorVis {
     const rrbVec = this.vector.json();
 
     if (this.rrbVecVis === undefined) {
-      // const root = rrbVec?.tree?.root;
-      // if (root) {
-      //   // If this root node was painted before, we should reuse the color.
-      //   const rootColor = this.colors.get(root.addr);
-      //   if (!rootColor) {
-      //     console.log("::: setting color for the root", root.addr);
-      //     this.colors.set(root.addr, "#4338ca");
-      //   }
-      // }
-
       this.rrbVecVis = new RrbVec(this.selector(), this.colorResolver);
       this.rrbVecVis.setOnMouseOverListener(this.listener);
       this.rrbVecVisColor = resolveColor(

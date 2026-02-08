@@ -21,6 +21,9 @@ pub type SharedPtr<K> = StdSharedPtr<K>;
 #[cfg(feature = "vis")]
 pub type SharedPtr<K> = IdentifiableSharedPtr<K>;
 
+/// `Rc`/`Arc` wrapper with a stable UUID for web-vis node identity.
+/// `clone()` preserves the UUID (structural sharing), `make_mut()` assigns
+/// a new one when refcount > 1 (path copying).
 #[cfg(feature = "vis")]
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct IdentifiableSharedPtr<T> {
@@ -60,7 +63,13 @@ impl<T> IdentifiableSharedPtr<T> {
 
 #[cfg(feature = "vis")]
 impl<T: Clone> IdentifiableSharedPtr<T> {
+    /// Clones the inner data if shared (refcount > 1) and assigns a new UUID
+    /// to `self`. After the call, `self` holds the new copy; other owners
+    /// keep the original data and UUID.
     pub fn make_mut(&mut self) -> &mut T {
+        if StdSharedPtr::strong_count(&self.data) > 1 {
+            self.uuid = Uuid::new_v4().to_string();
+        }
         StdSharedPtr::make_mut(&mut self.data)
     }
 }
@@ -76,10 +85,12 @@ impl<T> Deref for IdentifiableSharedPtr<T> {
 
 #[cfg(feature = "vis")]
 impl<T> Clone for IdentifiableSharedPtr<T> {
+    /// Preserves the UUID: both copies point to the same data and share
+    /// the same visual identity.
     fn clone(&self) -> Self {
         Self {
             data: StdSharedPtr::clone(&self.data),
-            uuid: format!("{}-cloned", Uuid::new_v4().to_string()),
+            uuid: self.uuid.clone(),
         }
     }
 }
