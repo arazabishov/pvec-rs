@@ -12,6 +12,7 @@ mod sharedptr;
 #[macro_use]
 mod rrbtree;
 
+/// JSON serialization support for tree structures.
 #[cfg(feature = "serde_serializer")]
 pub mod serializer;
 

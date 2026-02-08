@@ -38,6 +38,42 @@ These must be preserved in any change:
 - `small_branch` — branching factor 4 instead of 32
 - `serde_serializer` — JSON serialization of tree structure
 
+## web-vis
+
+WASM-based interactive RRB-Tree visualization. Two-part build: Rust→WASM backend + webpack frontend.
+
+### Structure
+
+- `web-vis/src/lib.rs` — Rust WASM bindings (uses `wasm-bindgen`, exposes push/split/append/serialize to JS)
+- `web-vis/pkg/` — generated WASM package (output of `wasm-pack build`)
+- `web-vis/www/` — webpack frontend (d3 visualization, Tailwind 4 CSS)
+
+### Frontend stack
+
+- **Bundler**: webpack 5 with `style-loader → css-loader → postcss-loader` chain
+- **CSS**: Tailwind CSS 4 (CSS-first config via `@tailwindcss/postcss`, no `tailwind.config.js`)
+- **Visualization**: d3 v7
+- **Formatting**: Prettier 3 (config in `.prettierrc.json`)
+
+### Building web-vis
+
+```bash
+cd web-vis && wasm-pack build           # build WASM package
+cd www && npm install                   # install frontend deps
+npm run build                           # production webpack build
+npm start                               # dev server
+```
+
+### Rust toolchain
+
+Keep Rust up to date (`rustup update`). `wasm-pack build` installs `wasm-bindgen-cli` via `cargo install`, which resolves latest transitive deps — these may require a newer Rust than what's installed.
+
+### CSS conventions
+
+- Custom utility classes used with `@apply` must be wrapped in `@utility` blocks (Tailwind 4 requirement)
+- Regular CSS classes applied via `classList.add()` in JS stay as normal CSS rules
+- Tailwind color references use CSS variables: `var(--color-gray-300)`, not `theme("colors.gray.300")`
+
 ## Building and testing
 
 ```bash
