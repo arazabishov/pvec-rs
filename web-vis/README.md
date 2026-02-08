@@ -1,73 +1,39 @@
-<div align="center">
+# web-vis
 
-  <h1><code>wasm-pack-template</code></h1>
+Interactive visualization of the RRB-Tree structure used by [pvec](https://crates.io/crates/pvec). The Rust side is compiled to WebAssembly via [wasm-pack](https://github.com/rustwasm/wasm-pack), and the frontend uses D3.js to render the tree.
 
-  <strong>A template for kick starting a Rust and WebAssembly project using <a href="https://github.com/rustwasm/wasm-pack">wasm-pack</a>.</strong>
+Live demo: [pvec-rs.abishov.com/web-vis/](https://pvec-rs.abishov.com/web-vis/)
 
-  <p>
-    <a href="https://travis-ci.org/rustwasm/wasm-pack-template"><img src="https://img.shields.io/travis/rustwasm/wasm-pack-template.svg?style=flat-square" alt="Build Status" /></a>
-  </p>
+## How it works
 
-  <h3>
-    <a href="https://rustwasm.github.io/docs/wasm-pack/tutorials/npm-browser-packages/index.html">Tutorial</a>
-    <span> | </span>
-    <a href="https://discordapp.com/channels/442252698964721669/443151097398296587">Chat</a>
-  </h3>
+The WASM module (`src/lib.rs`) holds a `Vec<RrbVec<usize>>` as global state and exposes operations to JavaScript:
 
-  <sub>Built with 🦀🕸 by <a href="https://rustwasm.github.io/">The Rust and WebAssembly Working Group</a></sub>
-</div>
+- `push_vec` / `clear` — create or remove vectors
+- `set_vec_size` — grow or shrink a vector by pushing elements or splitting
+- `split_off_vec` — split a vector at an index, producing two vectors
+- `concatenat_all` — merge all vectors into one via `append`
+- `get` — serialize an RRB-Tree to JSON for rendering
 
-## Read before proceeding
+The pvec crate is compiled with `small_branch` (branching factor 4) and `serde_serializer` so that tree structures are small enough to visualize and can be serialized to JSON.
 
-When installing `wasm-pack` and friends on Apple Silicon machine, simply go for Rosetta 2 translation layer. That will save you a lot of headache!
+## Note on Apple Silicon
 
-## About
+When installing `wasm-pack` on Apple Silicon, use the Rosetta 2 translation layer to avoid compatibility issues.
 
-[**📚 Read this template tutorial! 📚**][template-docs]
+## Build
 
-This template is designed for compiling Rust libraries into WebAssembly and
-publishing the resulting package to NPM.
-
-Be sure to check out [other `wasm-pack` tutorials online][tutorials] for other
-templates and usages of `wasm-pack`.
-
-[tutorials]: https://rustwasm.github.io/docs/wasm-pack/tutorials/index.html
-[template-docs]: https://rustwasm.github.io/docs/wasm-pack/tutorials/npm-browser-packages/index.html
-
-## 🚴 Usage
-
-### 🐑 Use `cargo generate` to Clone this Template
-
-[Learn more about `cargo generate` here.](https://github.com/ashleygwilliams/cargo-generate)
-
-```
-cargo generate --git https://github.com/rustwasm/wasm-pack-template.git --name my-project
-cd my-project
-```
-
-### 🛠️ Build with `wasm-pack build`
-
-```
+```bash
+# Build the WASM package
 wasm-pack build
+
+# Install frontend dependencies and start dev server
+cd www
+npm install
+npm start
 ```
 
-### 🔬 Test in Headless Browsers with `wasm-pack test`
+The dev server runs at `http://localhost:8080`.
 
-```
-wasm-pack test --headless --firefox
-```
+## Deploy
 
-### 🎁 Publish to NPM with `wasm-pack publish`
-
-```
-wasm-pack publish
-```
-
-## 🔋 Batteries Included
-
-* [`wasm-bindgen`](https://github.com/rustwasm/wasm-bindgen) for communicating
-  between WebAssembly and JavaScript.
-* [`console_error_panic_hook`](https://github.com/rustwasm/console_error_panic_hook)
-  for logging panic messages to the developer console.
-* [`wee_alloc`](https://github.com/rustwasm/wee_alloc), an allocator optimized
-  for small code size.
+The frontend is deployed to Cloudflare Pages. See the GitHub Actions workflow in `.github/workflows/` for details.

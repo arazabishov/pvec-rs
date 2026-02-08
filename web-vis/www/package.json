@@ -1,7 +1,7 @@
 {
-  "name": "create-wasm-app",
+  "name": "pvec-web-vis",
   "version": "0.1.0",
-  "description": "create an app to consume rust-generated wasm packages",
+  "description": "Interactive RRB-Tree visualization for pvec-rs",
   "private": true,
   "main": "index.js",
   "scripts": {
@@ -10,19 +10,16 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/rustwasm/create-wasm-app.git"
+    "url": "git+https://github.com/ArazAbishov/pvec-rs.git"
   },
   "keywords": [
-    "webassembly",
-    "wasm",
-    "rust",
-    "webpack"
+    "rrb-tree",
+    "persistent-vector",
+    "visualization",
+    "webassembly"
   ],
-  "author": "Ashley Williams <ashley666ashley@gmail.com>",
-  "license": "(MIT OR Apache-2.0)",
-  "bugs": {
-    "url": "https://github.com/rustwasm/create-wasm-app/issues"
-  },
+  "author": "Araz Abishov <araz@abishov.com>",
+  "license": "MIT",
   "dependencies": {
     "d3": "^7.8.0",
     "web-vis": "file:../pkg"
@@ -40,5 +37,5 @@
     "webpack-cli": "^5.0.1",
     "webpack-dev-server": "^5.2.2"
   },
-  "homepage": "https://github.com/rustwasm/create-wasm-app#readme"
+  "homepage": "https://pvec-rs.abishov.com/web-vis/"
 }
