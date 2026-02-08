@@ -2,7 +2,7 @@
 name = "web-vis"
 version = "0.1.0"
 authors = ["arazabishov"]
-edition = "2018"
+edition = "2021"
 publish = false
 
 [lib]
@@ -19,8 +19,8 @@ serde-wasm-bindgen = "0.4.3"
 pvec = { path = "../", features = ["serde_serializer", "small_branch"] }
 
 # TODO: how to import the serde version used by the parent project?
-serde_json = "1.0.41"
-serde = "1.0.102"
+serde_json = "1.0.133"
+serde = "1.0.200"
 
 # The `console_error_panic_hook` crate provides better debugging of panics by
 # logging them with `console.error`. This is great for development, but requires

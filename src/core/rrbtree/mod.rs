@@ -1341,7 +1341,7 @@ impl<T: Clone + Debug> RrbTree<T> {
             let remaining = self.root_len.0 - mid;
 
             if !right_shift.is_leaf_level() && right_root.is_relaxed_branch() {
-                let mut branch = SharedPtr::make_mut(right_root.as_mut_relaxed_branch());
+                let branch = SharedPtr::make_mut(right_root.as_mut_relaxed_branch());
                 branch.sizes[branch.len - 1] = Some(remaining);
             }
 

@@ -1,6 +1,4 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
 
 body {
   background: radial-gradient(#000 1px, transparent 0px) 0 0 / 24px 24px;
@@ -23,7 +21,7 @@ body {
 }
 
 .button-add-vector {
-  @apply bg-white hover:bg-gray-50 border-gray-300 focus:outline-none rounded-lg p-4;
+  @apply bg-white hover:bg-gray-50 border-gray-300 focus:outline-hidden rounded-lg p-4;
   @apply min-h-[196px] min-w-[196px] py-2.5 px-5 border flex items-center justify-center;
 }
 
@@ -31,55 +29,56 @@ body {
   @apply absolute  w-1/4 bottom-4 right-12;
 }
 
-.slider-track {
+@utility slider-track {
   @apply appearance-none h-5;
 
-  background: linear-gradient(
-        to right,
-        theme("colors.gray.300"),
-        theme("colors.gray.300")
-      )
+  background:
+    linear-gradient(to right, var(--color-gray-300), var(--color-gray-300))
       no-repeat left center,
-    linear-gradient(to left, theme("colors.gray.300"), theme("colors.gray.300"))
+    linear-gradient(to left, var(--color-gray-300), var(--color-gray-300))
       no-repeat right center,
-    linear-gradient(theme("colors.gray.300"), theme("colors.gray.300"))
-      no-repeat center center;
-  background-size: 2px 100%, 2px 100%, 100% 2px;
-  background-position: left center, right center, center center;
+    linear-gradient(var(--color-gray-300), var(--color-gray-300)) no-repeat
+      center center;
+  background-size:
+    2px 100%,
+    2px 100%,
+    100% 2px;
+  background-position:
+    left center,
+    right center,
+    center center;
 }
 
-.slider-thumb {
-  @apply appearance-none h-5 w-2.5 rounded-sm bg-gray-500 border-none;
+@utility slider-thumb {
+  @apply appearance-none h-5 w-2.5 rounded-xs bg-gray-500 border-none;
   box-sizing: border-box;
 }
 
-@layer components {
-  input[type="range"] {
-    @apply appearance-none w-full;
-  }
-
-  input[type="range"]::-webkit-slider-runnable-track {
-    @apply slider-track;
-  }
-
-  input[type="range"]::-moz-range-track {
-    @apply slider-track;
-  }
-
-  input[type="range"]::-webkit-slider-thumb {
-    @apply slider-thumb;
-  }
-
-  input[type="range"]::-moz-range-thumb {
-    @apply slider-thumb;
-  }
+input[type="range"] {
+  @apply appearance-none w-full;
 }
 
-.tooltip-styles {
+input[type="range"]::-webkit-slider-runnable-track {
+  @apply slider-track;
+}
+
+input[type="range"]::-moz-range-track {
+  @apply slider-track;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  @apply slider-thumb;
+}
+
+input[type="range"]::-moz-range-thumb {
+  @apply slider-thumb;
+}
+
+@utility tooltip-styles {
   @apply absolute block rounded-md bg-blue-400 text-white text-xs text-center w-12 h-6 leading-6 font-mono;
 }
 
-.tooltip-span-styles {
+@utility tooltip-span-styles {
   @apply absolute content-[""] w-0 h-0 border-t-8 border-blue-400;
   @apply translate-y-6 left-2/4 -ml-[5px];
 
@@ -114,7 +113,7 @@ body {
 }
 
 .tooltip-split span:hover:before {
-  border-top-color: theme("colors.blue.500");
+  border-top-color: var(--color-blue-500);
 }
 
 .button-concat-all {

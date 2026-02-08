@@ -1,11 +1,5 @@
 //! A module providing persistent vector types based on RrbTree.
 
-#[cfg(all(feature = "arc", feature = "rayon_iter"))]
-extern crate rayon;
-
-#[cfg(feature = "serde_serializer")]
-extern crate serde;
-
 use rrbtree::RrbTree;
 use rrbtree::BRANCH_FACTOR;
 use std::fmt::Debug;
@@ -18,6 +12,7 @@ mod sharedptr;
 #[macro_use]
 mod rrbtree;
 
+/// JSON serialization support for tree structures.
 #[cfg(feature = "serde_serializer")]
 pub mod serializer;
 
@@ -138,8 +133,8 @@ macro_rules! impl_vec {
 
                 if self.tail_len == 0 {
                     let (new_tail, new_tail_len) = self.tree.pop();
-                    mem::replace(&mut self.tail, new_tail);
 
+                    self.tail = new_tail;
                     self.tail_len = new_tail_len;
                 }
 

@@ -1,5 +1,3 @@
-extern crate csv;
-
 use csv::Writer;
 use std::env;
 use std::error::Error;

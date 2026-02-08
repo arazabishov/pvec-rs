@@ -1,18 +1,3 @@
-extern crate criterion;
-
-#[cfg(feature = "arc")]
-extern crate im;
-
-#[cfg(not(feature = "arc"))]
-extern crate im_rc;
-extern crate num;
-extern crate pvec;
-extern crate rand;
-extern crate rand_xorshift;
-
-#[cfg(all(feature = "arc", feature = "rayon_iter"))]
-extern crate rayon;
-
 use criterion::*;
 
 mod sequential;

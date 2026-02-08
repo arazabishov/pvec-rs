@@ -3,7 +3,7 @@ name = "pvec"
 version = "0.2.1"
 authors = ["Araz Abishov <araz@abishov.com>"]
 description = "RRB-Tree based persistent vector implementation."
-edition = "2018"
+edition = "2021"
 license = "MIT"
 repository = "https://github.com/ArazAbishov/pvec-rs"
 documentation = "https://docs.rs/pvec/"
@@ -21,10 +21,9 @@ members = [
 ]
 
 [dependencies]
-serde = { version = "1.0.73", features = ["rc"], optional = true}
-serde_json = { version = "1.0.26", optional = true }
-serde_derive = { version = "1.0.73", optional = true }
-rayon = { version = "1.1.0", optional = true }
+serde = { version = "1.0.200", features = ["rc"], optional = true }
+serde_json = { version = "1.0.133", optional = true }
+rayon = { version = "1.10", optional = true }
 
 [dev-dependencies]
 im-rc = "15.1.0"
@@ -35,7 +34,7 @@ rand = "0.6"
 num = "0.2.0"
 
 [features]
-serde_serializer = ["serde", "serde_json", "serde_derive"]
+serde_serializer = ["serde", "serde_json"]
 rayon_iter = ["rayon"]
 small_branch = []
 arc = []
