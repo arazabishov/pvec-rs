@@ -132,8 +132,8 @@ macro_rules! impl_vec {
 
                 if self.tail_len == 0 {
                     let (new_tail, new_tail_len) = self.tree.pop();
-                    mem::replace(&mut self.tail, new_tail);
 
+                    self.tail = new_tail;
                     self.tail_len = new_tail_len;
                 }
 

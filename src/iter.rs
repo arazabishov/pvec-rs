@@ -8,9 +8,11 @@ use super::Representation;
 
 use std::fmt::Debug;
 
+/// The branching factor used in tests (matches the tree branching factor).
 #[cfg(all(test, not(feature = "small_branch")))]
 pub const BRANCH_FACTOR: usize = 32;
 
+/// The branching factor used in tests (matches the tree branching factor).
 #[cfg(all(test, feature = "small_branch"))]
 pub const BRANCH_FACTOR: usize = 4;
 
