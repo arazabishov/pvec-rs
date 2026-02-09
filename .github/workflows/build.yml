@@ -52,6 +52,6 @@ jobs:
       - name: Installing dependencies
         run: npm install
       - name: Checking code style
-        run: npx prettier --check .
+        run: npm run format:check
       - name: Build JS
         run: npm run build
