@@ -86,6 +86,32 @@ class VectorCard {
     this.slider.addEventListener("input", updateTooltip);
     updateTooltip();
 
+    const zoomControls = document.createElement("div");
+    zoomControls.classList.add("zoom-controls");
+
+    const zoomIn = document.createElement("button");
+    zoomIn.type = "button";
+    zoomIn.textContent = "+";
+    zoomIn.classList.add("zoom-btn", "zoom-btn-top");
+    zoomIn.addEventListener("click", () => this.vector.zoomIn());
+
+    const zoomOut = document.createElement("button");
+    zoomOut.type = "button";
+    zoomOut.textContent = "\u2212";
+    zoomOut.classList.add("zoom-btn", "zoom-btn-mid");
+    zoomOut.addEventListener("click", () => this.vector.zoomOut());
+
+    const fitBtn = document.createElement("button");
+    fitBtn.type = "button";
+    fitBtn.textContent = "\u2316";
+    fitBtn.classList.add("zoom-btn", "zoom-btn-bottom");
+    fitBtn.addEventListener("click", () => this.vector.fit());
+
+    zoomControls.appendChild(zoomIn);
+    zoomControls.appendChild(zoomOut);
+    zoomControls.appendChild(fitBtn);
+
+    this.el.appendChild(zoomControls);
     this.el.appendChild(sliderContainer);
 
     // Persistent split tooltip

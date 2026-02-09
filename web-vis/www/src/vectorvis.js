@@ -89,6 +89,18 @@ export class VectorVis {
     return `rgba(${color.r}, ${color.g}, ${color.b}, ${0.6})`;
   }
 
+  fit() {
+    this.rrbVecVis?.fit();
+  }
+
+  zoomIn() {
+    this.rrbVecVis?.zoomIn();
+  }
+
+  zoomOut() {
+    this.rrbVecVis?.zoomOut();
+  }
+
   // Re-fetches tree JSON from WASM and re-renders without changing size.
   update() {
     const rrbVec = this.vector.json();
