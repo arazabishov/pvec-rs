@@ -32,6 +32,6 @@ export class Vector {
   }
 
   json() {
-    return JSON.parse(wasm.get(this.#id));
+    return wasm.get(this.#id);
   }
 }
