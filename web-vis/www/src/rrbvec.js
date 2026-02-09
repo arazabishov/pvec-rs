@@ -261,7 +261,7 @@ export class RrbVec {
       .exit()
       .transition(transition)
       .remove()
-      .attr("transform", (d) => `translate(${source.x},${source.y})`)
+      .attr("transform", () => `translate(${source.x},${source.y})`)
       .attr("fill-opacity", 0)
       .attr("stroke-opacity", 0);
 
@@ -300,7 +300,7 @@ export class RrbVec {
       .exit()
       .transition(transition)
       .remove()
-      .attr("d", (d) => {
+      .attr("d", () => {
         const o = { x: source.x, y: source.y };
         return diagonal({ source: o, target: o });
       });

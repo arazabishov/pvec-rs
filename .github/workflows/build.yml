@@ -53,5 +53,7 @@ jobs:
         run: npm install
       - name: Checking code style
         run: npm run format:check
+      - name: Linting
+        run: npm run lint
       - name: Build JS
         run: npm run build
