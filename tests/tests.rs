@@ -281,6 +281,40 @@ macro_rules! make_tests {
             }
 
             #[test]
+            fn interleaving_split_off_push_operations_with_nested_splits() {
+                let n = BRANCH_FACTOR * BRANCH_FACTOR * BRANCH_FACTOR;
+
+                // Non-aligned split points ensure split_off produces relaxed nodes
+                // and the second split leaves a bare Leaf as the tree root (shift=0).
+                let mid_a = n - n / 4 + 2;
+                let mid_b = BRANCH_FACTOR;
+
+                let mut vec_a = $vec::new();
+                for i in 0..n {
+                    vec_a.push(i);
+                }
+
+                let mut vec_b = vec_a.split_off(mid_a);
+                let vec_c = vec_b.split_off(mid_b);
+
+                assert_eq!(vec_a.len(), mid_a);
+                assert_eq!(vec_b.len(), mid_b);
+                assert_eq!(vec_c.len(), n - mid_a - mid_b);
+
+                // Push into the middle vector (produced by two successive splits).
+                // This must not panic even when split_off leaves a bare leaf as root.
+                for i in 0..n {
+                    vec_b.push(1000 + i);
+                }
+
+                assert_eq!(vec_b.len(), mid_b + n);
+
+                for i in 0..vec_b.len() {
+                    assert!(vec_b.get(i).is_some());
+                }
+            }
+
+            #[test]
             fn interleaving_different_operations_must_maintain_correct_internal_state_for_var_sizes_4() {
                 interleaving_different_operations_must_maintain_correct_internal_state(4);
             }
