@@ -3,9 +3,12 @@
   "version": "0.1.0",
   "description": "Interactive RRB-Tree visualization for pvec-rs",
   "private": true,
+  "sideEffects": [
+    "*.css"
+  ],
   "main": "index.js",
   "scripts": {
-    "build": "webpack --config webpack.config.js",
+    "build": "webpack --mode production --config webpack.config.js",
     "start": "webpack-dev-server",
     "lint": "eslint .",
     "format": "prettier --write .",
@@ -25,6 +28,7 @@
   "license": "MIT",
   "dependencies": {
     "d3": "^7.9.0",
+    "lucide": "^0.563.0",
     "web-vis": "file:../pkg"
   },
   "devDependencies": {

@@ -190,9 +190,7 @@ export class RrbVec {
       if (node.y > bottom) bottom = node.y;
     });
 
-    const transition = this.svgTree
-      .transition()
-      .duration(transitionDuration);
+    const transition = this.svgTree.transition().duration(transitionDuration);
 
     this.#fit(left, top, right, bottom + arrayCellHeight);
 
@@ -330,16 +328,10 @@ export class RrbVec {
     const treeW = right - left + fitPadding * 2;
     const treeH = bottom - top + fitPadding * 2;
 
-    const scale = Math.min(
-      viewportWidth / treeW,
-      viewportHeight / treeH,
-      1
-    );
+    const scale = Math.min(viewportWidth / treeW, viewportHeight / treeH, 1);
 
-    const tx =
-      (viewportWidth - (right - left) * scale) / 2 - left * scale;
-    const ty =
-      (viewportHeight - (bottom - top) * scale) / 2 - top * scale;
+    const tx = (viewportWidth - (right - left) * scale) / 2 - left * scale;
+    const ty = (viewportHeight - (bottom - top) * scale) / 2 - top * scale;
 
     const transform = d3.zoomIdentity.translate(tx, ty).scale(scale);
 

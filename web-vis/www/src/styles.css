@@ -17,7 +17,9 @@ body {
 }
 
 .button-add-vector-icon {
-  @apply text-gray-500 text-4xl;
+  @apply text-gray-400;
+  height: 32px;
+  width: 32px;
 }
 
 .button-add-vector {
@@ -39,7 +41,7 @@ body {
 
 .zoom-btn {
   @apply bg-white hover:bg-gray-100 text-gray-600 border border-gray-300;
-  @apply w-8 h-8 flex items-center justify-center cursor-pointer text-sm font-mono leading-none;
+  @apply w-9 h-9 flex items-center justify-center cursor-pointer text-sm font-mono leading-none;
   margin-left: -1px;
 }
 
