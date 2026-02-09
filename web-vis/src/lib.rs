@@ -158,7 +158,8 @@ pub fn get(vec_id: String) -> JsValue {
     STATE.with(|state| {
         let s = state.borrow();
         let vec = s.vectors.get(&vec_id);
-        vec.serialize(&serde_wasm_bindgen::Serializer::json_compatible()).unwrap()
+        vec.serialize(&serde_wasm_bindgen::Serializer::json_compatible())
+            .unwrap()
     })
 }
 
