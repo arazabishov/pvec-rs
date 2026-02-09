@@ -7,6 +7,7 @@
   "scripts": {
     "build": "webpack --config webpack.config.js",
     "start": "webpack-dev-server",
+    "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check ."
   },
@@ -27,8 +28,12 @@
     "web-vis": "file:../pkg"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@tailwindcss/postcss": "^4.1.18",
     "css-loader": "^7.1.3",
+    "eslint": "^10.0.0",
+    "eslint-config-prettier": "^10.1.8",
+    "globals": "^17.3.0",
     "html-webpack-plugin": "^5.6.6",
     "postcss": "^8.5.6",
     "postcss-loader": "^8.2.0",
