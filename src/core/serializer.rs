@@ -12,10 +12,17 @@ macro_rules! impl_serializer {
             where
                 S: Serializer,
             {
-                let mut serde_state = serializer.serialize_struct($name, 1)?;
+                // Serialize the tail as a node-like struct so the visualization
+                // layer can treat it uniformly with tree nodes (e.g. stamp a color
+                // on it directly rather than passing color out-of-band).
+                let tail_node = serde_json::json!({
+                    "elements": &self.tail,
+                    "len": self.tail_len
+                });
+
+                let mut serde_state = serializer.serialize_struct($name, 2)?;
                 serde_state.serialize_field("tree", &self.tree)?;
-                serde_state.serialize_field("tail", &self.tail)?;
-                serde_state.serialize_field("tail_len", &self.tail_len)?;
+                serde_state.serialize_field("tail", &tail_node)?;
                 serde_state.end()
             }
         }

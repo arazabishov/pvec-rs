@@ -75,8 +75,7 @@ export class RrbVec {
     this.listener = listener;
   }
 
-  set(vec, tailColor) {
-    this.tailColor = tailColor;
+  set(vec) {
     this.updateTail(vec.tail);
 
     if (vec.tree.root_len > 0) {
@@ -342,7 +341,9 @@ export class RrbVec {
   }
 
   updateTail(tail) {
-    const tailElements = tail.filter((d) => d !== null && d !== undefined);
+    const tailElements = tail.elements.filter(
+      (d) => d !== null && d !== undefined
+    );
     const node = this.gNodeTail
       .selectAll("g")
       .data(tailElements, (d) => `${d}:tail`);
@@ -352,7 +353,7 @@ export class RrbVec {
       .append("rect")
       .style("stroke-width", "1px")
       .style("stroke", "black")
-      .style("fill", this.tailColor ?? "none")
+      .style("fill", tail.color ?? "none")
       .attr("width", arrayCellWidth)
       .attr("height", arrayCellHeight)
       .attr("transform", (_val, i) => `translate(${i * arrayCellWidth}, 0)`);

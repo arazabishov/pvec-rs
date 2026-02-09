@@ -77,7 +77,7 @@ export class VectorVis {
     }
 
     this.#annotate(rrbVec);
-    this.rrbVecVis.set(rrbVec, this.color);
+    this.rrbVecVis.set(rrbVec);
   }
 
   // Advances the palette cursor and returns an rgba string with 0.6 opacity.
@@ -93,7 +93,7 @@ export class VectorVis {
   update() {
     const rrbVec = this.vector.json();
     this.#annotate(rrbVec);
-    this.rrbVecVis.set(rrbVec, this.color);
+    this.rrbVecVis.set(rrbVec);
   }
 
   // Splits the WASM vector at index. Returns a new registered VectorVis
@@ -114,7 +114,7 @@ export class VectorVis {
 
     const rrbVec = this.vector.json();
     this.#annotate(rrbVec);
-    this.rrbVecVis.set(rrbVec, this.color);
+    this.rrbVecVis.set(rrbVec);
 
     VectorVis.#prune();
     VectorVis.#notify();
@@ -148,19 +148,18 @@ export class VectorVis {
     VectorVis.#instances.delete(this);
   }
 
-  // Stamps a color on every node in the tree JSON. Existing nodes (by addr)
-  // keep their cached color; new nodes get this instance's color.
-  // Collects all visited addresses for later pruning.
+  // Stamps a color on every node in the tree JSON and on the tail node.
+  // Existing nodes (by addr) keep their cached color; new nodes get this
+  // instance's color. Collects all visited addresses for later pruning.
   #annotate(rrbVec) {
     this.addresses = new Set();
+    const color = this.color ?? "none";
 
     if (rrbVec.tree.root_len > 0) {
-      VectorVis.#annotateColors(
-        rrbVec.tree.root,
-        this.color ?? "none",
-        this.addresses
-      );
+      VectorVis.#annotateColors(rrbVec.tree.root, color, this.addresses);
     }
+
+    rrbVec.tail.color = color;
   }
 
   // Iterative tree walk that assigns colors to nodes. Nodes already in the
