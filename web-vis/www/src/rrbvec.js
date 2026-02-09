@@ -94,7 +94,7 @@ export class RrbVec {
   }
 
   set(vec) {
-    this.updateTail(vec.tail);
+    this.#updateTail(vec.tail);
 
     if (vec.tree.root_len > 0) {
       this.root = d3.hierarchy(vec.tree.root, getDescendants);
@@ -130,7 +130,7 @@ export class RrbVec {
         }
       });
 
-      this.updateTree(this.root);
+      this.#updateTree(this.root);
     } else {
       this.root = null;
 
@@ -140,7 +140,22 @@ export class RrbVec {
     }
   }
 
-  updateTree(source) {
+  #onMouseEvent(entering, event, d) {
+    if (!d.data.leaf || !this.listener) {
+      return;
+    }
+
+    // Infer the vector index so outer layers don't deal with nodes directly.
+    const index = d.data.lenSubTree + d.position;
+
+    if (entering) {
+      this.listener.onMouseOver?.(event, index);
+    } else {
+      this.listener.onMouseOut?.(event, index);
+    }
+  }
+
+  #updateTree(source) {
     const nodes = this.root.descendants().reverse();
     const links = this.root.links();
 
@@ -179,22 +194,8 @@ export class RrbVec {
       .attr("stroke-opacity", 0)
       .on("click", (_event, d) => {
         d.children = d.children ? null : d._children;
-        this.updateTree(d);
+        this.#updateTree(d);
       });
-
-    const onMouseOverNode = (onMouseOver, event, d) => {
-      // We don't want branch nodes to emit mouse hover events to outer layers as of now.
-      if (d.data.leaf && this.listener) {
-        // Inferring index here, so that outer layers don't have to deal with nodes directly.
-        const index = d.data.lenSubTree + d.position;
-
-        if (onMouseOver) {
-          this.listener.onMouseOver && this.listener.onMouseOver(event, index);
-        } else {
-          this.listener.onMouseOut && this.listener.onMouseOut(event, index);
-        }
-      }
-    };
 
     nodeEnter
       .selectAll("rect")
@@ -216,8 +217,8 @@ export class RrbVec {
         "transform",
         (d, i) => `translate(${(i - d.data.len / 2) * arrayCellWidth}, 0)`
       )
-      .on("mouseover", (event, d) => onMouseOverNode(true, event, d))
-      .on("mouseout", (event, d) => onMouseOverNode(false, event, d));
+      .on("mouseover", (event, d) => this.#onMouseEvent(true, event, d))
+      .on("mouseout", (event, d) => this.#onMouseEvent(false, event, d));
 
     appendOutlinedText(
       nodeEnter
@@ -311,7 +312,7 @@ export class RrbVec {
     });
   }
 
-  updateTail(tail) {
+  #updateTail(tail) {
     const tailElements = tail.elements.filter(
       (d) => d !== null && d !== undefined
     );
