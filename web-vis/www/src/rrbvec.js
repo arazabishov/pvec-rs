@@ -45,6 +45,24 @@ const getDescendants = (node) => {
   return null;
 };
 
+// Appends a text element with a white stroke outline for readability.
+// `selection` is a d3 enter selection, `transformFn` computes the transform
+// attribute, and `textFn` extracts the display text from each datum.
+const appendOutlinedText = (selection, transformFn, textFn) => {
+  selection
+    .append("text")
+    .attr("transform", transformFn)
+    .attr("dy", "0.31em")
+    .attr("x", 8)
+    .attr("text-anchor", "end")
+    .text(textFn)
+    .clone(true)
+    .lower()
+    .attr("stroke-linejoin", "round")
+    .attr("stroke-width", 3)
+    .attr("stroke", "white");
+};
+
 export class RrbVec {
   constructor(selector) {
     this.svgTree = d3
@@ -147,11 +165,7 @@ export class RrbVec {
     const transition = this.svgTree
       .transition()
       .duration(transitionDuration)
-      .attr("viewBox", [-margin.left, -margin.top, width, height])
-      .tween(
-        "resize",
-        window.ResizeObserver ? null : () => () => svg.dispatch("toggle")
-      );
+      .attr("viewBox", [-margin.left, -margin.top, width, height]);
 
     // Update the nodes…
     const node = this.gNode.selectAll("g").data(nodes, (d) => d.id);
@@ -205,53 +219,33 @@ export class RrbVec {
       .on("mouseover", (event, d) => onMouseOverNode(true, event, d))
       .on("mouseout", (event, d) => onMouseOverNode(false, event, d));
 
-    nodeEnter
-      .selectAll("text")
-      .data((d) =>
-        Array.from(d.data.leaf || [], (item) => ({ item, len: d.data.len }))
-      )
-      .enter()
-      .append("text")
-      .attr(
-        "transform",
-        (d, i) =>
-          `translate(${
-            (i - d.len / 2) * arrayCellWidth + arrayCellWidth / 2
-          }, ${arrayCellHeight + arrayCellHeight * 0.6}) rotate(270)`
-      )
-      .attr("dy", "0.31em")
-      .attr("x", 8)
-      .attr("text-anchor", "end")
-      .text((d) => d.item)
-      .clone(true)
-      .lower()
-      .attr("stroke-linejoin", "round")
-      .attr("stroke-width", 3)
-      .attr("stroke", "white");
+    appendOutlinedText(
+      nodeEnter
+        .selectAll("text")
+        .data((d) =>
+          Array.from(d.data.leaf || [], (item) => ({ item, len: d.data.len }))
+        )
+        .enter(),
+      (d, i) =>
+        `translate(${
+          (i - d.len / 2) * arrayCellWidth + arrayCellWidth / 2
+        }, ${arrayCellHeight + arrayCellHeight * 0.6}) rotate(270)`,
+      (d) => d.item
+    );
 
-    nodeEnter
-      .selectAll("text")
-      .data((d) =>
-        Array.from(d.data.sizes || [], (item) => ({ item, len: d.data.len }))
-      )
-      .enter()
-      .append("text")
-      .attr(
-        "transform",
-        (d, i) =>
-          `translate(${
-            (i - d.len / 2) * arrayCellWidth + arrayCellWidth / 2
-          }, ${-0.6 * arrayCellHeight}) rotate(315)`
-      )
-      .attr("dy", "0.31em")
-      .attr("x", 8)
-      .attr("text-anchor", "end")
-      .text((d) => d.item)
-      .clone(true)
-      .lower()
-      .attr("stroke-linejoin", "round")
-      .attr("stroke-width", 3)
-      .attr("stroke", "white");
+    appendOutlinedText(
+      nodeEnter
+        .selectAll("text")
+        .data((d) =>
+          Array.from(d.data.sizes || [], (item) => ({ item, len: d.data.len }))
+        )
+        .enter(),
+      (d, i) =>
+        `translate(${
+          (i - d.len / 2) * arrayCellWidth + arrayCellWidth / 2
+        }, ${-0.6 * arrayCellHeight}) rotate(315)`,
+      (d) => d.item
+    );
 
     // Transition nodes to their new position.
     node
@@ -282,40 +276,17 @@ export class RrbVec {
         return diagonal({ source: o, target: o });
       });
 
-    // TODO: de-dupe this code
-    const getDescendants = (node) => {
-      if (node.branch) {
-        return node.branch;
-      } else if (node.relaxedBranch) {
-        return node.relaxedBranch;
-      }
-    };
-
     // Transition links to their new position.
     link
       .merge(linkEnter)
       .transition(transition)
       .attr("d", (d) => {
-        const childNodePosition = getDescendants(d.source.data).indexOf(
-          d.target.data
-        );
-        const halfCellWidth = arrayCellWidth / 2;
+        const children = getDescendants(d.source.data);
+        const childNodePosition = children.indexOf(d.target.data);
 
-        // TODO: making assumptions about branching factor is not great + array is ugly.
-        const offsets = {
-          1: [0],
-          2: [-halfCellWidth, halfCellWidth],
-          3: [-arrayCellWidth, 0, arrayCellWidth],
-          4: [
-            -arrayCellWidth - halfCellWidth,
-            -halfCellWidth,
-            halfCellWidth,
-            arrayCellWidth + halfCellWidth,
-          ],
-        };
-
-        let sourceX =
-          d.source.x + offsets[d.source.data.len][childNodePosition];
+        const sourceX =
+          d.source.x +
+          (childNodePosition - (d.source.data.len - 1) / 2) * arrayCellWidth;
 
         return diagonal({
           source: { x: sourceX, y: d.source.y + arrayCellHeight },
@@ -358,24 +329,14 @@ export class RrbVec {
       .attr("height", arrayCellHeight)
       .attr("transform", (_val, i) => `translate(${i * arrayCellWidth}, 0)`);
 
-    nodeEnter
-      .append("text")
-      .attr(
-        "transform",
-        (_d, i) =>
-          `translate(${i * arrayCellWidth + arrayCellWidth / 2}, ${
-            arrayCellHeight + arrayCellHeight * 0.6
-          }) rotate(270)`
-      )
-      .attr("dy", "0.31em")
-      .attr("x", 8)
-      .attr("text-anchor", "end")
-      .text((d) => d)
-      .clone(true)
-      .lower()
-      .attr("stroke-linejoin", "round")
-      .attr("stroke-width", 3)
-      .attr("stroke", "white");
+    appendOutlinedText(
+      nodeEnter,
+      (_d, i) =>
+        `translate(${i * arrayCellWidth + arrayCellWidth / 2}, ${
+          arrayCellHeight + arrayCellHeight * 0.6
+        }) rotate(270)`,
+      (d) => d
+    );
 
     node
       .merge(nodeEnter)
