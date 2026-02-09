@@ -44,32 +44,29 @@ const resolveColor = (color) => {
 // and thus their original color after concatenation.
 const colors = new Map();
 
-// Remove stale entries from the color cache. Call after removing vectors.
-export const pruneColors = (activeVectors) => {
-  const live = new Set(activeVectors.flatMap((v) => [...v.rrbVecVis.nodeAddrs]));
-  for (const addr of colors.keys()) {
-    if (!live.has(addr)) colors.delete(addr);
+// Resolve and assign a color to each node in the raw tree data. Collects
+// node addrs for later pruning.
+const annotateColors = (node, color, nodeAddrs) => {
+  if (!node) return;
+
+  if (colors.has(node.addr)) {
+    node.color = colors.get(node.addr);
+  } else {
+    node.color = color;
+    colors.set(node.addr, color);
+  }
+  nodeAddrs.add(node.addr);
+
+  const children = node.relaxedBranch || node.branch;
+  if (children) {
+    children.forEach((child) => annotateColors(child, color, nodeAddrs));
   }
 };
+
 export class VectorVis {
   constructor(vector) {
     this.vector = vector;
-
-    // Returns cached color for known addrs, otherwise assigns this vector's
-    // color. Called with null for tail elements (always current vector's color).
-    this.colorResolver = (node) => {
-      if (!node) {
-        return this.rrbVecVisColor ?? "none";
-      }
-
-      if (colors.has(node.data.addr)) {
-        return colors.get(node.data.addr);
-      }
-
-      const newColor = this.rrbVecVisColor ?? "none";
-      colors.set(node.data.addr, newColor);
-      return newColor;
-    };
+    this.nodeAddrs = new Set();
   }
 
   id() {
@@ -90,12 +87,15 @@ export class VectorVis {
 
   update() {
     const rrbVec = this.vector.json();
-    this.rrbVecVis.set(rrbVec);
+    this.#annotate(rrbVec);
+    this.rrbVecVis.set(rrbVec, this.color);
   }
 
   concatenate(two) {
     this.vector.concatenate(two.vector);
-    this.rrbVecVis.set(this.vector.json());
+    const rrbVec = this.vector.json();
+    this.#annotate(rrbVec);
+    this.rrbVecVis.set(rrbVec, this.color);
   }
 
   setSize(size) {
@@ -103,17 +103,33 @@ export class VectorVis {
     const rrbVec = this.vector.json();
 
     if (this.rrbVecVis === undefined) {
-      this.rrbVecVis = new RrbVec(this.selector(), this.colorResolver);
+      this.rrbVecVis = new RrbVec(this.selector());
       this.rrbVecVis.setOnMouseOverListener(this.listener);
-      this.rrbVecVisColor = resolveColor(
+      this.color = resolveColor(
         colorPalette[colorPicker++ % colorPalette.length]
       );
     }
 
-    this.rrbVecVis.set(rrbVec);
+    this.#annotate(rrbVec);
+    this.rrbVecVis.set(rrbVec, this.color);
   }
 
   size() {
     return this.vector.size();
+  }
+
+  // Clean up resources for removed vectors. Call with remaining active vectors.
+  static prune(activeVectors) {
+    const live = new Set(activeVectors.flatMap((v) => [...v.nodeAddrs]));
+    for (const addr of colors.keys()) {
+      if (!live.has(addr)) colors.delete(addr);
+    }
+  }
+
+  #annotate(rrbVec) {
+    this.nodeAddrs = new Set();
+    if (rrbVec.tree.root_len > 0) {
+      annotateColors(rrbVec.tree.root, this.color ?? "none", this.nodeAddrs);
+    }
   }
 }

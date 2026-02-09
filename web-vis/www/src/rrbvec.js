@@ -46,8 +46,7 @@ const getDescendants = (node) => {
 };
 
 export class RrbVec {
-  constructor(selector, colorResolver) {
-    this.colorResolver = colorResolver;
+  constructor(selector) {
     this.svgTree = d3
       .select(selector)
       .append("svg")
@@ -76,7 +75,8 @@ export class RrbVec {
     this.listener = listener;
   }
 
-  set(vec) {
+  set(vec, tailColor) {
+    this.tailColor = tailColor;
     this.updateTail(vec.tail);
 
     if (vec.tree.root_len > 0) {
@@ -85,7 +85,6 @@ export class RrbVec {
       this.root.x0 = dy / 2;
       this.root.y0 = 0;
 
-      this.nodeAddrs = new Set();
       let descendants = this.root.descendants();
       let next_node_to_expand = descendants ? descendants[0].data : null;
 
@@ -103,11 +102,6 @@ export class RrbVec {
         }
 
         d.id = `${data.addr}:${data.len}`;
-
-        // Cache color for all nodes before collapsing, so that collapsed
-        // nodes retain their color after concatenation into another vector.
-        this.colorResolver({ data });
-        this.nodeAddrs.add(data.addr);
         d._children = children;
 
         // keep only the right-most branches expanded to save space
@@ -202,7 +196,7 @@ export class RrbVec {
       .append("rect")
       .style("stroke-width", "1px")
       .style("stroke", "black")
-      .style("fill", (node) => this.colorResolver(node))
+      .style("fill", (d) => d.data.color ?? "none")
       .attr("width", arrayCellWidth)
       .attr("height", arrayCellHeight)
       .attr(
@@ -358,7 +352,7 @@ export class RrbVec {
       .append("rect")
       .style("stroke-width", "1px")
       .style("stroke", "black")
-      .style("fill", this.colorResolver(null))
+      .style("fill", this.tailColor ?? "none")
       .attr("width", arrayCellWidth)
       .attr("height", arrayCellHeight)
       .attr("transform", (_val, i) => `translate(${i * arrayCellWidth}, 0)`);
