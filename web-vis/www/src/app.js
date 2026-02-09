@@ -1,5 +1,6 @@
 import "./styles.css";
 import { VectorVis } from "./vectorvis";
+import { createElement, Plus, Minus, Crosshair } from "lucide";
 
 function createGrid() {
   const el = document.createElement("div");
@@ -15,9 +16,8 @@ function createAddButton(onClick) {
   button.type = "button";
   button.classList.add("button-add-vector");
 
-  const plusIcon = document.createElement("span");
+  const plusIcon = createIcon(Plus);
   plusIcon.classList.add("button-add-vector-icon");
-  plusIcon.innerHTML = "+";
 
   button.appendChild(plusIcon);
   button.addEventListener("click", () => onClick(container));
@@ -46,6 +46,15 @@ function createConcatenateButton(onClick) {
   };
 
   return container;
+}
+
+function createIcon(iconNode) {
+  // prettier-ignore
+  return createElement(iconNode, {
+    "stroke-width": 1.5,
+    "height": 18,
+    "width": 18,
+  });
 }
 
 class VectorCard {
@@ -91,19 +100,19 @@ class VectorCard {
 
     const zoomIn = document.createElement("button");
     zoomIn.type = "button";
-    zoomIn.textContent = "+";
+    zoomIn.appendChild(createIcon(Plus));
     zoomIn.classList.add("zoom-btn", "zoom-btn-top");
     zoomIn.addEventListener("click", () => this.vector.zoomIn());
 
     const zoomOut = document.createElement("button");
     zoomOut.type = "button";
-    zoomOut.textContent = "\u2212";
+    zoomOut.appendChild(createIcon(Minus));
     zoomOut.classList.add("zoom-btn", "zoom-btn-mid");
     zoomOut.addEventListener("click", () => this.vector.zoomOut());
 
     const fitBtn = document.createElement("button");
     fitBtn.type = "button";
-    fitBtn.textContent = "\u2316";
+    fitBtn.appendChild(createIcon(Crosshair));
     fitBtn.classList.add("zoom-btn", "zoom-btn-bottom");
     fitBtn.addEventListener("click", () => this.vector.fit());
 
