@@ -15,13 +15,10 @@ default = ["console_error_panic_hook"]
 wasm-bindgen = "0.2.106"
 serde-wasm-bindgen = "0.4.3"
 uuid = { version = "1.5.0", features = ["v4", "js"] }
+serde = "1.0.200"
 
 # TODO: feature flags pass through
 pvec = { path = "../", features = ["serde_serializer", "small_branch", "vis"] }
-
-# TODO: how to import the serde version used by the parent project?
-serde_json = "1.0.133"
-serde = "1.0.200"
 
 # The `console_error_panic_hook` crate provides better debugging of panics by
 # logging them with `console.error`. This is great for development, but requires

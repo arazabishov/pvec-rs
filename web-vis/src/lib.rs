@@ -1,4 +1,5 @@
 use pvec::core::RrbVec;
+use serde::Serialize;
 use std::cell::RefCell;
 use std::collections::HashMap;
 use uuid::Uuid;
@@ -157,7 +158,7 @@ pub fn get(vec_id: String) -> JsValue {
     STATE.with(|state| {
         let s = state.borrow();
         let vec = s.vectors.get(&vec_id);
-        JsValue::from_str(serde_json::to_string(&vec).unwrap().as_str())
+        vec.serialize(&serde_wasm_bindgen::Serializer::json_compatible()).unwrap()
     })
 }
 
