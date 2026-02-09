@@ -9,8 +9,7 @@ const fitPadding = 60;
 const arrayCellWidth = 16;
 const arrayCellHeight = 20;
 
-const treeWidth = 1512;
-const dy = treeWidth / 28;
+const dy = 1512 / 28;
 const dx = arrayCellWidth * 5;
 
 const diagonal = d3
@@ -177,22 +176,11 @@ export class RrbVec {
     // Compute the new tree layout.
     tree(this.root);
 
-    let left = Infinity;
-    let right = -Infinity;
-    let top = Infinity;
-    let bottom = -Infinity;
-
-    this.root.eachBefore((node) => {
-      const halfWidth = (node.data.len / 2) * arrayCellWidth;
-      if (node.x - halfWidth < left) left = node.x - halfWidth;
-      if (node.x + halfWidth > right) right = node.x + halfWidth;
-      if (node.y < top) top = node.y;
-      if (node.y > bottom) bottom = node.y;
-    });
+    const { left, top, right, bottom } = this.#computeBounds();
 
     const transition = this.svgTree.transition().duration(transitionDuration);
 
-    this.#fit(left, top, right, bottom + arrayCellHeight);
+    this.#fit(left, top, right, bottom);
 
     // Update the nodes…
     const node = this.gNode.selectAll("g").data(nodes, (d) => d.id);
@@ -324,6 +312,32 @@ export class RrbVec {
     });
   }
 
+  #computeBounds() {
+    let left = Infinity;
+    let right = -Infinity;
+    let top = Infinity;
+    let bottom = -Infinity;
+
+    this.root.eachBefore((node) => {
+      const halfWidth = (node.data.len / 2) * arrayCellWidth;
+
+      if (node.x - halfWidth < left) {
+        left = node.x - halfWidth;
+      }
+      if (node.x + halfWidth > right) {
+        right = node.x + halfWidth;
+      }
+      if (node.y < top) {
+        top = node.y;
+      }
+      if (node.y > bottom) {
+        bottom = node.y;
+      }
+    });
+
+    return { left, top, right, bottom: bottom + arrayCellHeight };
+  }
+
   #fit(left, top, right, bottom) {
     const treeW = right - left + fitPadding * 2;
     const treeH = bottom - top + fitPadding * 2;
@@ -342,22 +356,11 @@ export class RrbVec {
   }
 
   fit() {
-    if (!this.root) return;
-
-    let left = Infinity;
-    let right = -Infinity;
-    let top = Infinity;
-    let bottom = -Infinity;
-
-    this.root.eachBefore((node) => {
-      const halfWidth = (node.data.len / 2) * arrayCellWidth;
-      if (node.x - halfWidth < left) left = node.x - halfWidth;
-      if (node.x + halfWidth > right) right = node.x + halfWidth;
-      if (node.y < top) top = node.y;
-      if (node.y > bottom) bottom = node.y;
-    });
-
-    this.#fit(left, top, right, bottom + arrayCellHeight);
+    if (!this.root) {
+      return;
+    }
+    const { left, top, right, bottom } = this.#computeBounds();
+    this.#fit(left, top, right, bottom);
   }
 
   zoomIn() {
