@@ -127,7 +127,9 @@ class VectorCard {
     });
 
     this.tooltip.addEventListener("click", () => {
-      if (this.currentIndex === null) return;
+      if (this.currentIndex === null) {
+        return;
+      }
 
       const otherVector = this.vector.split(this.currentIndex);
       this.update();
