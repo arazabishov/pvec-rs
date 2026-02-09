@@ -1,5 +1,5 @@
 import "./styles.css";
-import { VectorVis, Vector, pruneColors } from "./vector";
+import { VectorVis, Vector } from "./vector";
 import { WasmDecorator } from "./wasm";
 
 class VectorComponent extends HTMLElement {
@@ -150,9 +150,8 @@ concatenateVectorsButton.onClick = () => {
     lastVector.remove();
   }
 
-  // Remove color cache entries for nodes that no longer exist in any vector.
   const active = [...grid.children].filter((c) => c.vectorVis).map((c) => c.vectorVis);
-  pruneColors(active);
+  VectorVis.prune(active);
 
   // wasmDecorator.concatenate();
   // // After concatenation, there will be only one vector left. Hence, we need to prune the rest.
