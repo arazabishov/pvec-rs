@@ -71,7 +71,7 @@ export class RrbVec {
       .attr("transform", () => `translate(${arrayCellWidth * 8}, 0)`);
   }
 
-  setOnMouseOverListener(listener) {
+  onMouseOver(listener) {
     this.listener = listener;
   }
 
