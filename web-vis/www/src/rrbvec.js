@@ -2,13 +2,15 @@ import * as d3 from "d3";
 
 const transitionDuration = 256;
 
-const margin = { top: 32, right: 120, bottom: 42, left: 512 };
-const width = 1512 + 512 - margin.left - margin.right;
+const viewportWidth = 960;
+const viewportHeight = 600;
+const fitPadding = 60;
 
 const arrayCellWidth = 16;
 const arrayCellHeight = 20;
 
-const dy = width / 28;
+const treeWidth = 1512;
+const dy = treeWidth / 28;
 const dx = arrayCellWidth * 5;
 
 const diagonal = d3
@@ -68,23 +70,36 @@ export class RrbVec {
     this.svgTree = d3
       .select(selector)
       .append("svg")
-      .attr("viewBox", [-margin.left, -margin.top, width, dx])
+      .attr("viewBox", [0, 0, viewportWidth, viewportHeight])
       .style("font", "10px sans-serif")
       .style("user-select", "none");
 
-    this.gLink = this.svgTree
+    this.gContainer = this.svgTree.append("g");
+
+    this.zoom = d3
+      .zoom()
+      .scaleExtent([0.1, 4])
+      .on("start", () => this.svgTree.classed("grabbing", true))
+      .on("zoom", (event) => {
+        this.gContainer.attr("transform", event.transform);
+      })
+      .on("end", () => this.svgTree.classed("grabbing", false));
+
+    this.svgTree.call(this.zoom);
+
+    this.gLink = this.gContainer
       .append("g")
       .attr("fill", "none")
       .attr("stroke", "#555")
       .attr("stroke-opacity", 0.4)
       .attr("stroke-width", 1.5);
 
-    this.gNode = this.svgTree
+    this.gNode = this.gContainer
       .append("g")
       .attr("cursor", "pointer")
       .attr("pointer-events", "all");
 
-    this.gNodeTail = this.svgTree
+    this.gNodeTail = this.gContainer
       .append("g")
       .attr("transform", () => `translate(${arrayCellWidth * 8}, 0)`);
   }
@@ -162,25 +177,24 @@ export class RrbVec {
     // Compute the new tree layout.
     tree(this.root);
 
-    let top = this.root;
-    let bottom = this.root;
+    let left = Infinity;
+    let right = -Infinity;
+    let top = Infinity;
+    let bottom = -Infinity;
 
     this.root.eachBefore((node) => {
-      if (node.y < top.y) {
-        top = node;
-      }
-
-      if (node.y > bottom.y) {
-        bottom = node;
-      }
+      const halfWidth = (node.data.len / 2) * arrayCellWidth;
+      if (node.x - halfWidth < left) left = node.x - halfWidth;
+      if (node.x + halfWidth > right) right = node.x + halfWidth;
+      if (node.y < top) top = node.y;
+      if (node.y > bottom) bottom = node.y;
     });
-
-    const height = bottom.y - top.y + margin.top + margin.bottom;
 
     const transition = this.svgTree
       .transition()
-      .duration(transitionDuration)
-      .attr("viewBox", [-margin.left, -margin.top, width, height]);
+      .duration(transitionDuration);
+
+    this.#fit(left, top, right, bottom + arrayCellHeight);
 
     // Update the nodes…
     const node = this.gNode.selectAll("g").data(nodes, (d) => d.id);
@@ -310,6 +324,62 @@ export class RrbVec {
       node.x0 = node.x;
       node.y0 = node.y;
     });
+  }
+
+  #fit(left, top, right, bottom) {
+    const treeW = right - left + fitPadding * 2;
+    const treeH = bottom - top + fitPadding * 2;
+
+    const scale = Math.min(
+      viewportWidth / treeW,
+      viewportHeight / treeH,
+      1
+    );
+
+    const tx =
+      (viewportWidth - (right - left) * scale) / 2 - left * scale;
+    const ty =
+      (viewportHeight - (bottom - top) * scale) / 2 - top * scale;
+
+    const transform = d3.zoomIdentity.translate(tx, ty).scale(scale);
+
+    this.svgTree
+      .transition()
+      .duration(transitionDuration)
+      .call(this.zoom.transform, transform);
+  }
+
+  fit() {
+    if (!this.root) return;
+
+    let left = Infinity;
+    let right = -Infinity;
+    let top = Infinity;
+    let bottom = -Infinity;
+
+    this.root.eachBefore((node) => {
+      const halfWidth = (node.data.len / 2) * arrayCellWidth;
+      if (node.x - halfWidth < left) left = node.x - halfWidth;
+      if (node.x + halfWidth > right) right = node.x + halfWidth;
+      if (node.y < top) top = node.y;
+      if (node.y > bottom) bottom = node.y;
+    });
+
+    this.#fit(left, top, right, bottom + arrayCellHeight);
+  }
+
+  zoomIn() {
+    this.svgTree
+      .transition()
+      .duration(transitionDuration)
+      .call(this.zoom.scaleBy, 1.5);
+  }
+
+  zoomOut() {
+    this.svgTree
+      .transition()
+      .duration(transitionDuration)
+      .call(this.zoom.scaleBy, 1 / 1.5);
   }
 
   #updateTail(tail) {

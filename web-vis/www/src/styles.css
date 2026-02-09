@@ -25,8 +25,35 @@ body {
   @apply min-h-[196px] min-w-[196px] py-2.5 px-5 border flex items-center justify-center;
 }
 
+.vector svg {
+  cursor: grab;
+}
+
+.vector svg.grabbing {
+  cursor: grabbing;
+}
+
+.zoom-controls {
+  @apply absolute top-3 right-3 flex flex-row shadow-md rounded-md overflow-hidden;
+}
+
+.zoom-btn {
+  @apply bg-white hover:bg-gray-100 text-gray-600 border border-gray-300;
+  @apply w-8 h-8 flex items-center justify-center cursor-pointer text-sm font-mono leading-none;
+  margin-left: -1px;
+}
+
+.zoom-btn-top {
+  @apply rounded-l-md;
+  margin-left: 0;
+}
+
+.zoom-btn-bottom {
+  @apply rounded-r-md;
+}
+
 .slider-container {
-  @apply absolute  w-1/4 bottom-4 right-12;
+  @apply absolute w-1/4 bottom-4 right-12;
 }
 
 @utility slider-track {
