@@ -4,6 +4,15 @@ use std::collections::HashMap;
 use uuid::Uuid;
 use wasm_bindgen::prelude::*;
 
+// web-vis only works with branching factor 4 (small_branch feature on pvec).
+// Redefined here to avoid leaking pvec internals through a pub re-export.
+const BRANCH_FACTOR: usize = 4;
+
+#[wasm_bindgen]
+pub fn branch_factor() -> usize {
+    BRANCH_FACTOR
+}
+
 type VecId = String;
 
 struct State {
