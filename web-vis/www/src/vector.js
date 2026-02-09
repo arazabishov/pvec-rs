@@ -1,8 +1,10 @@
 import * as wasm from "web-vis";
 
 export class Vector {
+  #id;
+
   constructor(id) {
-    this._id = id;
+    this.#id = id;
   }
 
   static create() {
@@ -10,26 +12,26 @@ export class Vector {
   }
 
   id() {
-    return this._id;
+    return this.#id;
   }
 
   resize(size) {
-    wasm.set_vec_size(this._id, size);
+    wasm.set_vec_size(this.#id, size);
   }
 
   split(index) {
-    return new Vector(wasm.split_off_vec(this._id, index));
+    return new Vector(wasm.split_off_vec(this.#id, index));
   }
 
   concatenate(other) {
-    wasm.concatenate(this._id, other.id());
+    wasm.concatenate(this.#id, other.id());
   }
 
   size() {
-    return wasm.get_vec_size(this._id);
+    return wasm.get_vec_size(this.#id);
   }
 
   json() {
-    return JSON.parse(wasm.get(this._id));
+    return JSON.parse(wasm.get(this.#id));
   }
 }
