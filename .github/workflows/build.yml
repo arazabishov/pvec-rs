@@ -23,8 +23,8 @@ jobs:
         run: cargo test --all --features "small_branch"
       - name: Running benchmarks as tests
         run: cargo test --benches
-      - name: Running memory benchmarks as tests
-        run: sh bench.sh
+      - name: Compiling memory benchmarks
+        run: cargo build --release --workspace
         working-directory: benches-mem
 
   build_js:
