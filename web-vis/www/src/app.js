@@ -1,6 +1,5 @@
 import "./styles.css";
-import { VectorVis, Vector } from "./vector";
-import { WasmDecorator } from "./wasm";
+import { VectorVis } from "./vectorvis";
 
 class VectorComponent extends HTMLElement {
   constructor(vectorVis) {
@@ -20,7 +19,7 @@ class VectorComponent extends HTMLElement {
 
     this.slider = document.createElement("input");
     this.slider.addEventListener("change", () =>
-      this.vectorVis.setSize(this.slider.value)
+      this.vectorVis.resize(this.slider.value)
     );
     this.slider.type = "range";
     this.slider.min = 1;
@@ -149,26 +148,16 @@ concatenateVectorsButton.onClick = () => {
 
     lastVector.remove();
   }
-
-  const active = [...grid.children].filter((c) => c.vectorVis).map((c) => c.vectorVis);
-  VectorVis.prune(active);
-
-  // wasmDecorator.concatenate();
-  // // After concatenation, there will be only one vector left. Hence, we need to prune the rest.
-  // while (grid.children.length > 2) {
-  //   grid.removeChild(grid.children[1]);
-  // }
-  // Signal the first vector to update itself, as it now contains values from all other vectors.
-  // grid.firstElementChild.update();
 };
 
-const wasmDecorator = new WasmDecorator(() => {
-  if (wasmDecorator.len() > 1) {
+VectorVis.onChange((count) => {
+  if (count > 1) {
     concatenateVectorsButton.show();
   } else {
     concatenateVectorsButton.hide();
   }
 });
+
 const grid = new GridComponent();
 const addVectorButton = new AddVectorButtonComponent();
 
@@ -200,11 +189,10 @@ const createMouseEventsHandler = (vectorVis, vectorComponent) => {
         vectorSplitControl.classList.add("tooltip-split");
         vectorSplitControl.innerHTML = "<span>Split</span>";
         vectorSplitControl.addEventListener("click", () => {
-          const vector = vectorVis.vec();
-          const other = vector.splitAt(index);
+          const otherVis = vectorVis.split(index);
 
           vectorComponent.update();
-          addVectorToGrid(other, vectorComponent.nextSibling);
+          addVectorToGrid(otherVis, vectorComponent.nextSibling);
 
           // Remove the control, otherwise it will be left hanging around
           vectorSplitControl.remove();
@@ -264,24 +252,20 @@ const createMouseEventsHandler = (vectorVis, vectorComponent) => {
   };
 };
 
-const addVectorToGrid = (vector, nextSibling) => {
-  const vectorVis = new VectorVis(vector);
+const addVectorToGrid = (vectorVis, nextSibling) => {
   const vectorComponent = new VectorComponent(vectorVis);
   const mouseEventsHandler = createMouseEventsHandler(
     vectorVis,
     vectorComponent
   );
 
-  vectorVis.setOnMouseOverListener(mouseEventsHandler);
+  vectorVis.onMouseOver(mouseEventsHandler);
   grid.insertBefore(vectorComponent, nextSibling);
 };
 
 const addVector = (button) => {
-  const vecId = wasmDecorator.pushVec();
-  const vector = new Vector(vecId, wasmDecorator);
-  vector.setSize(64);
-
-  addVectorToGrid(vector, button);
+  const vectorVis = VectorVis.create(64);
+  addVectorToGrid(vectorVis, button);
 };
 addVectorButton.onClick = addVector;
 
