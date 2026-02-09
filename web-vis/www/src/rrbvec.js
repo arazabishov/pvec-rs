@@ -73,32 +73,32 @@ export class RrbVec {
       .style("font", "10px sans-serif")
       .style("user-select", "none");
 
-    this.gContainer = this.svgTree.append("g");
+    this.gCanvas = this.svgTree.append("g");
 
     this.zoom = d3
       .zoom()
       .scaleExtent([0.1, 4])
       .on("start", () => this.svgTree.classed("grabbing", true))
       .on("zoom", (event) => {
-        this.gContainer.attr("transform", event.transform);
+        this.gCanvas.attr("transform", event.transform);
       })
       .on("end", () => this.svgTree.classed("grabbing", false));
 
     this.svgTree.call(this.zoom);
 
-    this.gLink = this.gContainer
+    this.gLink = this.gCanvas
       .append("g")
       .attr("fill", "none")
       .attr("stroke", "#555")
       .attr("stroke-opacity", 0.4)
       .attr("stroke-width", 1.5);
 
-    this.gNode = this.gContainer
+    this.gNode = this.gCanvas
       .append("g")
       .attr("cursor", "pointer")
       .attr("pointer-events", "all");
 
-    this.gNodeTail = this.gContainer
+    this.gNodeTail = this.gCanvas
       .append("g")
       .attr("transform", () => `translate(${arrayCellWidth * 8}, 0)`);
   }
