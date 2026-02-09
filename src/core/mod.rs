@@ -322,15 +322,63 @@ impl<T: Clone + Debug> RrbVec<T> {
                 let right_tail = mem::replace(&mut self.tail, left_tail);
                 let right_tail_len = mem::replace(&mut self.tail_len, left_tail_len);
 
+                // Popping the tail may leave the left tree with a bare Leaf root.
+                // Normalize: merge the root leaf into the tail, or redistribute
+                // elements between the root leaf and the tail.
+                if self.tree.is_root_leaf() {
+                    if self.len() <= BRANCH_FACTOR {
+                        // All values fit into a single tail.
+                        let (mut new_tail, mut new_tail_len) = self.tree.pop();
+
+                        for i in 0..self.tail_len {
+                            new_tail[new_tail_len] = self.tail[i].take();
+                            new_tail_len += 1;
+                        }
+
+                        self.tail = new_tail;
+                        self.tail_len = new_tail_len;
+
+                        // Push back if tail is exactly BRANCH_FACTOR long.
+                        self.push_tail();
+                    } else if self.tree.len() < BRANCH_FACTOR {
+                        // Root leaf is not fully dense; redistribute
+                        // elements from the tail to fill it.
+                        let (mut root, mut root_len) = self.tree.pop();
+                        let mut index = 0;
+
+                        while root_len < BRANCH_FACTOR && index < self.tail_len {
+                            root[root_len] = self.tail[index].take();
+
+                            root_len += 1;
+                            index += 1;
+                        }
+
+                        self.tree.push(root, root_len);
+
+                        let (mut new_tail, mut new_tail_len) = (new_branch!(), 0);
+                        while index < self.tail_len {
+                            new_tail[new_tail_len] = self.tail[index].take();
+
+                            new_tail_len += 1;
+                            index += 1;
+                        }
+
+                        self.tail = new_tail;
+                        self.tail_len = new_tail_len;
+                    }
+                }
+
                 let mut right = RrbVec {
                     tree: right_tree,
                     tail: right_tail,
                     tail_len: right_tail_len,
                 };
 
+                // Same normalization for the right side: the tree split may
+                // produce a bare Leaf root here as well.
                 if right.tree.is_root_leaf() {
                     if right.len() <= BRANCH_FACTOR {
-                        // all values can fit into a single tail
+                        // All values fit into a single tail.
                         let (mut new_tail, mut new_tail_len) = right.tree.pop();
 
                         for i in 0..right.tail_len {
@@ -341,12 +389,11 @@ impl<T: Clone + Debug> RrbVec<T> {
                         right.tail = new_tail;
                         right.tail_len = new_tail_len;
 
-                        // in case if tail is exactly BRANCH_FACTOR long, we should push it to the tree
+                        // Push back if tail is exactly BRANCH_FACTOR long.
                         right.push_tail()
                     } else if right.tree.len() < BRANCH_FACTOR {
-                        // root is leaf, but it is not fully dense
-                        // hence, some of the values should be redistributed to the actual leaf
-
+                        // Root leaf is not fully dense; redistribute
+                        // elements from the tail to fill it.
                         let (mut root, mut root_len) = right.tree.pop();
                         let mut index = 0;
 
