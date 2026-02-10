@@ -65,6 +65,9 @@ export class RrbVec {
   constructor(selector) {
     this.container = document.querySelector(selector);
 
+    // Content box dimensions for the initial viewBox (before ResizeObserver fires).
+    // clientWidth/clientHeight include padding, so subtract it to match the SVG's
+    // CSS-assigned size (width/height: 100% resolves against the content box).
     const cs = getComputedStyle(this.container);
     this.width =
       this.container.clientWidth -
@@ -111,6 +114,9 @@ export class RrbVec {
       .append("g")
       .attr("transform", () => `translate(${arrayCellWidth * 8}, 0)`);
 
+    // Callback fires once per observed element that changed size; the entries
+    // array is guaranteed non-empty. contentBoxSize is a FrozenArray with one
+    // entry per fragment (always one for a non-fragmented div).
     this.resizeObserver = new ResizeObserver((entries) => {
       const { inlineSize, blockSize } = entries[0].contentBoxSize[0];
       this.width = inlineSize;
