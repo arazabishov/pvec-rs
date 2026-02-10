@@ -10,6 +10,7 @@ body {
 
 .vector {
   @apply bg-white rounded-lg border border-gray-300 p-4 min-h-[600px] relative;
+  contain: size;
 }
 
 .button-add-vector-container {
@@ -27,11 +28,14 @@ body {
   @apply min-h-[196px] min-w-[196px] py-2.5 px-5 border flex items-center justify-center;
 }
 
-.vector svg {
+.vector > svg {
+  display: block;
+  width: 100%;
+  height: 100%;
   cursor: grab;
 }
 
-.vector svg.grabbing {
+.vector > svg.grabbing {
   cursor: grabbing;
 }
 
