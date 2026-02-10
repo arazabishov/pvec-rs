@@ -1,9 +1,6 @@
 import * as d3 from "d3";
 
 const transitionDuration = 256;
-
-const viewportWidth = 960;
-const viewportHeight = 600;
 const fitPadding = 60;
 
 const arrayCellWidth = 16;
@@ -66,10 +63,22 @@ const appendOutlinedText = (selection, transformFn, textFn) => {
 
 export class RrbVec {
   constructor(selector) {
+    this.container = document.querySelector(selector);
+
+    const cs = getComputedStyle(this.container);
+    this.width =
+      this.container.clientWidth -
+      parseFloat(cs.paddingLeft) -
+      parseFloat(cs.paddingRight);
+    this.height =
+      this.container.clientHeight -
+      parseFloat(cs.paddingTop) -
+      parseFloat(cs.paddingBottom);
+
     this.svgTree = d3
       .select(selector)
       .append("svg")
-      .attr("viewBox", [0, 0, viewportWidth, viewportHeight])
+      .attr("viewBox", [0, 0, this.width, this.height])
       .style("font", "10px sans-serif")
       .style("user-select", "none");
 
@@ -101,6 +110,19 @@ export class RrbVec {
     this.gNodeTail = this.gCanvas
       .append("g")
       .attr("transform", () => `translate(${arrayCellWidth * 8}, 0)`);
+
+    this.resizeObserver = new ResizeObserver((entries) => {
+      const { inlineSize, blockSize } = entries[0].contentBoxSize[0];
+      this.width = inlineSize;
+      this.height = blockSize;
+      this.svgTree.attr("viewBox", [0, 0, this.width, this.height]);
+
+      if (this.root) {
+        const { left, top, right, bottom } = this.#computeBounds();
+        this.#fit(left, top, right, bottom, 0);
+      }
+    });
+    this.resizeObserver.observe(this.container);
   }
 
   onMouseOver(listener) {
@@ -338,20 +360,20 @@ export class RrbVec {
     return { left, top, right, bottom: bottom + arrayCellHeight };
   }
 
-  #fit(left, top, right, bottom) {
+  #fit(left, top, right, bottom, duration = transitionDuration) {
     const treeW = right - left + fitPadding * 2;
     const treeH = bottom - top + fitPadding * 2;
 
-    const scale = Math.min(viewportWidth / treeW, viewportHeight / treeH, 1);
+    const scale = Math.min(this.width / treeW, this.height / treeH, 1);
 
-    const tx = (viewportWidth - (right - left) * scale) / 2 - left * scale;
-    const ty = (viewportHeight - (bottom - top) * scale) / 2 - top * scale;
+    const tx = (this.width - (right - left) * scale) / 2 - left * scale;
+    const ty = (this.height - (bottom - top) * scale) / 2 - top * scale;
 
     const transform = d3.zoomIdentity.translate(tx, ty).scale(scale);
 
     this.svgTree
       .transition()
-      .duration(transitionDuration)
+      .duration(duration)
       .call(this.zoom.transform, transform);
   }
 
