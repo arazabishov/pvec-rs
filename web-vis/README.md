@@ -6,12 +6,13 @@ Live demo: [pvec-rs.abishov.com/web-vis/](https://pvec-rs.abishov.com/web-vis/)
 
 ## How it works
 
-The WASM module (`src/lib.rs`) holds a `Vec<RrbVec<usize>>` as global state and exposes operations to JavaScript:
+The WASM module (`src/lib.rs`) holds a `HashMap<VecId, RrbVec<usize>>` as global state and exposes operations to JavaScript:
 
-- `push_vec` / `clear` — create or remove vectors
-- `set_vec_size` — grow or shrink a vector by pushing elements or splitting
+- `push_vec` / `remove_vec` — create or remove vectors
+- `set_vec_size` / `get_vec_size` — grow or shrink a vector by pushing elements or splitting
 - `split_off_vec` — split a vector at an index, producing two vectors
-- `concatenat_all` — merge all vectors into one via `append`
+- `clone_vec` — O(1) clone via structural sharing
+- `concatenate` — append one vector into another via `append`
 - `get` — serialize an RRB-Tree to JSON for rendering
 
 The pvec crate is compiled with `small_branch` (branching factor 4) and `serde_serializer` so that tree structures are small enough to visualize and can be serialized to JSON.
