@@ -6,7 +6,8 @@ const fitPadding = 60;
 const arrayCellWidth = 16;
 const arrayCellHeight = 20;
 
-const dy = 1512 / 28;
+// Vertical spacing between tree levels in px.
+const dy = 54;
 const dx = arrayCellWidth * 5;
 
 const diagonal = d3
@@ -27,7 +28,7 @@ const tree = d3
     return a.parent == b.parent ? 1 : 2;
   });
 
-const getDescendants = (node) => {
+const getChildren = (node) => {
   if (!node) {
     return null;
   }
@@ -149,7 +150,7 @@ export class RrbVec {
     this.#updateTail(vec.tail);
 
     if (vec.tree.root_len > 0) {
-      this.root = d3.hierarchy(vec.tree.root, getDescendants);
+      this.root = d3.hierarchy(vec.tree.root, getChildren);
 
       this.root.x0 = dy / 2;
       this.root.y0 = 0;
@@ -175,7 +176,7 @@ export class RrbVec {
 
         // keep only the right-most branches expanded to save space
         if (next_node_to_expand === data || (data && data.leaf)) {
-          const children = getDescendants(data);
+          const children = getChildren(data);
           next_node_to_expand = children ? children[data.len - 1] : undefined;
         } else {
           d.children = null;
@@ -318,7 +319,7 @@ export class RrbVec {
       .merge(linkEnter)
       .transition(transition)
       .attr("d", (d) => {
-        const children = getDescendants(d.source.data);
+        const children = getChildren(d.source.data);
         const childNodePosition = children.indexOf(d.target.data);
 
         const sourceX =

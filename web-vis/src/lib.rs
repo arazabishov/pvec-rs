@@ -5,15 +5,6 @@ use std::collections::HashMap;
 use uuid::Uuid;
 use wasm_bindgen::prelude::*;
 
-// web-vis only works with branching factor 4 (small_branch feature on pvec).
-// Redefined here to avoid leaking pvec internals through a pub re-export.
-const BRANCH_FACTOR: usize = 4;
-
-#[wasm_bindgen]
-pub fn branch_factor() -> usize {
-    BRANCH_FACTOR
-}
-
 type VecId = String;
 
 struct State {
@@ -121,39 +112,6 @@ pub fn concatenate(vec_id_self: String, vec_id_that: String) {
 }
 
 #[wasm_bindgen]
-pub fn concatenate_all() {
-    STATE.with(|state| {
-        let mut s = state.borrow_mut();
-
-        if s.order.len() <= 1 {
-            return;
-        }
-
-        let first_id = s.order[0].clone();
-        let other_ids: Vec<VecId> = s.order.drain(1..).collect();
-
-        let others: Vec<RrbVec<usize>> = other_ids
-            .iter()
-            .map(|id| s.vectors.remove(id).unwrap())
-            .collect();
-
-        let first = s.vectors.get_mut(&first_id).unwrap();
-        for mut other in others {
-            first.append(&mut other);
-        }
-    })
-}
-
-#[wasm_bindgen]
-pub fn clear() {
-    STATE.with(|state| {
-        let mut s = state.borrow_mut();
-        s.vectors.clear();
-        s.order.clear();
-    })
-}
-
-#[wasm_bindgen]
 pub fn clone_vec(vec_id: String) -> String {
     STATE.with(|state| {
         let mut s = state.borrow_mut();
@@ -189,13 +147,3 @@ pub fn get(vec_id: String) -> JsValue {
     })
 }
 
-#[wasm_bindgen]
-pub fn len() -> usize {
-    STATE.with(|state| state.borrow().vectors.len())
-}
-
-/// Returns the list of vector IDs in display order
-#[wasm_bindgen]
-pub fn get_ids() -> Vec<String> {
-    STATE.with(|state| state.borrow().order.clone())
-}

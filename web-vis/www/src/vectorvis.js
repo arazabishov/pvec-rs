@@ -57,7 +57,6 @@ export class VectorVis {
     return `vec${this.vector.id()}`;
   }
 
-  // CSS selector targeting this instance's DOM element.
   selector() {
     return `#${this.id()}`;
   }
@@ -159,7 +158,6 @@ export class VectorVis {
     return this.vector.size();
   }
 
-  // Removes this instance from the live set and cleans up WASM state.
   dispose() {
     VectorVis.#instances.delete(this);
     this.vector.remove();

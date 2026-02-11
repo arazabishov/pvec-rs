@@ -57,14 +57,6 @@ function createConcatenateButton(onClick) {
   button.addEventListener("click", () => onClick(container));
 
   container.appendChild(button);
-
-  container.show = () => {
-    container.classList.add("visible");
-  };
-  container.hide = () => {
-    container.classList.remove("visible");
-  };
-
   return container;
 }
 
@@ -512,7 +504,7 @@ function init() {
   });
 
   VectorVis.onChange((count) => {
-    count > 1 ? concatenateButton.show() : concatenateButton.hide();
+    concatenateButton.classList.toggle("visible", count > 1);
   });
 
   const addButton = createAddButton((button) => {
