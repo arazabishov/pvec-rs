@@ -146,4 +146,3 @@ pub fn get(vec_id: String) -> JsValue {
             .unwrap()
     })
 }
-
