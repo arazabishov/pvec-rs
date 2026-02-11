@@ -23,6 +23,14 @@ export class Vector {
     return new Vector(wasm.split_off_vec(this.#id, index));
   }
 
+  clone() {
+    return new Vector(wasm.clone_vec(this.#id));
+  }
+
+  remove() {
+    wasm.remove_vec(this.#id);
+  }
+
   concatenate(other) {
     wasm.concatenate(this.#id, other.id());
   }

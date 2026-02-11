@@ -1,11 +1,10 @@
 import { Vector } from "./vector.js";
 import { RrbVec } from "./rrbvec.js";
-import * as d3 from "d3";
 
 // Pairs a Vector (WASM data) with an RrbVec (d3 rendering) and manages
 // per-node color assignment for structurally shared trees.
 export class VectorVis {
-  static #palette = ["#dc2626", "#ea580c", "#65a30d", "#059669", "#0891b2"];
+  static #paletteSize = 10;
 
   // Live instances, used by #prune to determine which node addresses are still reachable.
   static #instances = new Set();
@@ -80,13 +79,11 @@ export class VectorVis {
     this.rrbVecVis.set(rrbVec);
   }
 
-  // Advances the palette cursor and returns an rgba string with 0.6 opacity.
+  // Advances the palette cursor and returns a CSS variable reference.
+  // Actual colors are defined in styles.css with light/dark variants.
   static #nextColor() {
-    const colorIndex = VectorVis.#colorCursor++ % VectorVis.#palette.length;
-    const colorHex = VectorVis.#palette[colorIndex];
-    const color = d3.rgb(colorHex);
-
-    return `rgba(${color.r}, ${color.g}, ${color.b}, ${0.6})`;
+    const colorIndex = VectorVis.#colorCursor++ % VectorVis.#paletteSize;
+    return `var(--palette-${colorIndex})`;
   }
 
   fit() {
@@ -108,6 +105,16 @@ export class VectorVis {
     this.rrbVecVis.set(rrbVec);
   }
 
+  // Clones the WASM vector (O(1) — bumps refcounts on shared nodes).
+  // Returns a new registered VectorVis for the clone.
+  clone() {
+    const clonedVector = this.vector.clone();
+    const clonedVis = new VectorVis(clonedVector);
+    VectorVis.#instances.add(clonedVis);
+    VectorVis.#notify();
+    return clonedVis;
+  }
+
   // Splits the WASM vector at index. Returns a new registered VectorVis
   // for the right half. Does NOT re-render this instance (caller should call update).
   split(index) {
@@ -122,14 +129,15 @@ export class VectorVis {
   // and prunes stale color cache entries.
   concatenate(other) {
     this.vector.concatenate(other.vector);
-    other.dispose();
 
+    // Annotate BEFORE dispose: captures shared node addresses in
+    // this.addresses so prune (triggered by dispose) doesn't evict
+    // the other vector's colors from the cache.
     const rrbVec = this.vector.json();
     this.#annotate(rrbVec);
     this.rrbVecVis.set(rrbVec);
 
-    VectorVis.#prune();
-    VectorVis.#notify();
+    other.dispose();
   }
 
   // Removes stale entries from #colors by collecting all addresses still
@@ -155,9 +163,12 @@ export class VectorVis {
     return this.vector.size();
   }
 
-  // Removes this instance from the live set. Does not touch WASM or DOM.
+  // Removes this instance from the live set and cleans up WASM state.
   dispose() {
     VectorVis.#instances.delete(this);
+    this.vector.remove();
+    VectorVis.#prune();
+    VectorVis.#notify();
   }
 
   // Stamps a color on every node in the tree JSON and on the tail node.

@@ -53,12 +53,13 @@ const appendOutlinedText = (selection, transformFn, textFn) => {
     .attr("dy", "0.31em")
     .attr("x", 8)
     .attr("text-anchor", "end")
+    .style("fill", "var(--text-label-fill)")
     .text(textFn)
     .clone(true)
     .lower()
     .attr("stroke-linejoin", "round")
     .attr("stroke-width", 3)
-    .attr("stroke", "white");
+    .style("stroke", "var(--text-outline-stroke)");
 };
 
 export class RrbVec {
@@ -101,8 +102,8 @@ export class RrbVec {
     this.gLink = this.gCanvas
       .append("g")
       .attr("fill", "none")
-      .attr("stroke", "#555")
-      .attr("stroke-opacity", 0.4)
+      .style("stroke", "var(--tree-link-stroke)")
+      .style("stroke-opacity", "var(--tree-link-opacity)")
       .attr("stroke-width", 1.5);
 
     this.gNode = this.gCanvas
@@ -113,6 +114,15 @@ export class RrbVec {
     this.gNodeTail = this.gCanvas
       .append("g")
       .attr("transform", () => `translate(${arrayCellWidth * 8}, 0)`);
+
+    this.tailLabel = this.gNodeTail
+      .append("text")
+      .attr("x", 0)
+      .attr("y", -6)
+      .style("fill", "var(--tail-label-fill)")
+      .attr("font-size", "10px")
+      .attr("visibility", "hidden")
+      .text("tail");
 
     // Callback fires once per observed element that changed size; the entries
     // array is guaranteed non-empty. contentBoxSize is a FrozenArray with one
@@ -218,8 +228,7 @@ export class RrbVec {
       .enter()
       .append("g")
       .attr("transform", () => `translate(${source.x0},${source.y0})`)
-      .attr("fill-opacity", 0)
-      .attr("stroke-opacity", 0)
+      .attr("opacity", 0)
       .on("click", (_event, d) => {
         d.children = d.children ? null : d._children;
         this.#updateTree(d);
@@ -237,8 +246,9 @@ export class RrbVec {
       .enter()
       .append("rect")
       .style("stroke-width", "1px")
-      .style("stroke", "black")
+      .style("stroke", "var(--node-border-stroke)")
       .style("fill", (d) => d.data.color ?? "none")
+      .style("fill-opacity", "var(--node-fill-opacity)")
       .attr("width", arrayCellWidth)
       .attr("height", arrayCellHeight)
       .attr(
@@ -281,8 +291,7 @@ export class RrbVec {
       .merge(nodeEnter)
       .transition(transition)
       .attr("transform", (d) => `translate(${d.x},${d.y})`)
-      .attr("fill-opacity", 1)
-      .attr("stroke-opacity", 1);
+      .attr("opacity", 1);
 
     // Transition exiting nodes to the parent's new position.
     node
@@ -290,8 +299,7 @@ export class RrbVec {
       .transition(transition)
       .remove()
       .attr("transform", () => `translate(${source.x},${source.y})`)
-      .attr("fill-opacity", 0)
-      .attr("stroke-opacity", 0);
+      .attr("opacity", 0);
 
     // Update the links…
     const link = this.gLink.selectAll("path").data(links, (d) => d.target.id);
@@ -409,6 +417,11 @@ export class RrbVec {
     const tailElements = tail.elements.filter(
       (d) => d !== null && d !== undefined
     );
+
+    this.tailLabel.attr(
+      "visibility",
+      tailElements.length > 0 ? "visible" : "hidden"
+    );
     const node = this.gNodeTail
       .selectAll("g")
       .data(tailElements, (d) => `${d}:tail`);
@@ -417,8 +430,9 @@ export class RrbVec {
     nodeEnter
       .append("rect")
       .style("stroke-width", "1px")
-      .style("stroke", "black")
+      .style("stroke", "var(--node-border-stroke)")
       .style("fill", tail.color ?? "none")
+      .style("fill-opacity", "var(--node-fill-opacity)")
       .attr("width", arrayCellWidth)
       .attr("height", arrayCellHeight)
       .attr("transform", (_val, i) => `translate(${i * arrayCellWidth}, 0)`);
@@ -435,14 +449,12 @@ export class RrbVec {
     node
       .merge(nodeEnter)
       .transition()
-      .attr("fill-opacity", 1)
-      .attr("stroke-opacity", 1);
+      .attr("opacity", 1);
 
     node
       .exit()
       .transition()
       .remove()
-      .attr("fill-opacity", 0)
-      .attr("stroke-opacity", 0);
+      .attr("opacity", 0);
   }
 }
