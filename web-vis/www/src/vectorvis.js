@@ -36,6 +36,10 @@ export class VectorVis {
       vector.resize(initialSize);
     }
 
+    return VectorVis.#register(vector);
+  }
+
+  static #register(vector) {
     const vis = new VectorVis(vector);
     VectorVis.#instances.add(vis);
     VectorVis.#notify();
@@ -108,21 +112,13 @@ export class VectorVis {
   // Clones the WASM vector (O(1) — bumps refcounts on shared nodes).
   // Returns a new registered VectorVis for the clone.
   clone() {
-    const clonedVector = this.vector.clone();
-    const clonedVis = new VectorVis(clonedVector);
-    VectorVis.#instances.add(clonedVis);
-    VectorVis.#notify();
-    return clonedVis;
+    return VectorVis.#register(this.vector.clone());
   }
 
   // Splits the WASM vector at index. Returns a new registered VectorVis
   // for the right half. Does NOT re-render this instance (caller should call update).
   split(index) {
-    const otherVector = this.vector.split(index);
-    const otherVis = new VectorVis(otherVector);
-    VectorVis.#instances.add(otherVis);
-    VectorVis.#notify();
-    return otherVis;
+    return VectorVis.#register(this.vector.split(index));
   }
 
   // Appends other's data into this vector, disposes other, re-renders,

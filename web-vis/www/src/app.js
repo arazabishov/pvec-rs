@@ -71,8 +71,12 @@ function createConcatenateButton(onClick) {
 function createSocialLinks() {
   const socials = [
     { icon: Github, href: "https://github.com/ArazAbishov", label: "GitHub" },
-    { icon: Linkedin, href: "https://linkedin.com", label: "LinkedIn" },
-    { icon: Twitter, href: "https://x.com", label: "X" },
+    {
+      icon: Linkedin,
+      href: "https://www.linkedin.com/in/arazabishov/",
+      label: "LinkedIn",
+    },
+    { icon: Twitter, href: "https://x.com/arazabishov", label: "X" },
   ];
 
   const container = document.createElement("nav");
@@ -123,13 +127,10 @@ function createTopBar() {
   track.appendChild(thumb);
   toggle.appendChild(track);
 
-  const setToggle = (dark) => {
-    toggle.classList.toggle("dark", dark);
-  };
-
-  setToggle(theme.isDark());
-  theme.onChange(setToggle);
+  toggle.classList.toggle("dark", theme.isDark());
   toggle.addEventListener("click", () => theme.toggle());
+
+  theme.onChange((dark) => toggle.classList.toggle("dark", dark));
 
   const githubLink = document.createElement("a");
   githubLink.href = "https://github.com/ArazAbishov/pvec-rs";
@@ -146,6 +147,33 @@ function createTopBar() {
 
   bar.appendChild(controls);
   return bar;
+}
+
+function createFooter() {
+  const footer = document.createElement("footer");
+  footer.classList.add("page-footer");
+
+  const attribution = document.createElement("span");
+  attribution.classList.add("footer-attribution");
+  attribution.textContent = "made by ";
+
+  const authorLink = document.createElement("a");
+  authorLink.href = "https://abishov.com";
+  authorLink.target = "_blank";
+  authorLink.rel = "noopener noreferrer";
+  authorLink.classList.add("footer-author-link");
+  authorLink.textContent = "arazabishov";
+
+  attribution.appendChild(authorLink);
+
+  const separator = document.createElement("span");
+  separator.classList.add("footer-separator");
+  separator.textContent = "\u00b7";
+
+  footer.appendChild(attribution);
+  footer.appendChild(separator);
+  footer.appendChild(createSocialLinks());
+  return footer;
 }
 
 function createIcon(iconNode) {
@@ -499,31 +527,7 @@ function init() {
   addVectorToGrid(VectorVis.create(64), addButton);
 
   document.body.appendChild(concatenateButton);
-
-  const footer = document.createElement("footer");
-  footer.classList.add("page-footer");
-
-  const attribution = document.createElement("span");
-  attribution.classList.add("footer-attribution");
-  attribution.textContent = "made by ";
-
-  const authorLink = document.createElement("a");
-  authorLink.href = "https://abishov.com";
-  authorLink.target = "_blank";
-  authorLink.rel = "noopener noreferrer";
-  authorLink.classList.add("footer-author-link");
-  authorLink.textContent = "arazabishov";
-
-  attribution.appendChild(authorLink);
-
-  const separator = document.createElement("span");
-  separator.classList.add("footer-separator");
-  separator.textContent = "\u00b7";
-
-  footer.appendChild(attribution);
-  footer.appendChild(separator);
-  footer.appendChild(createSocialLinks());
-  document.body.appendChild(footer);
+  document.body.appendChild(createFooter());
 }
 
 init();
