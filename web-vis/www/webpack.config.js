@@ -30,7 +30,7 @@ module.exports = (_, argv) => {
     },
     plugins: [
       new HtmlWebpackPlugin({
-        title: "RRBVec visualization",
+        template: "./index.html",
       }),
     ],
   };
