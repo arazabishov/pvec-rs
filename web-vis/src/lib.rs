@@ -59,7 +59,7 @@ pub fn set_vec_size(vec_id: String, size: usize) {
             for i in vec.len()..size {
                 vec.push(i);
             }
-        } else {
+        } else if vec.len() > size {
             vec.split_off(size);
         }
     })
@@ -150,6 +150,32 @@ pub fn clear() {
         let mut s = state.borrow_mut();
         s.vectors.clear();
         s.order.clear();
+    })
+}
+
+#[wasm_bindgen]
+pub fn clone_vec(vec_id: String) -> String {
+    STATE.with(|state| {
+        let mut s = state.borrow_mut();
+
+        let vec = s.vectors.get(&vec_id).expect("Vector not found").clone();
+        let new_id = State::new_id();
+
+        s.vectors.insert(new_id.clone(), vec);
+
+        let pos = s.order.iter().position(|id| *id == vec_id).unwrap();
+        s.order.insert(pos + 1, new_id.clone());
+
+        new_id
+    })
+}
+
+#[wasm_bindgen]
+pub fn remove_vec(vec_id: String) {
+    STATE.with(|state| {
+        let mut s = state.borrow_mut();
+        s.vectors.remove(&vec_id);
+        s.order.retain(|id| *id != vec_id);
     })
 }
 
