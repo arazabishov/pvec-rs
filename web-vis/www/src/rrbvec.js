@@ -447,15 +447,8 @@ export class RrbVec {
       (d) => d
     );
 
-    node
-      .merge(nodeEnter)
-      .transition()
-      .attr("opacity", 1);
+    node.merge(nodeEnter).transition().attr("opacity", 1);
 
-    node
-      .exit()
-      .transition()
-      .remove()
-      .attr("opacity", 0);
+    node.exit().transition().remove().attr("opacity", 0);
   }
 }
