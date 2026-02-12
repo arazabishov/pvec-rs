@@ -21,7 +21,7 @@ An interactive visualization of the RRB-Tree based persistent vector. It runs pv
 
 The branching factor of 4 is used to ensure trees can visually fit on the screen.
 
-**[Try the live demo](https://pvec-rs.abishov.com/web-vis/)**
+**[Try the live visualization here.](https://pvec-rs.abishov.com/web-vis/)**
 
 ## Example
 
