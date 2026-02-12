@@ -8,7 +8,20 @@ A persistent vector implementation based on RRB-Tree for Rust, inspired by the b
 
 One of the vector types - **PVec**, explores an idea of starting out as the standard vector and spills to the tree representation only when cloned to offer the best possible performance. The API of methods provided by pvec-rs is identical to the standard vector, reducing the friction of using the library. Another notable feature is the out of the box support for [Rayon](https://github.com/rayon-rs/rayon).
 
-The performance evaluation of the library is provided in the [technical report](https://abishov.com/thesis). PVec is available on [crates.io](https://crates.io/crates/pvec), and API documentation is available on [docs.rs](https://docs.rs/pvec/0.2.1/pvec/). An interactive visualization of the RRB-Tree structure is available at [web-vis](https://abishov.com/pvec-rs/web-vis/).
+The performance evaluation of the library is provided in the [technical report](https://abishov.com/thesis). PVec is available on [crates.io](https://crates.io/crates/pvec), and API documentation is available on [docs.rs](https://docs.rs/pvec/0.2.1/pvec/).
+
+## Interactive Visualization
+
+![Interactive visualization of the RRB-Tree based persistent vector](images/screenshot-2026-02-12-at-15.45.25.png)
+
+An interactive visualization of the RRB-Tree based persistent vector. It runs pvec-rs in the browser via WebAssembly, rendering the internal representation of the tree. Color-coded nodes demonstrate how structural sharing works across instances.
+
+- Resize the vector via slider (up to 4096 elements).
+- Clone, split at any leaf, and concatenate.
+
+The branching factor of 4 is used to ensure trees can visually fit on the screen.
+
+**[Try the live demo](https://pvec-rs.abishov.com/web-vis/)**
 
 ## Example
 
