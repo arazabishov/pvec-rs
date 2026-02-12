@@ -12,7 +12,7 @@ The performance evaluation of the library is provided in the [technical report](
 
 ## Interactive Visualization
 
-![Interactive visualization of the RRB-Tree based persistent vector](images/screenshot-2026-02-12-at-15.45.25.png)
+[![Interactive visualization of the RRB-Tree based persistent vector](images/screenshot-2026-02-12-at-15.45.25.png)](https://pvec-rs.abishov.com/web-vis/)
 
 An interactive visualization of the RRB-Tree based persistent vector. It runs pvec-rs in the browser via WebAssembly, rendering the internal representation of the tree. Color-coded nodes demonstrate how structural sharing works across instances.
 
